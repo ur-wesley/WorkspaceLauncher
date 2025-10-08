@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Workspace {
     pub id: i64,
@@ -11,6 +12,7 @@ pub struct Workspace {
     pub updated_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewWorkspace {
     pub name: String,
@@ -18,6 +20,7 @@ pub struct NewWorkspace {
     pub icon: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Action {
     pub id: i64,
@@ -35,6 +38,7 @@ pub struct Action {
     pub updated_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewAction {
     pub workspace_id: i64,
@@ -49,6 +53,7 @@ pub struct NewAction {
     pub order_index: i32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Variable {
     pub id: i64,
@@ -61,6 +66,7 @@ pub struct Variable {
     pub updated_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewVariable {
     pub workspace_id: i64,
@@ -70,6 +76,7 @@ pub struct NewVariable {
     pub enabled: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Run {
     pub id: i64,
@@ -81,6 +88,7 @@ pub struct Run {
     pub updated_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewRun {
     pub workspace_id: i64,
@@ -88,6 +96,7 @@ pub struct NewRun {
     pub started_at: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Log {
     pub id: i64,
@@ -98,6 +107,7 @@ pub struct Log {
     pub timestamp: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewLog {
     pub run_id: i64,
@@ -106,6 +116,7 @@ pub struct NewLog {
     pub message: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Setting {
     pub id: i64,
@@ -115,12 +126,14 @@ pub struct Setting {
     pub updated_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewSetting {
     pub key: String,
     pub value: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tool {
     pub id: i64,
@@ -136,6 +149,7 @@ pub struct Tool {
     pub updated_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewTool {
     pub name: String,
