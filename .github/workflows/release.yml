@@ -41,7 +41,8 @@ jobs:
         shell: pwsh
         run: |
           $EXE_PATH = Get-ChildItem -Path "src-tauri\target\release\bundle\nsis" -Filter "*.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
-          echo "exe_path=$EXE_PATH" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $EXE_PATH_UNIX = $EXE_PATH -replace '\\', '/'
+          echo "exe_path=$EXE_PATH_UNIX" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           echo "artifact_name=WorkspaceLauncher-${{ steps.version.outputs.version }}-windows-x64.exe" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           echo "Found installer: $EXE_PATH"
 
