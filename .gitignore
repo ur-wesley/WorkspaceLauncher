@@ -1,0 +1,5 @@
+node_modules
+dist
+
+# Application logs created by launched processes
+src-tauri/derby.log

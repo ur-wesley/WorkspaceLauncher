@@ -1,0 +1,62 @@
+{
+  "name": "urwesley-workspacelauncher",
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "tauri": "tauri",
+    "build": "vite build",
+    "serve": "vite preview",
+    "lint": "biome check ./src --fix",
+    "format": "biome format ./src --fix",
+    "add": "bunx shadcn-solid@latest add",
+    "deps": "bunx taze",
+    "bump": "bunx bumpp"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@iconify-json/mdi": "^1.2.3",
+    "@tauri-apps/cli": "^2.8.4",
+    "@types/bun": "^1.2.23",
+    "@types/node": "^24.5.2",
+    "@unocss/preset-icons": "^66.5.2",
+    "@unocss/preset-typography": "^66.5.2",
+    "@unocss/vite": "^66.5.2",
+    "bumpp": "^10.2.3",
+    "taze": "^19.7.0",
+    "typescript": "^5.9.2",
+    "unocss": "^66.5.2",
+    "vite": "^7.1.7",
+    "vite-plugin-solid": "^2.11.8"
+  },
+  "dependencies": {
+    "@corvu/resizable": "^0.2.5",
+    "@iconify/iconify": "^3.1.1",
+    "@kobalte/core": "^0.13.11",
+    "@solid-primitives/event-bus": "^1.1.2",
+    "@solid-primitives/keyboard": "^1.3.3",
+    "@solidjs/meta": "^0.29.4",
+    "@solidjs/router": "^0.15.3",
+    "@tauri-apps/api": "^2.8.0",
+    "@tauri-apps/plugin-autostart": "~2",
+    "@tauri-apps/plugin-dialog": "^2.4.0",
+    "@tauri-apps/plugin-fs": "^2.4.2",
+    "@tauri-apps/plugin-opener": "^2.5.0",
+    "@tauri-apps/plugin-shell": "^2.3.1",
+    "@tauri-apps/plugin-sql": "~2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk-solid": "^1.1.2",
+    "neverthrow": "^8.2.0",
+    "solid-js": "^1.9.9",
+    "somoto": "^0.0.2",
+    "tailwind-merge": "^3.3.1",
+    "unocss-preset-animations": "^1.2.1"
+  },
+  "engines": {
+    "bun": ">=1.20.0"
+  }
+}
