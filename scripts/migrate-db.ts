@@ -86,7 +86,9 @@ async function main() {
 
  // Check if tables exist
  const tables = db
-  .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type='table'")
+  .query<{ name: string }, []>(
+   "SELECT name FROM sqlite_master WHERE type='table'"
+  )
   .all();
  const tableNames = tables.map((t: { name: string }) => t.name);
 
@@ -108,7 +110,9 @@ async function main() {
 
  // Export workspaces
  if (tableNames.includes("workspaces")) {
-  exportData.workspaces = db.query<Workspace, []>("SELECT * FROM workspaces").all();
+  exportData.workspaces = db
+   .query<Workspace, []>("SELECT * FROM workspaces")
+   .all();
   console.log(`  ✅ Exported ${exportData.workspaces.length} workspaces`);
  }
 
@@ -120,7 +124,9 @@ async function main() {
 
  // Export variables
  if (tableNames.includes("variables")) {
-  exportData.variables = db.query<Variable, []>("SELECT * FROM variables").all();
+  exportData.variables = db
+   .query<Variable, []>("SELECT * FROM variables")
+   .all();
   console.log(`  ✅ Exported ${exportData.variables.length} variables`);
  }
 
