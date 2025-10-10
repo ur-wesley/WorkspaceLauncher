@@ -2,10 +2,14 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::process::Command as StdCommand;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_shell::ShellExt;
 use tokio::time::{sleep, Duration};
+
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LaunchActionRequest {
@@ -91,6 +95,33 @@ fn cursor_candidates() -> Vec<String> {
         ));
     }
     candidates
+}
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+fn spawn_hidden_process(
+    command: &str,
+    args: &[String],
+    working_dir: Option<&str>,
+) -> Result<u32, String> {
+    let mut cmd = StdCommand::new(command);
+    
+    if !args.is_empty() {
+        cmd.args(args);
+    }
+    
+    if let Some(dir) = working_dir {
+        cmd.current_dir(dir);
+    }
+    
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    
+    match cmd.spawn() {
+        Ok(child) => Ok(child.id()),
+        Err(e) => Err(format!("Failed to spawn process: {}", e)),
+    }
 }
 
 fn spawn_with_candidates(
@@ -386,20 +417,18 @@ async fn launch_command_action(
         .get("working_directory")
         .and_then(|value| value.as_str());
 
+    let keep_terminal_open = config
+        .get("keep_terminal_open")
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false);
+
     let command_str = replace_variables(command_str, &request.variables);
     let args: Vec<String> = args
         .iter()
         .map(|arg| replace_variables(arg, &request.variables))
         .collect();
 
-    let mut command = app.shell().command(&command_str);
-    if !args.is_empty() {
-        command = command.args(args.clone());
-    }
-    if let Some(dir) = working_directory {
-        let resolved = replace_variables(dir, &request.variables);
-        command = command.current_dir(&resolved);
-    }
+    let working_directory_resolved = working_directory.map(|dir| replace_variables(dir, &request.variables));
 
     emit_log(
         &app,
@@ -410,68 +439,104 @@ async fn launch_command_action(
         &format!("Executing command: {} {:?}", command_str, args),
     );
 
-    match command.spawn() {
-        Ok((_rx, child)) => {
-            let process_id = child.pid();
-            let detached = config
-                .get("detached")
-                .and_then(|value| value.as_bool())
-                .unwrap_or(false);
+    let process_id = if keep_terminal_open {
+        let mut full_command = command_str.clone();
+        if !args.is_empty() {
+            full_command.push_str(&format!(" {}", args.join(" ")));
+        }
+        full_command.push_str(" & pause");
 
-            if detached {
+        let mut cmd = app.shell().command("cmd");
+        cmd = cmd.args(["/k", &full_command]);
+        
+        if let Some(dir) = &working_directory_resolved {
+            cmd = cmd.current_dir(dir);
+        }
+
+        match cmd.spawn() {
+            Ok((_rx, child)) => child.pid(),
+            Err(error) => {
+                emit_log(
+                    &app,
+                    request.action_id,
+                    request.workspace_id,
+                    run_id,
+                    "error",
+                    &format!("Failed to execute command: {}", error),
+                );
                 emit_completed(
                     &app,
                     request.action_id,
                     request.workspace_id,
                     run_id,
-                    Some(0),
-                    true,
+                    None,
+                    false,
                 );
-                return Ok(LaunchResult {
-                    success: true,
-                    message: format!("Command launched successfully (detached): {}", command_str),
-                    process_id: Some(process_id),
-                    run_id: Some(run_id),
-                });
+                return Err(format!("Failed to execute command: {}", error));
             }
-
-            emit_completed(
-                &app,
-                request.action_id,
-                request.workspace_id,
-                run_id,
-                Some(0),
-                true,
-            );
-
-            Ok(LaunchResult {
-                success: true,
-                message: format!("Command started: {}", command_str),
-                process_id: Some(process_id),
-                run_id: Some(run_id),
-            })
         }
-        Err(error) => {
-            emit_log(
-                &app,
-                request.action_id,
-                request.workspace_id,
-                run_id,
-                "error",
-                &format!("Failed to execute command: {}", error),
-            );
-            emit_completed(
-                &app,
-                request.action_id,
-                request.workspace_id,
-                run_id,
-                None,
-                false,
-            );
-
-            Err(format!("Failed to execute command: {}", error))
+    } else {
+        match spawn_hidden_process(&command_str, &args, working_directory_resolved.as_deref()) {
+            Ok(pid) => pid,
+            Err(error) => {
+                emit_log(
+                    &app,
+                    request.action_id,
+                    request.workspace_id,
+                    run_id,
+                    "error",
+                    &error,
+                );
+                emit_completed(
+                    &app,
+                    request.action_id,
+                    request.workspace_id,
+                    run_id,
+                    None,
+                    false,
+                );
+                return Err(error);
+            }
         }
+    };
+
+    let detached = config
+        .get("detached")
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false);
+
+    if detached {
+        emit_completed(
+            &app,
+            request.action_id,
+            request.workspace_id,
+            run_id,
+            Some(0),
+            true,
+        );
+        return Ok(LaunchResult {
+            success: true,
+            message: format!("Command launched successfully (detached): {}", command_str),
+            process_id: Some(process_id),
+            run_id: Some(run_id),
+        });
     }
+
+    emit_completed(
+        &app,
+        request.action_id,
+        request.workspace_id,
+        run_id,
+        Some(0),
+        true,
+    );
+
+    Ok(LaunchResult {
+        success: true,
+        message: format!("Command started: {}", command_str),
+        process_id: Some(process_id),
+        run_id: Some(run_id),
+    })
 }
 
 async fn launch_url_action(

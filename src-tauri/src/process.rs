@@ -1,5 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct KillProcessResult {
     pub success: bool,
@@ -12,8 +18,13 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
     {
         use std::process::Command;
 
-        let output = Command::new("taskkill")
-            .args(&["/PID", &pid.to_string(), "/F", "/T"])
+        let mut cmd = Command::new("taskkill");
+        cmd.args(&["/PID", &pid.to_string(), "/F", "/T"]);
+        
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        let output = cmd
             .output()
             .map_err(|e| format!("Failed to execute taskkill: {}", e))?;
 
@@ -60,8 +71,13 @@ pub async fn is_process_running(pid: u32) -> Result<bool, String> {
     {
         use std::process::Command;
 
-        let output = Command::new("tasklist")
-            .args(&["/FI", &format!("PID eq {}", pid), "/FO", "CSV", "/NH"])
+        let mut cmd = Command::new("tasklist");
+        cmd.args(&["/FI", &format!("PID eq {}", pid), "/FO", "CSV", "/NH"]);
+        
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        let output = cmd
             .output()
             .map_err(|e| format!("Failed to execute tasklist: {}", e))?;
 

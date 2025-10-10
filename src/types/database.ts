@@ -64,6 +64,7 @@ export interface CommandActionConfig extends ActionConfigBase {
  args?: string[];
  working_directory?: string;
  environment_variables?: Record<string, string>;
+ keep_terminal_open?: boolean;
 }
 
 export interface URLActionConfig extends ActionConfigBase {
