@@ -18,7 +18,9 @@ import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
 import { useVariableStore } from "@/store/variable";
 import { useWorkspaceStore } from "@/store/workspace";
+import { useUI } from "@/store/ui";
 import type { NewWorkspace } from "@/types/database";
+import { ImageRoot, ImageFallback, Image } from "@/components/ui/image.tsx";
 
 interface SidebarProps {
  collapsed?: boolean;
@@ -28,6 +30,7 @@ interface SidebarProps {
 export const Sidebar: Component<SidebarProps> = (props) => {
  const location = useLocation();
  const { store, actions } = useWorkspaceStore();
+ const ui = useUI();
  const [, actionStoreActions] = useActionStore() ?? [null, null];
  const [, variableStoreActions] = useVariableStore() ?? [null, null];
  const actionStore = useActionStore()?.[0] ?? { actions: [] };
@@ -41,6 +44,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
  const [searchQuery, setSearchQuery] = createSignal("");
  const [showSearch, setShowSearch] = createSignal(false);
  const [createDialogOpen, setCreateDialogOpen] = createSignal(false);
+ const [totalRunningActions, setTotalRunningActions] = createSignal(0);
 
  const toggleSearch = () => {
   if (showSearch()) {
@@ -79,6 +83,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
   const running = runningActionsService.getAll();
   const workspaceIds = new Set(running.map((action) => action.workspace_id));
   setRunningWorkspaceIds(workspaceIds);
+  setTotalRunningActions(running.length);
  };
 
  onMount(() => {
@@ -88,7 +93,22 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 
   const interval = setInterval(updateRunningWorkspaces, 1000);
 
-  onCleanup(() => clearInterval(interval));
+  const handleRunningActionsChange = () => {
+   updateRunningWorkspaces();
+  };
+
+  window.addEventListener(
+   "running-actions-changed",
+   handleRunningActionsChange
+  );
+
+  onCleanup(() => {
+   clearInterval(interval);
+   window.removeEventListener(
+    "running-actions-changed",
+    handleRunningActionsChange
+   );
+  });
  });
 
  const sortedWorkspaces = createMemo(() => {
@@ -132,7 +152,11 @@ export const Sidebar: Component<SidebarProps> = (props) => {
      href="/"
      class="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
     >
-     <div class="i-mdi-rocket-launch w-8 h-8 text-primary flex-shrink-0" />
+     {/* <div class="i-mdi-rocket-launch w-8 h-8 text-primary flex-shrink-0" /> */}
+     <ImageRoot>
+      <Image src="/icon.png" />
+      <ImageFallback>WSL</ImageFallback>
+     </ImageRoot>
      <div
       class={cn(
        "transition-opacity duration-200",
@@ -230,6 +254,8 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 
           await launchWorkspace(actionStore.actions, context);
 
+          updateRunningWorkspaces();
+
           showToast({
            title: "Success",
            description: `Workspace "${workspace.name}" launched successfully`,
@@ -260,6 +286,17 @@ export const Sidebar: Component<SidebarProps> = (props) => {
            )}
            title={props.collapsed ? workspace.name : undefined}
           >
+           {/* Running indicator - always positioned left when not collapsed */}
+           <Show when={!props.collapsed}>
+            <div
+             class="w-2 h-2 flex-shrink-0"
+             classList={{
+              "rounded-full bg-green-500 animate-pulse": hasRunningActions(),
+             }}
+             title={hasRunningActions() ? "Has running actions" : undefined}
+            />
+           </Show>
+
            {/* Workspace Icon */}
            <Show
             when={workspace.icon}
@@ -279,19 +316,9 @@ export const Sidebar: Component<SidebarProps> = (props) => {
             />
            </Show>
 
-           {/* Running indicator - small dot overlay when collapsed */}
-           <Show when={hasRunningActions()}>
-            <Show
-             when={props.collapsed}
-             fallback={
-              <div
-               class="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0"
-               title="Has running actions"
-              />
-             }
-            >
-             <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            </Show>
+           {/* Running indicator overlay for collapsed state */}
+           <Show when={props.collapsed && hasRunningActions()}>
+            <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse" />
            </Show>
 
            {/* Workspace name - hidden when collapsed */}
@@ -382,6 +409,30 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 
    {/* Bottom Navigation - Settings */}
    <div class="p-2 border-t border-border space-y-1">
+    <Button
+     variant="ghost"
+     class={cn(
+      "w-full justify-start gap-3 px-3 py-2 text-sm font-medium",
+      "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+     )}
+     onclick={() => ui.actions.openActiveActionsManager()}
+    >
+     <div class="i-mdi-application-cog w-5 h-5 flex-shrink-0" />
+     <span
+      class={cn(
+       "transition-opacity duration-200 flex-1 text-left",
+       props.collapsed ? "opacity-0 hidden" : "opacity-100"
+      )}
+     >
+      Active Actions
+     </span>
+     <Show when={!props.collapsed && totalRunningActions() > 0}>
+      <span class="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-5 text-center">
+       {totalRunningActions()}
+      </span>
+     </Show>
+    </Button>
+
     <A
      href="/settings"
      class={cn(
