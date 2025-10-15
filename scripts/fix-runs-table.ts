@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 const DB_PATH = join(
  process.env.APPDATA || "",
- "com.parac.workspacelauncher",
+ "com.w4y.workspacelauncher",
  "workspacelauncher.db"
 );
 

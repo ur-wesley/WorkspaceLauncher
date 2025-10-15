@@ -10,12 +10,12 @@ import { join } from "node:path";
 
 const DB_PATH = join(
  process.env.APPDATA || "",
- "com.parac.workspacelauncher",
+ "com.w4y.workspacelauncher",
  "workspacelauncher.db"
 );
 const BACKUP_PATH = join(
  process.env.APPDATA || "",
- "com.parac.workspacelauncher",
+ "com.w4y.workspacelauncher",
  `workspacelauncher_backup_${Date.now()}.db`
 );
 
@@ -149,7 +149,7 @@ async function main() {
  // Save export to JSON
  const exportPath = join(
   process.env.APPDATA || "",
-  "com.parac.workspacelauncher",
+  "com.w4y.workspacelauncher",
   "export.json"
  );
  await Bun.write(exportPath, JSON.stringify(exportData, null, 2));
@@ -159,7 +159,7 @@ async function main() {
  console.log("� Renaming old database...");
  const renamedPath = join(
   process.env.APPDATA || "",
-  "com.parac.workspacelauncher",
+  "com.w4y.workspacelauncher",
   "workspacelauncher_old.db"
  );
  const fs = await import("node:fs/promises");
