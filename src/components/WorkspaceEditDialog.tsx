@@ -1,4 +1,5 @@
 import type { Component } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 import { createSignal, Show } from "solid-js";
 import { IconPicker } from "@/components/IconPicker";
 import {
@@ -39,6 +40,7 @@ type WorkspaceEditDialogProps = {
 export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
  props
 ) => {
+ const navigate = useNavigate();
  const workspaceContext = useWorkspaceStore();
  const [open, setOpen] = createSignal(false);
  const [deleteDialogOpen, setDeleteDialogOpen] = createSignal(false);
@@ -81,6 +83,7 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
    setDeleteDialogOpen(false);
    setOpen(false);
    props.onClose?.();
+   navigate("/");
   } finally {
    setDeleting(false);
   }
@@ -100,9 +103,11 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
   }
  };
 
+ const TriggerComponent = props.trigger;
+
  return (
   <>
-   <props.trigger onClick={() => setOpen(true)} />
+   <TriggerComponent onClick={() => setOpen(true)} />
    <Dialog open={open()} onOpenChange={handleOpenChange}>
     <DialogContent class="max-w-lg">
      <DialogHeader>
@@ -127,7 +132,7 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
       </TextFieldRoot>
 
       <div class="space-y-2">
-       <TextFieldLabel>Icon</TextFieldLabel>
+       <div class="text-sm font-medium">Icon</div>
        <div class="flex items-center gap-2">
         <IconPicker value={icon()} onChange={setIcon} />
         <Show when={icon()}>

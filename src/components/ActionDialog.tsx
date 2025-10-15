@@ -150,14 +150,17 @@ type ActionDialogProps = {
  action?: Action;
  trigger: Component<{ onClick?: () => void }>;
  onClose?: () => void;
+ forceOpen?: boolean;
 };
 
 export const ActionDialog: Component<ActionDialogProps> = (props) => {
  const [actionStore, actionActions] = useActionStore();
  const [toolStore, toolActions] = useToolStore();
- const [variableStore] = useVariableStore();
+ const [variableStore, variableActions] = useVariableStore();
 
  const [open, setOpen] = createSignal(false);
+ const isOpen = () =>
+  props.forceOpen !== undefined ? props.forceOpen : open();
  const [loading, setLoading] = createSignal(false);
  const [savingCustomTool, setSavingCustomTool] = createSignal(false);
 
@@ -302,7 +305,7 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
  };
 
  const canSubmit = createMemo(() => {
-  if (!name().trim() || missingVariables().length > 0) {
+  if (!name().trim()) {
    return false;
   }
 
@@ -318,7 +321,7 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
  });
 
  createEffect(() => {
-  if (!open()) {
+  if (!isOpen()) {
    return;
   }
 
@@ -399,7 +402,7 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
  };
 
  createEffect(() => {
-  if (!open()) {
+  if (!isOpen()) {
    return;
   }
 
@@ -522,13 +525,27 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
  });
 
  const handleSubmit = async () => {
-  if (!canSubmit() || loading()) {
+  if (loading()) {
    return;
   }
 
   setLoading(true);
 
   try {
+   const missing = missingVariables();
+   if (missing.length > 0) {
+    for (const varName of missing) {
+     await variableActions.addVariable({
+      workspace_id: Number(props.workspaceId),
+      key: varName,
+      value: "",
+      is_secure: false,
+      enabled: true,
+     });
+    }
+    await variableActions.loadVariables(Number(props.workspaceId));
+   }
+
    const actionConfig = buildActionConfig();
    if (!actionConfig) {
     setLoading(false);
@@ -601,7 +618,7 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
     showToast({
      title: "Tool Saved",
      description: `"${trimmedName}" is now available as a saved tool.`,
-     variant: "default",
+     variant: "success",
     });
    } else {
     showToast({
@@ -642,9 +659,13 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
   setCustomWorkingDirectory("");
  };
 
- const handleOpenChange = (isOpen: boolean) => {
-  setOpen(isOpen);
-  if (!isOpen) {
+ const handleOpenChange = (openNext: boolean) => {
+  if (props.forceOpen !== undefined) {
+   if (!openNext) props.onClose?.();
+   return;
+  }
+  setOpen(openNext);
+  if (!openNext) {
    resetForm();
    props.onClose?.();
   }
@@ -653,7 +674,7 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
  return (
   <>
    <props.trigger onClick={() => setOpen(true)} />
-   <Dialog open={open()} onOpenChange={handleOpenChange}>
+   <Dialog open={isOpen()} onOpenChange={handleOpenChange}>
     <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
      <DialogHeader>
       <DialogTitle>
@@ -940,15 +961,13 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
       </Show>
 
       <Show when={missingVariables().length > 0}>
-       <div class="p-3 bg-destructive/10 rounded-md shadow-sm">
+       <div class="p-3 bg-accent/50 rounded-md shadow-sm">
         <div class="flex items-start gap-2">
-         <div class="i-mdi-alert-circle w-4 h-4 text-destructive mt-0.5" />
+         <div class="i-mdi-information w-4 h-4 text-primary mt-0.5" />
          <div>
-          <p class="text-sm font-medium text-destructive">
-           Missing Environment Variables
-          </p>
+          <p class="text-sm font-medium">New Environment Variables</p>
           <p class="text-sm text-muted-foreground mt-1">
-           The following variables are referenced but not defined:{" "}
+           The following variables will be created with empty values:{" "}
            <span class="font-mono">{missingVariables().join(", ")}</span>
           </p>
          </div>

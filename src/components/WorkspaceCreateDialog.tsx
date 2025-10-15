@@ -98,7 +98,7 @@ export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (
       </TextFieldRoot>
 
       <div class="grid grid-cols-4 items-center gap-4">
-       <TextFieldLabel class="text-right">Icon</TextFieldLabel>
+       <div class="text-right text-sm font-medium">Icon</div>
        <div class="col-span-3 flex items-center gap-2">
         <IconPicker value={icon()} onChange={setIcon} />
         <Show when={icon()}>
