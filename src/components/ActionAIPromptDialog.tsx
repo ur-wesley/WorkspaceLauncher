@@ -425,7 +425,6 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
     </DialogHeader>
 
     <div class="flex-1 overflow-auto space-y-4 p-1">
-     {/* Step 1: User Description */}
      <div class="space-y-2">
       <div class="flex items-center justify-between">
        <div class="text-sm font-medium">Step 1: Describe Your Action</div>
@@ -446,7 +445,6 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
       </div>
      </div>
 
-     {/* Separator */}
      <div class="relative">
       <div class="absolute inset-0 flex items-center">
        <span class="w-full border-t" />
@@ -458,7 +456,6 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
       </div>
      </div>
 
-     {/* Step 2: JSON Import */}
      <div class="space-y-2">
       <div class="flex items-center justify-between">
        <div class="text-sm font-medium">Step 2: Import JSON Response</div>

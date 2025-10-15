@@ -144,7 +144,6 @@ export const SettingsPage: Component = () => {
  return (
   <div class="h-full w-full flex flex-col">
    <div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 space-y-4">
-    {/* Header */}
     <div class="flex items-center justify-between">
      <div>
       <h1 class="text-3xl font-bold">Settings</h1>
@@ -159,7 +158,6 @@ export const SettingsPage: Component = () => {
 
     <Separator />
 
-    {/* General Settings */}
     <Card>
      <CardHeader>
       <CardTitle class="flex items-center gap-2">
@@ -195,7 +193,6 @@ export const SettingsPage: Component = () => {
      </CardContent>
     </Card>
 
-    {/* Updates */}
     <Card>
      <CardHeader>
       <CardTitle class="flex items-center gap-2">
@@ -248,7 +245,6 @@ export const SettingsPage: Component = () => {
      </CardContent>
     </Card>
 
-   {/* Tool Management */}
    <Card>
     <Collapsible>
      <CardHeader>
@@ -291,7 +287,6 @@ export const SettingsPage: Component = () => {
          .filter(([_category, tools]) => tools.length > 0)
          .map(([category, tools]) => (
           <div class="space-y-2">
-           {/* Only show category header if it's not "Other" or if there are tools */}
            <Show
             when={
              category !== "Other" || Object.keys(groupedTools()).length === 1
@@ -303,7 +298,6 @@ export const SettingsPage: Component = () => {
             {tools.map((tool) => (
              <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 shadow-sm transition-all">
               <div class="flex items-center gap-3">
-               {/* Only show icon container if icon exists */}
                <Show when={tool.icon}>
                 <div class="flex items-center justify-center w-10 h-10 rounded bg-primary text-primary-foreground">
                  <span
@@ -351,7 +345,6 @@ export const SettingsPage: Component = () => {
                 </Switch>
                </div>
 
-               {/* Dropdown menu for edit/delete */}
                <DropdownMenu>
                 <Tooltip>
                  <TooltipTrigger>
@@ -387,7 +380,6 @@ export const SettingsPage: Component = () => {
     </Collapsible>
    </Card>
 
-    {/* Share & Import */}
     <Card>
      <CardHeader>
       <CardTitle class="flex items-center gap-2">

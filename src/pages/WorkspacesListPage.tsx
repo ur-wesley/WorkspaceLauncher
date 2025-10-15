@@ -210,7 +210,6 @@ export const WorkspacesListPage: Component = () => {
  return (
   <div class="h-full w-full flex flex-col">
    <div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 space-y-6">
-    {/* Header */}
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
      <div class="flex-1 min-w-0">
       <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold">Workspaces</h1>
@@ -228,7 +227,6 @@ export const WorkspacesListPage: Component = () => {
      </Button>
     </div>
 
-    {/* Search and View Controls */}
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
      <div class="relative flex-1">
       <div class="absolute left-3 top-1/2 transform -translate-y-1/2 i-mdi-magnify w-5 h-5 text-muted-foreground pointer-events-none" />
