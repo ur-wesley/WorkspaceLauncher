@@ -111,8 +111,8 @@ there are workspaces. each workspace could have actions. an action is a tool cal
 
 i want to start a workspace like that:
 
-- open eclipse binary ("C:\Users\parac\Desktop\eclipse-pc\eclipse.exe")
-- open binary ("C:\Users\parac\Desktop\Kyocera\Debug-SQLITE\HEDAS-API.exe")
+- open eclipse binary ("C:\Users\w4y\Desktop\eclipse-pc\eclipse.exe")
+- open binary ("C:\Users\w4y\Desktop\Kyocera\Debug-SQLITE\HEDAS-API.exe")
 - open cursor (cursor C:\Arbeit\LogReceiver\LogCollector and run it with "cd C:\Arbeit\LogReceiver\LogCollector ; bun run dev")
 - open 2x vscode instance (code C:\eclipse-ws\PrintHere; code C:\eclipse-ws\HoerAuthenticator)
 - therefore, the paths for printhere and hoerauthenticator are defined as environment variables in the workspace, like PRINT_HERE_PATH=C:\eclipse-ws\PrintHere and run like that: code ${PRINT_HERE_PATH}
