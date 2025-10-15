@@ -1,5 +1,4 @@
 import type { JSX, ParentComponent } from "solid-js";
-import { createSignal } from "solid-js";
 import { Sidebar } from "@/components/Sidebar";
 import { UIProvider, useUI } from "@/store/ui";
 import { Commander } from "@/components/Commander";
@@ -16,13 +15,8 @@ interface LayoutProps {
 }
 
 const LayoutContent: ParentComponent<LayoutProps> = (props) => {
- const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false);
  const ui = useUI();
  const workspaceStore = useWorkspaceStore();
-
- const toggleSidebar = () => {
-  setSidebarCollapsed(!sidebarCollapsed());
- };
 
  const navigate = useNavigate();
  useHotkeys("global", {
@@ -35,12 +29,12 @@ const LayoutContent: ParentComponent<LayoutProps> = (props) => {
 
  return (
   <div class="flex h-screen bg-background overflow-hidden">
-   {/* Sidebar */}
-   <Sidebar collapsed={sidebarCollapsed()} onToggle={toggleSidebar} />
+   <Sidebar
+    collapsed={ui.store.sidebarCollapsed}
+    onToggle={ui.actions.toggleSidebar}
+   />
 
-   {/* Main Content */}
    <div class="flex-1 flex flex-col overflow-hidden">
-    {/* Main Content Area */}
     <main class="flex-1 overflow-y-auto">{props.children}</main>
     <Commander />
     <WorkspaceCreateDialog
