@@ -46,7 +46,7 @@
         "https://github.com/ur-wesley/WorkspaceLauncher/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "pubkey": "YOUR_PUBLIC_KEY_HERE"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwQjc5RDBCRTc4MjQ1OUUKUldTZVJZTG5DNTIzVUJzbUJJdGdkQTF6WngvL3hWNVJwL29JUExFYXFJRStMRWpwOStPcTZZMi8K"
     }
   }
 }
