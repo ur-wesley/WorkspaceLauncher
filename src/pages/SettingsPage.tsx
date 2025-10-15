@@ -29,8 +29,11 @@ import {
 import { autostartHandler } from "@/libs/autostart";
 import { cn } from "@/libs/cn";
 import { showToast } from "@/libs/toast";
+import { checkForUpdates } from "@/libs/updater";
 import { useToolStore } from "@/store/tool";
 import type { Tool } from "@/types/database";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { version } from "../../package.json" with { type: "json" };
 
 const AddToolTrigger = (props: { onClick?: () => void }) => (
  <Button onClick={props.onClick}>
@@ -149,6 +152,9 @@ export const SettingsPage: Component = () => {
        Configure tools and application preferences
       </p>
      </div>
+     <a href="/settings/hotkeys" class="text-sm text-primary hover:underline">
+      Hotkeys
+     </a>
     </div>
 
     <Separator />
@@ -189,24 +195,82 @@ export const SettingsPage: Component = () => {
      </CardContent>
     </Card>
 
-    {/* Tool Management */}
+    {/* Updates */}
     <Card>
      <CardHeader>
-      <div class="flex justify-between items-center">
+      <CardTitle class="flex items-center gap-2">
+       <div class="i-mdi-update w-5 h-5" />
+       Updates
+      </CardTitle>
+      <CardDescription>Check for application updates</CardDescription>
+     </CardHeader>
+     <CardContent class="space-y-4">
+      <div class="flex items-center justify-between">
        <div>
-        <CardTitle class="flex items-center gap-2">
-         <div class="i-mdi-tools w-5 h-5" />
-         Tool Management
-        </CardTitle>
-        <CardDescription>
-         Manage tools that can be used to create actions
-        </CardDescription>
+        <p class="text-sm font-medium">Application Updates</p>
+        <p class="text-sm text-muted-foreground">
+         Automatically check for updates on startup
+        </p>
+       </div>
+       <Button onClick={() => checkForUpdates(false)}>Check for Updates</Button>
+      </div>
+
+      <div class="flex items-center justify-between">
+       <div>
+        <p class="text-sm font-medium">Version</p>
+        <p class="text-sm text-muted-foreground">Current: {version || "dev"}</p>
+       </div>
+       <div class="flex gap-2">
+        <a
+         href="https://github.com/ur-wesley/WorkspaceLauncher"
+         target="_blank"
+         rel="noreferrer"
+        >
+         <Button variant="outline">
+          <span
+           class="iconify w-4 h-4 mr-2"
+           data-icon="mdi:source-repository"
+          />{" "}
+          Repository
+         </Button>
+        </a>
+        <a
+         href="https://github.com/ur-wesley/WorkspaceLauncher/issues/new/choose"
+         target="_blank"
+         rel="noreferrer"
+        >
+         <Button variant="outline">
+          <span class="iconify w-4 h-4 mr-2" data-icon="mdi:github" /> New Issue
+         </Button>
+        </a>
+       </div>
+      </div>
+     </CardContent>
+    </Card>
+
+   {/* Tool Management */}
+   <Card>
+    <Collapsible>
+     <CardHeader>
+      <div class="flex justify-between items-center">
+       <div class="flex items-center gap-2">
+        <CollapsibleTrigger class="i-mdi-chevron-down w-5 h-5 transition-transform" aria-label="Toggle tools" />
+        <div>
+         <CardTitle class="flex items-center gap-2">
+          <div class="i-mdi-tools w-5 h-5" />
+          Tool Management
+         </CardTitle>
+         <CardDescription>
+          Manage tools that can be used to create actions
+         </CardDescription>
+        </div>
        </div>
        <ToolDialog trigger={AddToolTrigger} />
       </div>
      </CardHeader>
-     <CardContent>
-      <Show
+     <CollapsibleContent>
+      <CardContent>
+       <Show
        when={!toolStore.isLoading && toolStore.tools.length > 0}
        fallback={
         <div class="text-center py-8 text-muted-foreground">
@@ -317,9 +381,11 @@ export const SettingsPage: Component = () => {
           </div>
          ))}
        </div>
-      </Show>
-     </CardContent>
-    </Card>
+       </Show>
+      </CardContent>
+     </CollapsibleContent>
+    </Collapsible>
+   </Card>
 
     {/* Share & Import */}
     <Card>
