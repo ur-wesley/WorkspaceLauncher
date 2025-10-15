@@ -2,6 +2,10 @@ import type { RunningAction } from "@/types/database";
 
 const STORAGE_KEY = "workspace-launcher:running-actions";
 
+function notifyChange() {
+	window.dispatchEvent(new CustomEvent("running-actions-changed"));
+}
+
 /**
  * Service for managing running actions in localStorage.
  * Running actions are NOT saved to the database until they complete.
@@ -42,6 +46,7 @@ export const runningActionsService = {
 		const all = this.getAll();
 		all.push(action);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+		notifyChange();
 	},
 
 	/**
@@ -51,6 +56,7 @@ export const runningActionsService = {
 		const all = this.getAll();
 		const filtered = all.filter((action) => action.id !== id);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+		notifyChange();
 	},
 
 	/**
@@ -60,6 +66,7 @@ export const runningActionsService = {
 		const all = this.getAll();
 		const filtered = all.filter((action) => action.workspace_id !== workspaceId);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+		notifyChange();
 	},
 
 	/**
@@ -67,6 +74,7 @@ export const runningActionsService = {
 	 */
 	clear(): void {
 		localStorage.removeItem(STORAGE_KEY);
+		notifyChange();
 	},
 
 	/**
@@ -78,6 +86,7 @@ export const runningActionsService = {
 		if (index !== -1) {
 			all[index] = { ...all[index], ...updates };
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+			notifyChange();
 		}
 	},
 };
