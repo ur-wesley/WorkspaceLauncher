@@ -43,8 +43,11 @@ export const autostartHandler = {
  /**
   * Toggle autostart on/off
   */
- async toggle(isEnabled: boolean): Promise<void> {
-  if (isEnabled) return await this.disable();
-  return await this.enable();
+ async toggle(shouldEnable: boolean): Promise<void> {
+  if (shouldEnable) {
+   await this.enable();
+  } else {
+   await this.disable();
+  }
  },
 };
