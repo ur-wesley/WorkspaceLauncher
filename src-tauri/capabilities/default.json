@@ -27,6 +27,8 @@
     "fs:allow-write-text-file",
     "fs:allow-read-file",
     "fs:allow-write-file",
+    "updater:default",
+    "updater:allow-check",
     {
       "identifier": "shell:allow-spawn",
       "allow": [
