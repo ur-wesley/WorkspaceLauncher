@@ -11,6 +11,11 @@ import {
  DialogTitle,
 } from "@/components/ui/dialog";
 import { TextField, TextFieldRoot } from "@/components/ui/textfield";
+import {
+ Collapsible,
+ CollapsibleContent,
+ CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { ExportData } from "@/libs/share";
 import { showToast } from "@/libs/toast";
 import { useActionStore } from "@/store/action";
@@ -26,67 +31,74 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
  const workspaceStore = useWorkspaceStore();
  const [, actionActions] = useActionStore();
  const [, toolActions] = useToolStore();
+
  const [importData, setImportData] = createSignal<ExportData | null>(null);
  const [selectedWorkspaces, setSelectedWorkspaces] = createSignal<Set<number>>(
-  new Set<number>()
+  new Set()
  );
  const [selectedActions, setSelectedActions] = createSignal<Set<number>>(
-  new Set<number>()
+  new Set()
  );
- const [selectedTools, setSelectedTools] = createSignal<Set<number>>(
-  new Set<number>()
- );
- const [renamedWorkspaces, setRenamedWorkspaces] = createSignal<
-  Map<number, string>
- >(new Map());
- const [renamedActions, setRenamedActions] = createSignal<Map<number, string>>(
+ const [selectedTools, setSelectedTools] = createSignal<Set<number>>(new Set());
+ const [workspaceNames, setWorkspaceNames] = createSignal<Map<number, string>>(
   new Map()
  );
+ const [actionNames, setActionNames] = createSignal<Map<number, string>>(
+  new Map()
+ );
+ const [expandedWorkspaces, setExpandedWorkspaces] = createSignal<Set<number>>(
+  new Set()
+ );
 
- const handleFileInput = (e: Event) => {
+ const resetState = () => {
+  setImportData(null);
+  setSelectedWorkspaces(new Set<number>());
+  setSelectedActions(new Set<number>());
+  setSelectedTools(new Set<number>());
+  setWorkspaceNames(new Map<number, string>());
+  setActionNames(new Map<number, string>());
+  setExpandedWorkspaces(new Set<number>());
+ };
+
+ const parseJSON = (jsonString: string): ExportData => {
+  return JSON.parse(jsonString) as ExportData;
+ };
+
+ const handleFileInput = async (e: Event) => {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-   try {
-    const data = JSON.parse(e.target?.result as string) as ExportData;
-    setImportData(data);
-    setSelectedWorkspaces(
-     new Set<number>(data.workspaces?.map((w: { id: number }) => w.id) || [])
-    );
-    setSelectedActions(
-     new Set<number>(data.actions?.map((a: { id: number }) => a.id) || [])
-    );
-    setSelectedTools(
-     new Set<number>(data.tools?.map((t: { id: number }) => t.id) || [])
-    );
-   } catch (err) {
-    showToast({
-     title: "Error",
-     description: `Failed to parse JSON: ${err}`,
-     variant: "destructive",
-    });
-   }
-  };
-  reader.readAsText(file);
+  try {
+   const text = await file.text();
+   const data = parseJSON(text);
+   setSelectedWorkspaces(new Set<number>());
+   setSelectedActions(new Set<number>());
+   setSelectedTools(new Set<number>());
+   setWorkspaceNames(new Map<number, string>());
+   setActionNames(new Map<number, string>());
+   setExpandedWorkspaces(new Set<number>());
+   setImportData(data);
+  } catch (err) {
+   showToast({
+    title: "Error",
+    description: `Failed to parse JSON: ${err}`,
+    variant: "destructive",
+   });
+  }
  };
 
  const handleClipboardInput = async () => {
   try {
    const text = await navigator.clipboard.readText();
-   const data = JSON.parse(text) as ExportData;
+   const data = parseJSON(text);
+   setSelectedWorkspaces(new Set<number>());
+   setSelectedActions(new Set<number>());
+   setSelectedTools(new Set<number>());
+   setWorkspaceNames(new Map<number, string>());
+   setActionNames(new Map<number, string>());
+   setExpandedWorkspaces(new Set<number>());
    setImportData(data);
-   setSelectedWorkspaces(
-    new Set<number>(data.workspaces?.map((w: { id: number }) => w.id) || [])
-   );
-   setSelectedActions(
-    new Set<number>(data.actions?.map((a: { id: number }) => a.id) || [])
-   );
-   setSelectedTools(
-    new Set<number>(data.tools?.map((t: { id: number }) => t.id) || [])
-   );
   } catch (err) {
    showToast({
     title: "Error",
@@ -96,93 +108,175 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
   }
  };
 
- const toggleWorkspace = (id: number) => {
-  const newSet = new Set<number>(selectedWorkspaces());
-  if (newSet.has(id)) newSet.delete(id);
-  else newSet.add(id);
-  setSelectedWorkspaces(newSet);
+ const getWorkspaceActions = (workspaceId: number) => {
+  return (importData()?.actions || []).filter((action) => {
+   const wsId = (action as any).workspace_id ?? (action as any).workspaceId;
+   return Number(wsId) === workspaceId;
+  });
  };
 
- const toggleAction = (id: number) => {
-  const newSet = new Set<number>(selectedActions());
-  if (newSet.has(id)) newSet.delete(id);
-  else newSet.add(id);
-  setSelectedActions(newSet);
- };
-
- const toggleTool = (id: number) => {
-  const newSet = new Set<number>(selectedTools());
-  if (newSet.has(id)) newSet.delete(id);
-  else newSet.add(id);
-  setSelectedTools(newSet);
- };
-
- const selectAllWorkspaces = () =>
-  setSelectedWorkspaces(
-   new Set<number>(
-    importData()?.workspaces?.map((w: { id: number }) => w.id) || []
-   )
+ const getWorkspaceName = (workspaceId: number): string => {
+  const customName = workspaceNames().get(workspaceId);
+  if (customName) return customName;
+  const workspace = (importData()?.workspaces || []).find(
+   (w) => w.id === workspaceId
   );
- const deselectAllWorkspaces = () => setSelectedWorkspaces(new Set<number>());
- const selectAllActions = () =>
-  setSelectedActions(
-   new Set<number>(
-    importData()?.actions?.map((a: { id: number }) => a.id) || []
-   )
-  );
- const deselectAllActions = () => setSelectedActions(new Set<number>());
- const selectAllTools = () =>
-  setSelectedTools(
-   new Set<number>(importData()?.tools?.map((t: { id: number }) => t.id) || [])
-  );
- const deselectAllTools = () => setSelectedTools(new Set<number>());
-
- const handleWorkspaceRename = (id: number, newName: string) => {
-  const newMap = new Map(renamedWorkspaces());
-  if (newName.trim()) newMap.set(id, newName);
-  else newMap.delete(id);
-  setRenamedWorkspaces(newMap);
+  return workspace?.name || "";
  };
 
- const handleActionRename = (id: number, newName: string) => {
-  const newMap = new Map(renamedActions());
-  if (newName.trim()) newMap.set(id, newName);
-  else newMap.delete(id);
-  setRenamedActions(newMap);
+ const getActionName = (actionId: number): string => {
+  const customName = actionNames().get(actionId);
+  if (customName) return customName;
+  const action = (importData()?.actions || []).find((a) => a.id === actionId);
+  return action?.name || "";
  };
 
- const getWorkspaceName = (workspace: { id: number; name: string }) => {
-  return renamedWorkspaces().get(workspace.id) || workspace.name;
- };
+ const toggleWorkspace = (workspaceId: number) => {
+  const newSelected = new Set(selectedWorkspaces());
+  const actions = getWorkspaceActions(workspaceId);
 
- const getActionName = (action: { id: number; name: string }) => {
-  return renamedActions().get(action.id) || action.name;
- };
-
- const isDuplicateWorkspaceName = (id: number) => {
-  const name = getWorkspaceName(
-   importData()?.workspaces?.find((w: { id: number }) => w.id === id) || {
-    id,
-    name: "",
+  if (newSelected.has(workspaceId)) {
+   newSelected.delete(workspaceId);
+   const newSelectedActions = new Set(selectedActions());
+   for (const action of actions) {
+    newSelectedActions.delete(action.id);
    }
-  );
-  const allNames = (importData()?.workspaces || [])
-   .filter((w: { id: number }) => selectedWorkspaces().has(w.id))
-   .map((w: { id: number; name: string }) => getWorkspaceName(w));
-  return allNames.filter((n: string) => n === name).length > 1;
+   setSelectedActions(newSelectedActions);
+   const newExpanded = new Set(expandedWorkspaces());
+   newExpanded.delete(workspaceId);
+   setExpandedWorkspaces(newExpanded);
+  } else {
+   newSelected.add(workspaceId);
+   const newSelectedActions = new Set(selectedActions());
+   for (const action of actions) {
+    newSelectedActions.add(action.id);
+   }
+   setSelectedActions(newSelectedActions);
+   const newExpanded = new Set(expandedWorkspaces());
+   newExpanded.add(workspaceId);
+   setExpandedWorkspaces(newExpanded);
+  }
+
+  setSelectedWorkspaces(newSelected);
  };
 
- const isDuplicateActionName = (id: number) => {
-  const name = getActionName(
-   importData()?.actions?.find((a: { id: number }) => a.id === id) || {
-    id,
-    name: "",
-   }
+ const toggleAction = (actionId: number) => {
+  const newSelected = new Set(selectedActions());
+  if (newSelected.has(actionId)) {
+   newSelected.delete(actionId);
+  } else {
+   newSelected.add(actionId);
+  }
+  setSelectedActions(newSelected);
+ };
+
+ const toggleTool = (toolId: number) => {
+  const newSelected = new Set(selectedTools());
+  if (newSelected.has(toolId)) {
+   newSelected.delete(toolId);
+  } else {
+   newSelected.add(toolId);
+  }
+  setSelectedTools(newSelected);
+ };
+
+ const toggleExpanded = (workspaceId: number) => {
+  const newExpanded = new Set(expandedWorkspaces());
+  if (newExpanded.has(workspaceId)) {
+   newExpanded.delete(workspaceId);
+  } else {
+   newExpanded.add(workspaceId);
+  }
+  setExpandedWorkspaces(newExpanded);
+ };
+
+ const selectAllWorkspaces = () => {
+  const allWorkspaceIds = (importData()?.workspaces || []).map((w) => w.id);
+  setSelectedWorkspaces(new Set(allWorkspaceIds));
+  setExpandedWorkspaces(new Set(allWorkspaceIds));
+  const allActionIds = (importData()?.actions || []).map((a) => a.id);
+  setSelectedActions(new Set(allActionIds));
+ };
+
+ const deselectAllWorkspaces = () => {
+  setSelectedWorkspaces(new Set<number>());
+  setSelectedActions(new Set<number>());
+  setExpandedWorkspaces(new Set<number>());
+ };
+
+ const selectAllTools = () => {
+  const allToolIds = (importData()?.tools || []).map((t) => t.id);
+  setSelectedTools(new Set(allToolIds));
+ };
+
+ const deselectAllTools = () => {
+  setSelectedTools(new Set<number>());
+ };
+
+ const updateWorkspaceName = (workspaceId: number, name: string) => {
+  const newNames = new Map(workspaceNames());
+  if (name.trim()) {
+   newNames.set(workspaceId, name);
+  } else {
+   newNames.delete(workspaceId);
+  }
+  setWorkspaceNames(newNames);
+ };
+
+ const updateActionName = (actionId: number, name: string) => {
+  const newNames = new Map(actionNames());
+  if (name.trim()) {
+   newNames.set(actionId, name);
+  } else {
+   newNames.delete(actionId);
+  }
+  setActionNames(newNames);
+ };
+
+ const getExistingWorkspaceNames = (): Set<string> => {
+  return new Set(
+   (workspaceStore.store.workspaces || []).map((w) => w.name.toLowerCase())
   );
-  const allNames = (importData()?.actions || [])
-   .filter((a: { id: number }) => selectedActions().has(a.id))
-   .map((a: { id: number; name: string }) => getActionName(a));
-  return allNames.filter((n: string) => n === name).length > 1;
+ };
+
+ const hasWorkspaceNameConflict = (): boolean => {
+  const existingNames = getExistingWorkspaceNames();
+  const selectedWorkspaceNames = new Map<string, number>();
+
+  for (const wsId of selectedWorkspaces()) {
+   const name = getWorkspaceName(wsId).toLowerCase();
+   if (!name) continue;
+
+   if (existingNames.has(name)) {
+    return true;
+   }
+
+   const count = selectedWorkspaceNames.get(name) || 0;
+   selectedWorkspaceNames.set(name, count + 1);
+  }
+
+  for (const count of selectedWorkspaceNames.values()) {
+   if (count > 1) return true;
+  }
+
+  return false;
+ };
+
+ const isWorkspaceNameDuplicate = (workspaceId: number): boolean => {
+  const name = getWorkspaceName(workspaceId).toLowerCase();
+  if (!name) return false;
+
+  const existingNames = getExistingWorkspaceNames();
+  if (existingNames.has(name)) return true;
+
+  let count = 0;
+  for (const wsId of selectedWorkspaces()) {
+   if (getWorkspaceName(wsId).toLowerCase() === name) {
+    count++;
+   }
+  }
+
+  return count > 1;
  };
 
  const handleImport = async () => {
@@ -190,18 +284,19 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
   if (!data) return;
 
   try {
-   const workspaceIdMap = new Map<number, number>();
    let importedCount = 0;
 
+   const workspaceIdMap = new Map<number, number>();
    for (const workspace of data.workspaces || []) {
     if (!selectedWorkspaces().has(workspace.id)) continue;
-    const workspaceName =
-     renamedWorkspaces().get(workspace.id) || workspace.name;
+
+    const name = getWorkspaceName(workspace.id);
     const newWorkspace = await workspaceStore.actions.createWorkspace({
-     name: workspaceName,
+     name,
      description: workspace.description || undefined,
      icon: workspace.icon || undefined,
     });
+
     if (newWorkspace) {
      workspaceIdMap.set(workspace.id, newWorkspace.id);
      importedCount++;
@@ -210,7 +305,8 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 
    for (const tool of data.tools || []) {
     if (!selectedTools().has(tool.id)) continue;
-    const newTool = await toolActions.createTool({
+
+    const result = await toolActions.createTool({
      name: tool.name,
      description: tool.description || undefined,
      icon: tool.icon || undefined,
@@ -220,17 +316,26 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
      placeholders: tool.placeholders || "[]",
      category: tool.category || undefined,
     });
-    if (newTool) importedCount++;
+
+    if (result) {
+     importedCount++;
+    }
    }
 
    for (const action of data.actions || []) {
     if (!selectedActions().has(action.id)) continue;
-    const actionName = renamedActions().get(action.id) || action.name;
+
+    const oldWorkspaceId = action.workspace_id;
+    const newWorkspaceId = oldWorkspaceId
+     ? workspaceIdMap.get(oldWorkspaceId)
+     : undefined;
+
+    if (!newWorkspaceId) continue;
+
+    const name = getActionName(action.id);
     await actionActions.addAction({
-     name: actionName,
-     workspace_id: action.workspace_id
-      ? workspaceIdMap.get(action.workspace_id) || action.workspace_id
-      : 0,
+     name,
+     workspace_id: newWorkspaceId,
      action_type: action.action_type,
      config: action.config,
      dependencies: action.dependencies,
@@ -240,19 +345,17 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
      os_overrides: action.os_overrides,
      order_index: action.order_index,
     });
+
     importedCount++;
    }
 
-   setImportData(null);
-   setSelectedWorkspaces(new Set<number>());
-   setSelectedActions(new Set<number>());
-   setSelectedTools(new Set<number>());
-   setRenamedWorkspaces(new Map());
-   setRenamedActions(new Map());
+   resetState();
    setOpen(false);
+
    showToast({
     title: "Success",
     description: `Imported ${importedCount} items`,
+    variant: "success",
    });
   } catch (err) {
    showToast({
@@ -274,6 +377,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
        Import workspaces, actions, and tools from JSON
       </DialogDescription>
      </DialogHeader>
+
      <div class="space-y-4">
       <div class="flex gap-2">
        <Button
@@ -311,110 +415,120 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
             </Button>
            </div>
           </div>
+
           <div class="space-y-2 border rounded-md p-4">
            <For each={importData()?.workspaces || []}>
-            {(workspace) => (
-             <div
-              class="flex items-center gap-2 p-2 rounded transition-colors cursor-pointer"
-              classList={{
-               "bg-accent/50 border border-accent": selectedWorkspaces().has(
-                workspace.id
-               ),
-               "hover:bg-muted/50": !selectedWorkspaces().has(workspace.id),
-               "border-destructive border-2": isDuplicateWorkspaceName(
-                workspace.id
-               ),
-              }}
-              onClick={() => toggleWorkspace(workspace.id)}
-             >
-              <Checkbox
-               checked={selectedWorkspaces().has(workspace.id)}
-               onChange={() => toggleWorkspace(workspace.id)}
-              />
-              <Show
-               when={selectedWorkspaces().has(workspace.id)}
-               fallback={<span class="flex-1">{workspace.name}</span>}
+            {(workspace) => {
+             const isSelected = () => selectedWorkspaces().has(workspace.id);
+             const isExpanded = () => expandedWorkspaces().has(workspace.id);
+             const actions = () => getWorkspaceActions(workspace.id);
+             const hasDuplicate = () => isWorkspaceNameDuplicate(workspace.id);
+
+             return (
+              <Collapsible
+               open={isExpanded()}
+               onOpenChange={() => toggleExpanded(workspace.id)}
               >
-               <TextFieldRoot class="flex-1">
-                <TextField
-                 value={getWorkspaceName(workspace)}
-                 onInput={(e: InputEvent) =>
-                  handleWorkspaceRename(
-                   workspace.id,
-                   (e.currentTarget as HTMLInputElement).value
-                  )
-                 }
+               <div
+                class="flex items-center gap-2 p-2 rounded transition-colors cursor-pointer"
+                classList={{
+                 "bg-accent/50 border border-accent": isSelected(),
+                 "hover:bg-muted/50": !isSelected(),
+                 "border-destructive border-2": hasDuplicate() && isSelected(),
+                }}
+                onClick={() => toggleWorkspace(workspace.id)}
+               >
+                <CollapsibleTrigger
+                 class="i-mdi-chevron-down w-4 h-4 transition-transform flex-shrink-0"
+                 classList={{
+                  "rotate-0": isExpanded(),
+                  "-rotate-90": !isExpanded(),
+                 }}
                  onClick={(e: MouseEvent) => e.stopPropagation()}
                 />
-               </TextFieldRoot>
-              </Show>
-             </div>
-            )}
-           </For>
-          </div>
-         </div>
-        </Show>
-
-        <Show when={(importData()?.actions?.length || 0) > 0}>
-         <div class="space-y-2">
-          <div class="flex items-center justify-between">
-           <h3 class="text-lg font-semibold">
-            Actions <Badge>{importData()?.actions?.length || 0}</Badge>
-           </h3>
-           <div class="flex gap-2">
-            <Button size="sm" variant="outline" onClick={selectAllActions}>
-             Select All
-            </Button>
-            <Button size="sm" variant="outline" onClick={deselectAllActions}>
-             Deselect All
-            </Button>
-           </div>
-          </div>
-          <div class="space-y-2 border rounded-md p-4">
-           <For each={importData()?.actions || []}>
-            {(action) => (
-             <div
-              class="flex items-center gap-2 p-2 rounded transition-colors cursor-pointer"
-              classList={{
-               "bg-accent/50 border border-accent": selectedActions().has(
-                action.id
-               ),
-               "hover:bg-muted/50": !selectedActions().has(action.id),
-               "border-destructive border-2": isDuplicateActionName(action.id),
-              }}
-              onClick={() => toggleAction(action.id)}
-             >
-              <Checkbox
-               checked={selectedActions().has(action.id)}
-               onChange={() => toggleAction(action.id)}
-              />
-              <Show
-               when={selectedActions().has(action.id)}
-               fallback={
-                <span class="flex-1">
-                 {action.name}{" "}
-                 <Badge variant="secondary">{action.action_type}</Badge>
-                </span>
-               }
-              >
-               <div class="flex items-center gap-2 flex-1">
-                <TextFieldRoot class="flex-1">
-                 <TextField
-                  value={getActionName(action)}
-                  onInput={(e: InputEvent) =>
-                   handleActionRename(
-                    action.id,
-                    (e.currentTarget as HTMLInputElement).value
-                   )
-                  }
-                  onClick={(e: MouseEvent) => e.stopPropagation()}
-                 />
-                </TextFieldRoot>
-                <Badge variant="secondary">{action.action_type}</Badge>
+                <Checkbox
+                 checked={isSelected()}
+                 onChange={() => toggleWorkspace(workspace.id)}
+                />
+                <Show
+                 when={isSelected()}
+                 fallback={
+                  <div class="flex-1 flex items-center justify-between gap-2">
+                   <span>{workspace.name}</span>
+                   <Badge variant="secondary">{actions().length}</Badge>
+                  </div>
+                 }
+                >
+                 <div class="flex-1 flex items-center gap-2">
+                  <TextFieldRoot class="flex-1">
+                   <TextField
+                    value={getWorkspaceName(workspace.id)}
+                    onInput={(e: InputEvent) =>
+                     updateWorkspaceName(
+                      workspace.id,
+                      (e.currentTarget as HTMLInputElement).value
+                     )
+                    }
+                    onClick={(e: MouseEvent) => e.stopPropagation()}
+                   />
+                  </TextFieldRoot>
+                  <Badge variant="secondary">{actions().length}</Badge>
+                 </div>
+                </Show>
                </div>
-              </Show>
-             </div>
-            )}
+
+               <CollapsibleContent>
+                <Show when={actions().length > 0}>
+                 <div class="ml-8 mt-1 space-y-1">
+                  <For each={actions()}>
+                   {(action) => {
+                    const actionId = action.id;
+                    const isActionSelected = () =>
+                     selectedActions().has(actionId);
+
+                    return (
+                     <div
+                      class="flex items-center gap-2 p-2 rounded transition-colors"
+                      classList={{
+                       "bg-accent/30 border border-accent": isActionSelected(),
+                       "hover:bg-muted/50": !isActionSelected(),
+                       "cursor-pointer": true,
+                      }}
+                      onClick={() => toggleAction(actionId)}
+                     >
+                      <Checkbox
+                       checked={isActionSelected()}
+                       onChange={() => toggleAction(actionId)}
+                      />
+                      <Show
+                       when={isActionSelected()}
+                       fallback={
+                        <span class="flex-1 text-sm">{action.name}</span>
+                       }
+                      >
+                       <TextFieldRoot class="flex-1">
+                        <TextField
+                         value={getActionName(actionId)}
+                         onInput={(e: InputEvent) =>
+                          updateActionName(
+                           actionId,
+                           (e.currentTarget as HTMLInputElement).value
+                          )
+                         }
+                         onClick={(e: MouseEvent) => e.stopPropagation()}
+                        />
+                       </TextFieldRoot>
+                      </Show>
+                     </div>
+                    );
+                   }}
+                  </For>
+                 </div>
+                </Show>
+               </CollapsibleContent>
+              </Collapsible>
+             );
+            }}
            </For>
           </div>
          </div>
@@ -435,31 +549,34 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
             </Button>
            </div>
           </div>
+
           <div class="space-y-2 border rounded-md p-4">
            <For each={importData()?.tools || []}>
-            {(tool) => (
-             <div
-              class="flex items-center gap-2 p-2 rounded transition-colors cursor-pointer"
-              classList={{
-               "bg-accent/50 border border-accent": selectedTools().has(
-                tool.id
-               ),
-               "hover:bg-muted/50": !selectedTools().has(tool.id),
-              }}
-              onClick={() => toggleTool(tool.id)}
-             >
-              <Checkbox
-               checked={selectedTools().has(tool.id)}
-               onChange={() => toggleTool(tool.id)}
-              />
-              <span class="flex-1">
-               {tool.name} <Badge variant="secondary">{tool.tool_type}</Badge>
-              </span>
-              <span class="text-sm text-muted-foreground truncate max-w-xs">
-               {tool.template}
-              </span>
-             </div>
-            )}
+            {(tool) => {
+             const isSelected = () => selectedTools().has(tool.id);
+
+             return (
+              <div
+               class="flex items-center gap-2 p-2 rounded transition-colors cursor-pointer"
+               classList={{
+                "bg-accent/50 border border-accent": isSelected(),
+                "hover:bg-muted/50": !isSelected(),
+               }}
+               onClick={() => toggleTool(tool.id)}
+              >
+               <Checkbox
+                checked={isSelected()}
+                onChange={() => toggleTool(tool.id)}
+               />
+               <span class="flex-1">
+                {tool.name} <Badge variant="secondary">{tool.tool_type}</Badge>
+               </span>
+               <span class="text-sm text-muted-foreground truncate max-w-xs">
+                {tool.template}
+               </span>
+              </div>
+             );
+            }}
            </For>
           </div>
          </div>
@@ -467,6 +584,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
        </div>
       </Show>
      </div>
+
      <DialogFooter class="flex items-center justify-between">
       <div class="flex items-center gap-4 text-sm text-muted-foreground">
        <Show
@@ -484,6 +602,9 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
          {selectedTools().size !== 1 ? "s" : ""}
         </span>
        </Show>
+       <Show when={hasWorkspaceNameConflict()}>
+        <span class="text-destructive">Resolve duplicate workspace names</span>
+       </Show>
       </div>
       <div class="flex gap-2">
        <Button variant="outline" onClick={() => setOpen(false)}>
@@ -495,7 +616,8 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
          !importData() ||
          (selectedWorkspaces().size === 0 &&
           selectedActions().size === 0 &&
-          selectedTools().size === 0)
+          selectedTools().size === 0) ||
+         hasWorkspaceNameConflict()
         }
        >
         Import Selected
