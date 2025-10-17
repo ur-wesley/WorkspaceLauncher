@@ -685,7 +685,6 @@ export default function WorkspaceDetailPage() {
                      variant="default"
                      class="text-xs font-medium shrink-0 bg-green-500 hover:bg-green-600"
                     >
-                     <div class="i-mdi-loading w-3 h-3 mr-1 animate-spin" />
                      Running
                     </Badge>
                    </Show>
