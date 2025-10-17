@@ -12,7 +12,7 @@ pub fn run() {
         .plugin(
             tauri_plugin_autostart::Builder::new()
                 .app_name("workspacelauncher")
-                .build()
+                .build(),
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
