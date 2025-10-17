@@ -34,7 +34,7 @@ jobs:
    - name: Rust cache
      uses: swatinem/rust-cache@v2
      with:
-      workspaces: './src-tauri -> target'
+      workspaces: "./src-tauri -> target"
 
    - name: Cache Bun dependencies
      uses: actions/cache@v4
@@ -55,18 +55,20 @@ jobs:
         echo "Error: TAURI_SIGNING_PRIVATE_KEY secret is not set"
         exit 1
       fi
-      if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
-        echo "Error: TAURI_SIGNING_PRIVATE_KEY_PASSWORD secret is not set"
-        exit 1
+      echo "✅ Signing key is configured"
+      if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+        echo "✅ Signing key password is configured"
+      else
+        echo "ℹ️ Signing key has no password (optional)"
       fi
-      echo "✅ All required signing secrets are configured"
      shell: bash
 
    - uses: tauri-apps/tauri-action@v0
      env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      # Password is optional - empty string or omitted means no password
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
      with:
       tagName: ${{ github.ref_name }}
       releaseName: "WorkspaceLauncher v__VERSION__"
