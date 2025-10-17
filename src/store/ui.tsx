@@ -12,6 +12,7 @@ type UIStore = {
  currentWorkspaceId: number | null;
  focusSearch?: () => void;
  runAllRequested: boolean;
+ sidebarCollapsed: boolean;
 };
 
 type UIActions = {
@@ -34,6 +35,7 @@ type UIActions = {
  closeActiveActionsManager: () => void;
  requestRunAll: () => void;
  clearRunAll: () => void;
+ toggleSidebar: () => void;
 };
 
 type UIContextValue = { store: UIStore; actions: UIActions };
@@ -41,6 +43,15 @@ type UIContextValue = { store: UIStore; actions: UIActions };
 const UIContext = createContext<UIContextValue>();
 
 export const UIProvider: ParentComponent = (props) => {
+ const getInitialSidebarState = () => {
+  try {
+   const stored = localStorage.getItem("sidebar-collapsed");
+   return stored ? JSON.parse(stored) : false;
+  } catch {
+   return false;
+  }
+ };
+
  const [store, setStore] = createStore<UIStore>({
   commanderOpen: false,
   workspaceCreateOpen: false,
@@ -52,6 +63,7 @@ export const UIProvider: ParentComponent = (props) => {
   currentWorkspaceId: null,
   focusSearch: undefined,
   runAllRequested: false,
+  sidebarCollapsed: getInitialSidebarState(),
  });
 
  const actions: UIActions = {
@@ -119,6 +131,15 @@ export const UIProvider: ParentComponent = (props) => {
   },
   clearRunAll() {
    setStore("runAllRequested", false);
+  },
+  toggleSidebar() {
+   setStore("sidebarCollapsed", (v) => {
+    const newValue = !v;
+    try {
+     localStorage.setItem("sidebar-collapsed", JSON.stringify(newValue));
+    } catch {}
+    return newValue;
+   });
   },
  };
 

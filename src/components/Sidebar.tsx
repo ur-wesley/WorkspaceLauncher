@@ -146,13 +146,11 @@ export const Sidebar: Component<SidebarProps> = (props) => {
     props.collapsed ? "w-16" : "w-64"
    )}
   >
-   {/* Header - Clickable to go home */}
    <div class="bg-muted/30 shadow-sm">
     <A
      href="/"
      class="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
     >
-     {/* <div class="i-mdi-rocket-launch w-8 h-8 text-primary flex-shrink-0" /> */}
      <ImageRoot>
       <Image src="/icon.png" />
       <ImageFallback>WSL</ImageFallback>
@@ -168,11 +166,8 @@ export const Sidebar: Component<SidebarProps> = (props) => {
     </A>
    </div>
 
-   {/* Main Navigation Area */}
    <div class="flex-1 flex flex-col min-h-0">
-    {/* Workspaces Section */}
     <div class={cn("flex-1 p-2 overflow-hidden flex flex-col")}>
-     {/* Workspaces header with action buttons - hidden when collapsed */}
      <Show when={!props.collapsed}>
       <div class="flex items-center justify-between px-2 py-1 mb-2">
        <div class="flex items-center gap-2">
@@ -182,7 +177,6 @@ export const Sidebar: Component<SidebarProps> = (props) => {
         </span>
        </div>
        <div class="flex items-center gap-1">
-        {/* Search toggle button */}
         <Button
          size="sm"
          variant="ghost"
@@ -192,7 +186,6 @@ export const Sidebar: Component<SidebarProps> = (props) => {
         >
          <div class="w-3 h-3 i-mdi-magnify" />
         </Button>
-        {/* New workspace button */}
         <Button
          size="sm"
          variant="ghost"
@@ -206,7 +199,6 @@ export const Sidebar: Component<SidebarProps> = (props) => {
       </div>
      </Show>
 
-     {/* Search input - shown when toggled and not collapsed */}
      <Show when={showSearch() && !props.collapsed}>
       <div class="px-2 mb-2">
        <TextFieldRoot>
@@ -220,7 +212,6 @@ export const Sidebar: Component<SidebarProps> = (props) => {
       </div>
      </Show>
 
-     {/* Scrollable workspace list */}
      <div class="space-y-1 overflow-y-auto flex-1">
       <For each={sortedWorkspaces()}>
        {(workspace) => {
@@ -286,18 +277,15 @@ export const Sidebar: Component<SidebarProps> = (props) => {
            )}
            title={props.collapsed ? workspace.name : undefined}
           >
-           {/* Running indicator - always positioned left when not collapsed */}
-           <Show when={!props.collapsed}>
-            <div
-             class="w-2 h-2 flex-shrink-0"
-             classList={{
-              "rounded-full bg-green-500 animate-pulse": hasRunningActions(),
-             }}
-             title={hasRunningActions() ? "Has running actions" : undefined}
-            />
-           </Show>
+           <div
+            class={cn(
+             "w-2 h-2 flex-shrink-0 transition-opacity duration-200",
+             props.collapsed ? "opacity-0 hidden" : "opacity-100",
+             hasRunningActions() && "rounded-full bg-green-500 animate-pulse"
+            )}
+            title={hasRunningActions() ? "Has running actions" : undefined}
+           />
 
-           {/* Workspace Icon */}
            <Show
             when={workspace.icon}
             fallback={
@@ -316,77 +304,97 @@ export const Sidebar: Component<SidebarProps> = (props) => {
             />
            </Show>
 
-           {/* Running indicator overlay for collapsed state */}
-           <Show when={props.collapsed && hasRunningActions()}>
-            <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-           </Show>
+           <div
+            class={cn(
+             "absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse transition-opacity duration-200",
+             props.collapsed && hasRunningActions()
+              ? "opacity-100"
+              : "opacity-0 hidden"
+            )}
+           />
 
-           {/* Workspace name - hidden when collapsed */}
-           <Show when={!props.collapsed}>
-            <span class="truncate flex-1">{workspace.name}</span>
-           </Show>
+           <span
+            class={cn(
+             "truncate flex-1 transition-opacity duration-200",
+             props.collapsed ? "opacity-0 hidden" : "opacity-100"
+            )}
+           >
+            {workspace.name}
+           </span>
 
-           {/* Reserve space for hover buttons to prevent shifting - hidden when collapsed */}
-           <Show when={!props.collapsed}>
-            <div class="w-14 flex-shrink-0" />
-           </Show>
+           <div
+            class={cn(
+             "w-14 flex-shrink-0 transition-opacity duration-200",
+             props.collapsed ? "opacity-0 hidden" : "opacity-100"
+            )}
+           />
           </A>
 
-          {/* Hover buttons container - hidden when collapsed */}
-          <Show when={!props.collapsed}>
-           <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            {/* Play button - shows on hover */}
-            <Button
-             size="sm"
-             variant="ghost"
-             class="h-6 w-6 p-0"
-             onclick={handleRunWorkspace}
-             disabled={isLaunching()}
-             title="Run all actions"
-            >
-             <div
-              class={cn(
-               "w-3 h-3",
-               isLaunching()
-                ? "i-mdi-loading animate-spin"
-                : "i-mdi-play text-green-600"
-              )}
-             />
-            </Button>
+          <div
+           class={cn(
+            "absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 transition-opacity",
+            props.collapsed
+             ? "opacity-0 hidden"
+             : "opacity-0 group-hover:opacity-100"
+           )}
+          >
+           <Button
+            size="sm"
+            variant="ghost"
+            class="h-6 w-6 p-0"
+            onclick={handleRunWorkspace}
+            disabled={isLaunching()}
+            title="Run all actions"
+           >
+            <div
+             class={cn(
+              "w-3 h-3",
+              isLaunching()
+               ? "i-mdi-loading animate-spin"
+               : "i-mdi-play text-green-600"
+             )}
+            />
+           </Button>
 
-            {/* Pin button - shows on hover, in exact same position always */}
-            <Button
-             size="sm"
-             variant="ghost"
-             class="h-6 w-6 p-0"
-             onclick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              actions.togglePinWorkspace(workspace.id);
-             }}
-             title={isPinned() ? "Unpin workspace" : "Pin workspace"}
-            >
-             <div
-              class={cn(
-               "w-3 h-3",
-               isPinned() ? "i-mdi-pin text-primary" : "i-mdi-pin-outline"
-              )}
-             />
-            </Button>
+           <Button
+            size="sm"
+            variant="ghost"
+            class="h-6 w-6 p-0"
+            onclick={(e) => {
+             e.preventDefault();
+             e.stopPropagation();
+             actions.togglePinWorkspace(workspace.id);
+            }}
+            title={isPinned() ? "Unpin workspace" : "Pin workspace"}
+           >
+            <div
+             class={cn(
+              "w-3 h-3",
+              isPinned() ? "i-mdi-pin text-primary" : "i-mdi-pin-outline"
+             )}
+            />
+           </Button>
+          </div>
+
+          <Show when={isPinned()}>
+           <div
+            class={cn(
+             "absolute right-7 top-1/2 -translate-y-1/2 transition-opacity pointer-events-none",
+             props.collapsed
+              ? "opacity-0 hidden"
+              : "opacity-100 group-hover:opacity-0"
+            )}
+           >
+            <div class="i-mdi-pin w-3 h-3 text-primary" />
            </div>
-
-           {/* Static pin indicator - shown when NOT hovering and pinned */}
-           <Show when={isPinned()}>
-            <div class="absolute right-7 top-1/2 -translate-y-1/2 opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none">
-             <div class="i-mdi-pin w-3 h-3 text-primary" />
-            </div>
-           </Show>
           </Show>
 
-          {/* Pin indicator for collapsed state */}
-          <Show when={props.collapsed && isPinned()}>
-           <div class="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
-          </Show>
+          <div
+           class={cn(
+            "absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-primary transition-opacity duration-200",
+            props.collapsed && isPinned() ? "opacity-100" : "opacity-0 hidden"
+           )}
+          />
          </div>
         );
        }}
@@ -407,7 +415,6 @@ export const Sidebar: Component<SidebarProps> = (props) => {
     </div>
    </div>
 
-   {/* Bottom Navigation - Settings */}
    <div class="p-2 border-t border-border space-y-1">
     <Button
      variant="ghost"
@@ -454,7 +461,6 @@ export const Sidebar: Component<SidebarProps> = (props) => {
      </span>
     </A>
 
-    {/* Collapse Toggle */}
     <Button
      variant="ghost"
      size="sm"
@@ -478,7 +484,6 @@ export const Sidebar: Component<SidebarProps> = (props) => {
     </Button>
    </div>
 
-   {/* Create Workspace Dialog */}
    <WorkspaceCreateDialog
     open={createDialogOpen()}
     onClose={() => setCreateDialogOpen(false)}

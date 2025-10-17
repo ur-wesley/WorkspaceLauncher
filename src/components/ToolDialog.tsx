@@ -187,7 +187,6 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
      </DialogHeader>
 
      <form onSubmit={handleSubmit} class="space-y-6">
-      {/* Basic Information */}
       <div class="space-y-4">
        <h3 class="text-lg font-medium">Basic Information</h3>
 
@@ -233,7 +232,6 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
        <div class="space-y-2">
         <TextFieldLabel for="tool-icon">Icon</TextFieldLabel>
         <div id="tool-icon" class="flex items-center gap-3">
-         {/* Icon preview */}
          <Show
           when={icon()}
           fallback={
@@ -252,8 +250,6 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
            />
           </div>
          </Show>{" "}
-         {/* Icon picker */}
-         {/* Icon picker */}
          <IconPicker
           value={icon()}
           onChange={setIcon}
@@ -264,7 +260,6 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
            </Button>
           }
          />{" "}
-         {/* Clear button */}
          <Show when={icon()}>
           <Button
            variant="ghost"
@@ -296,11 +291,9 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
        </div>
       </div>
 
-      {/* Tool Configuration */}
       <div class="space-y-4">
        <h3 class="text-lg font-medium">Tool Configuration</h3>
 
-       {/* Tool Type Toggle */}
        <div class="space-y-2">
         <TextFieldLabel>Tool Type *</TextFieldLabel>
         <ToggleGroup
@@ -322,7 +315,6 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
         </p>
        </div>
 
-       {/* Command Template with optional binary picker */}
        <TextFieldRoot>
         <TextFieldLabel for="tool-template">
          {toolType() === "binary" ? "Binary Path *" : "Command Template *"}
@@ -361,7 +353,6 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
        </TextFieldRoot>
       </div>
 
-      {/* Placeholders Configuration */}
       <div class="space-y-4">
        <div class="flex items-center justify-between">
         <h3 class="text-lg font-medium">Placeholders</h3>
@@ -410,7 +401,6 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
        </TextFieldRoot>
       </div>
 
-      {/* Actions */}
       <div class="flex justify-end gap-3 pt-4 border-t">
        <Button
         type="button"

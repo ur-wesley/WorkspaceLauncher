@@ -118,7 +118,6 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
    />
    <PopoverContent class="w-[420px] p-0">
     <div class="flex flex-col max-h-[400px]">
-     {/* Search Input */}
      <div class="p-3 border-b border-border">
       <TextFieldRoot>
        <TextField
@@ -135,7 +134,6 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
         : "Loading..."}
       </div>
      </div>{" "}
-     {/* Icon Grid */}
      <div class="flex-1 overflow-y-auto">
       <Show when={loading()}>
        <div class="flex items-center justify-center p-12">
@@ -176,7 +174,6 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
        </div>
       </Show>
      </div>
-     {/* Results info */}
      <div class="border-t border-border p-2 bg-muted/30">
       <Show when={!loading() && searchQuery()}>
        <div class="text-xs text-muted-foreground text-center">

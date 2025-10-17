@@ -506,7 +506,6 @@ export default function WorkspaceDetailPage() {
    >
     {(workspace) => (
      <>
-      {/* Workspace Header */}
       <div class="w-full flex flex-col sm:flex-row justify-between items-start gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 bg-muted/30 shadow-sm border-b border-border">
        <div class="flex-1 min-w-0 w-full sm:w-auto">
         <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold truncate">
@@ -557,7 +556,6 @@ export default function WorkspaceDetailPage() {
        </div>
       </div>
 
-      {/* Tabs for Actions and Environment Variables */}
       <Tabs
        value={activeTab()}
        onChange={handleTabChange}
@@ -596,7 +594,6 @@ export default function WorkspaceDetailPage() {
         <TabsIndicator />
        </TabsList>
 
-       {/* Actions Tab */}
        <TabsContent value="actions" class="flex-1 w-full overflow-auto">
         <Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
          <CardHeader class="px-0 pt-0">
@@ -675,15 +672,12 @@ export default function WorkspaceDetailPage() {
              return (
               <div class="group rounded-lg bg-muted/30 hover:bg-muted/50 shadow-sm hover:shadow-md transition-all duration-200">
                <div class="p-3">
-                {/* Action header with name and badges */}
                 <div class="flex items-center justify-between mb-2 gap-2">
                  <div class="flex items-center gap-3 flex-1 min-w-0">
-                  {/* Order Badge */}
                   <div class="flex items-center justify-center w-8 h-8 rounded bg-primary text-primary-foreground text-xs font-bold shrink-0">
                    {action.order_index + 1}
                   </div>
 
-                  {/* Action Name and Type */}
                   <div class="flex items-center gap-2 flex-1 min-w-0">
                    <h4 class="font-semibold text-sm truncate">{action.name}</h4>
                    <Show when={isActionRunning(action.id)}>
@@ -714,7 +708,6 @@ export default function WorkspaceDetailPage() {
                   </div>
                  </div>
 
-                 {/* Action dropdown */}
                  <DropdownMenu>
                   <Tooltip>
                    <TooltipTrigger>
@@ -750,7 +743,6 @@ export default function WorkspaceDetailPage() {
                  </DropdownMenu>
                 </div>
 
-                {/* Action details */}
                 <div class="flex items-center justify-between pl-11">
                  <div class="flex items-center gap-2 flex-1 min-w-0">
                   <Show when={commandPreview}>
@@ -766,9 +758,7 @@ export default function WorkspaceDetailPage() {
                   </Show>
                  </div>
 
-                 {/* Action buttons */}
                  <div class="flex items-center gap-2">
-                  {/* History button */}
                   <Show when={workspace()}>
                    {(ws) => (
                     <ActionRunHistory
@@ -790,7 +780,6 @@ export default function WorkspaceDetailPage() {
                    )}
                   </Show>
 
-                  {/* Launch/Stop button */}
                   <Button
                    variant={
                     isActionRunning(action.id) ? "destructive" : "default"
@@ -826,7 +815,6 @@ export default function WorkspaceDetailPage() {
         </Card>
        </TabsContent>
 
-       {/* Running Actions Tab */}
        <TabsContent value="running" class="flex-1 w-full overflow-auto">
         <Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
          <CardHeader class="px-0 pt-0">
@@ -843,7 +831,6 @@ export default function WorkspaceDetailPage() {
         </Card>
        </TabsContent>
 
-       {/* Action History Tab */}
        <TabsContent value="history" class="flex-1 w-full overflow-auto">
         <Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
          <CardHeader class="px-0 pt-0">
@@ -860,7 +847,6 @@ export default function WorkspaceDetailPage() {
         </Card>
        </TabsContent>
 
-       {/* Environment Variables Tab */}
        <TabsContent value="variables" class="flex-1 w-full overflow-auto">
         <Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
          <CardHeader class="px-0 pt-0">
@@ -915,10 +901,8 @@ export default function WorkspaceDetailPage() {
             {filteredVariables().map((variable) => (
              <div class="group rounded-lg bg-muted/30 hover:bg-muted/50 shadow-sm hover:shadow-md transition-all duration-200">
               <div class="p-3">
-               {/* Key-Value pair display in environment variable format */}
                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
                 <div class="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
-                 {/* Environment variable syntax: KEY=VALUE */}
                  <div class="flex items-center gap-1 flex-1 min-w-0">
                   <code class="bg-primary/10 text-primary px-2 py-1 rounded text-sm font-mono font-semibold truncate">
                    {variable.key}
@@ -941,7 +925,6 @@ export default function WorkspaceDetailPage() {
                  </div>
                 </div>
 
-                {/* Action dropdown */}
                 <DropdownMenu>
                  <Tooltip>
                   <TooltipTrigger>
@@ -976,7 +959,6 @@ export default function WorkspaceDetailPage() {
                 </DropdownMenu>
                </div>
 
-               {/* Status badges and toggle */}
                <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                  <Show when={variable.is_secure}>
