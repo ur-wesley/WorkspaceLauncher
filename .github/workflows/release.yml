@@ -32,6 +32,19 @@ jobs:
    - name: Install frontend dependencies
      run: bun install
 
+   - name: Check signing secrets
+     run: |
+      if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+        echo "Error: TAURI_SIGNING_PRIVATE_KEY secret is not set"
+        exit 1
+      fi
+      if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+        echo "Error: TAURI_SIGNING_PRIVATE_KEY_PASSWORD secret is not set"
+        exit 1
+      fi
+      echo "✅ All required signing secrets are configured"
+     shell: bash
+
    - uses: tauri-apps/tauri-action@v0
      env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
