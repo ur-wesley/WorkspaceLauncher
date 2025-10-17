@@ -2,14 +2,28 @@ import type {
  DialogContentProps,
  DialogDescriptionProps,
  DialogTitleProps,
+ DialogRootProps,
 } from "@kobalte/core/dialog";
 import { Dialog as DialogPrimitive } from "@kobalte/core/dialog";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ComponentProps, ParentProps, ValidComponent } from "solid-js";
-import { splitProps } from "solid-js";
+import { splitProps, createEffect, onCleanup } from "solid-js";
 import { cn } from "@/libs/cn";
+import { notifyDialogOpened, notifyDialogClosed } from "@/libs/hotkeys";
 
-export const Dialog = DialogPrimitive;
+export const Dialog = (props: DialogRootProps) => {
+ createEffect(() => {
+  if (props.open) {
+   notifyDialogOpened();
+   onCleanup(() => {
+    notifyDialogClosed();
+   });
+  }
+ });
+
+ return <DialogPrimitive {...props} />;
+};
+
 export const DialogTrigger = DialogPrimitive.Trigger;
 
 type dialogContentProps<T extends ValidComponent = "div"> = ParentProps<

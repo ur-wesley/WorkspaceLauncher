@@ -1,6 +1,22 @@
 import { createEffect, onCleanup, createSignal } from "solid-js";
 import { useKeyDownList } from "@solid-primitives/keyboard";
 
+let dialogOpenCount = 0;
+
+export function notifyDialogOpened() {
+  dialogOpenCount++;
+  console.debug("[hotkeys] dialog opened, count:", dialogOpenCount);
+}
+
+export function notifyDialogClosed() {
+  dialogOpenCount = Math.max(0, dialogOpenCount - 1);
+  console.debug("[hotkeys] dialog closed, count:", dialogOpenCount);
+}
+
+function isAnyDialogOpen(): boolean {
+  return dialogOpenCount > 0;
+}
+
 export type HotkeyId =
   | "openCommander"
   | "createWorkspace"
@@ -121,6 +137,33 @@ export function useHotkeys(
     console.debug("[hotkeys] pressed", Array.from(current));
     if (current.size === 0) return;
 
+
+    if (isAnyDialogOpen() && matchCombo(current, ["Control", "s"])) {
+      console.debug("[hotkeys] Ctrl+S in dialog - submitting form");
+
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      if (dialogs.length > 0) {
+
+        const activeDialog = dialogs[dialogs.length - 1];
+
+        const buttons = activeDialog.querySelectorAll('button[type="submit"], button:not([type="button"]):not([aria-label*="Close"])');
+        if (buttons.length > 0) {
+          const submitButton = buttons[buttons.length - 1] as HTMLButtonElement;
+          if (!submitButton.disabled) {
+            submitButton.click();
+            console.debug("[hotkeys] Clicked submit button in dialog");
+          }
+        }
+      }
+      return;
+    }
+
+
+    if (isAnyDialogOpen()) {
+      console.debug("[hotkeys] skipping - dialog is open");
+      return;
+    }
+
     const bindings = getBindings();
 
     const tryInvoke = (id: HotkeyId) => {
@@ -162,6 +205,18 @@ export function useHotkeys(
     const bindings = loadBindings();
     const current = new Set(pressed().map((k) => normalizeKeyName(k)));
     current.add(normalizeKeyName(event.key));
+
+
+    if (isAnyDialogOpen() && matchCombo(current, ["Control", "s"])) {
+      console.debug("[hotkeys] preventing Ctrl+S default (browser save)");
+      event.preventDefault();
+      return;
+    }
+
+
+    if (isAnyDialogOpen()) {
+      return;
+    }
     const relevant: HotkeyId[] = [
       "openCommander",
       "createWorkspace",
