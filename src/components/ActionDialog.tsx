@@ -197,6 +197,59 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
  const [customArgsText, setCustomArgsText] = createSignal("");
  const [customWorkingDirectory, setCustomWorkingDirectory] = createSignal("");
 
+ const commandSuggestion = createMemo(() => {
+  const cmd = customCommand().trim();
+  if (!cmd || customToolType() !== "cli") return null;
+
+  const cdPattern = /^cd\s+([^;]+)\s*;\s*(.+)$/i;
+  const cdMatch = cmd.match(cdPattern);
+  if (cdMatch) {
+   const [, dir, actualCmd] = cdMatch;
+   const cleanDir = dir.trim().replace(/^["']|["']$/g, "");
+   const parts = actualCmd.trim().split(/\s+/);
+   return {
+    type: "cd-compound",
+    workingDirectory: cleanDir,
+    command: parts[0],
+    args: parts.slice(1).join(" "),
+    original: cmd,
+   };
+  }
+
+  const cdDPattern = /^cd\s+\/d\s+([^&]+)\s*&&\s*(.+)$/i;
+  const cdDMatch = cmd.match(cdDPattern);
+  if (cdDMatch) {
+   const [, dir, actualCmd] = cdDMatch;
+   const cleanDir = dir.trim().replace(/^["']|["']$/g, "");
+   const parts = actualCmd.trim().split(/\s+/);
+   return {
+    type: "cd-compound",
+    workingDirectory: cleanDir,
+    command: parts[0],
+    args: parts.slice(1).join(" "),
+    original: cmd,
+   };
+  }
+
+  return null;
+ });
+
+ const applyCommandSuggestion = () => {
+  const suggestion = commandSuggestion();
+  if (!suggestion) return;
+
+  setCustomWorkingDirectory(suggestion.workingDirectory);
+  setCustomCommand(suggestion.command);
+  setCustomArgsText(suggestion.args);
+
+  showToast({
+   title: "Command fixed!",
+   description:
+    "Separated directory, command, and arguments into proper fields.",
+   variant: "success",
+  });
+ };
+
  const handlePickExecutable = async () => {
   const path = await pickExecutable({ title: "Select Executable" });
   if (path) {
@@ -835,21 +888,67 @@ export const ActionDialog: Component<ActionDialogProps> = (props) => {
         </div>
 
         <Show when={customToolType() === "cli"}>
-         <TextFieldRoot>
-          <TextFieldLabel for="custom-command">Command *</TextFieldLabel>
-          <TextField
-           id="custom-command"
-           value={customCommand()}
-           onInput={(event: InputEvent) =>
-            setCustomCommand((event.currentTarget as HTMLInputElement).value)
-           }
-           placeholder="e.g., bun run start"
-           required
-          />
-          <p class="text-xs text-muted-foreground mt-1">
-           Use ${"{VAR}"} to reference workspace variables.
-          </p>
-         </TextFieldRoot>
+         <div class="space-y-2">
+          <TextFieldRoot>
+           <TextFieldLabel for="custom-command">Command *</TextFieldLabel>
+           <TextField
+            id="custom-command"
+            value={customCommand()}
+            onInput={(event: InputEvent) =>
+             setCustomCommand((event.currentTarget as HTMLInputElement).value)
+            }
+            placeholder="e.g., bun"
+            required
+           />
+           <p class="text-xs text-muted-foreground mt-1">
+            Use ${"{VAR}"} to reference workspace variables.
+           </p>
+          </TextFieldRoot>
+
+          <Show when={commandSuggestion()}>
+           {(suggestion) => (
+            <div class="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-2">
+             <div class="flex items-start gap-2">
+              <div class="i-mdi-alert w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div class="flex-1 space-y-1">
+               <p class="text-sm font-medium text-amber-900 dark:text-amber-100">
+                Compound command detected
+               </p>
+               <p class="text-xs text-amber-800 dark:text-amber-200">
+                This command contains a directory change. It's better to use
+                separate fields:
+               </p>
+               <div class="bg-white/50 dark:bg-black/20 rounded px-2 py-1.5 text-xs font-mono space-y-0.5">
+                <div>
+                 <span class="text-muted-foreground">Working Directory:</span>{" "}
+                 {suggestion().workingDirectory}
+                </div>
+                <div>
+                 <span class="text-muted-foreground">Command:</span>{" "}
+                 {suggestion().command}
+                </div>
+                <Show when={suggestion().args}>
+                 <div>
+                  <span class="text-muted-foreground">Arguments:</span>{" "}
+                  {suggestion().args}
+                 </div>
+                </Show>
+               </div>
+              </div>
+             </div>
+             <Button
+              size="sm"
+              variant="default"
+              class="w-full bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700"
+              onClick={applyCommandSuggestion}
+             >
+              <div class="i-mdi-auto-fix w-4 h-4 mr-2" />
+              Auto-fix: Separate into proper fields
+             </Button>
+            </div>
+           )}
+          </Show>
+         </div>
         </Show>
 
         <Show when={customToolType() === "binary"}>
