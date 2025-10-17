@@ -339,9 +339,18 @@ function createCliCommand(
   }
 
   if (isWindows()) {
+    const fullCommand = [processedCommand, ...processedArgs].join(" ");
+
+    const cmdString = `cd /d ${workingDir} && ${fullCommand}`.replace(/'/g, "''");
+
+    const psScript = `
+      $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','${cmdString}' -WindowStyle Hidden -PassThru
+      Write-Output $proc.Id
+    `.trim().replace(/\n\s+/g, '; ');
+
     return Command.create(
       "powershell",
-      ["-Command", processedCommand, ...processedArgs],
+      ["-NoProfile", "-OutputFormat", "Text", "-Command", psScript],
       { cwd: workingDir }
     );
   }
@@ -407,8 +416,9 @@ async function launchCustomTool(
 
   const isDetached = config.detached !== false;
 
-  const workingDir =
-    context.variables.TEMP ||
+  const workingDir = config.working_directory
+    ? replaceVariables(config.working_directory, context.variables)
+    : context.variables.TEMP ||
     context.variables.TMP ||
     (isWindows() ? "C:\\Windows\\Temp" : "/tmp");
 
@@ -418,7 +428,9 @@ async function launchCustomTool(
     const processedCommand = replaceVariables(commandStr, context.variables);
     console.log(
       `Executing command: ${processedCommand} with args:`,
-      processedArgs
+      processedArgs,
+      `in directory: ${workingDir}`,
+      `detached: ${isDetached}`
     );
 
     cmd = createCliCommand(
@@ -432,13 +444,33 @@ async function launchCustomTool(
     const processedBinaryPath = replaceVariables(binaryPath, context.variables);
     console.log(
       `Executing binary: ${processedBinaryPath} with args:`,
-      processedArgs
+      processedArgs,
+      `in directory: ${workingDir}`
     );
 
     cmd = createBinaryCommand(processedBinaryPath, processedArgs, workingDir);
   }
 
-  if (hasCommand) {
+  if (hasCommand && isDetached && isWindows()) {
+    try {
+      const output = await cmd.execute();
+      const actualPid = Number.parseInt(output.stdout.trim(), 10);
+      if (Number.isNaN(actualPid)) {
+        console.error("Failed to parse PID from output:", output.stdout);
+        throw new Error(`Could not determine process ID. Output: ${output.stdout}`);
+      }
+      console.log(`Custom tool launched with actual PID: ${actualPid}`);
+
+      return {
+        success: true,
+        message: `${config.tool_name} launched successfully`,
+        processId: actualPid,
+      };
+    } catch (error) {
+      console.error("Error launching detached command:", error);
+      throw error;
+    }
+  } else if (hasCommand) {
     const child = await cmd.spawn();
     console.log(`Custom tool launched with PID: ${child.pid}`);
 
