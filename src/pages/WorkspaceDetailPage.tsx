@@ -45,6 +45,7 @@ import {
  prepareVariables,
 } from "@/libs/launcher";
 import { showToast } from "@/libs/toast";
+import { setAppWindowTitle } from "@/libs/windowTitle";
 import { useHotkeys } from "@/libs/hotkeys";
 import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
@@ -156,6 +157,11 @@ export default function WorkspaceDetailPage() {
    void handleLaunchWorkspace();
    ui.actions.clearRunAll();
   }
+ });
+
+ createEffect(() => {
+  const workspace = currentWorkspace();
+  setAppWindowTitle(workspace?.name);
  });
 
  const handleKeyDown = (e: KeyboardEvent) => {
