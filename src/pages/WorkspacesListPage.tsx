@@ -5,12 +5,10 @@ import {
  createMemo,
  createSignal,
  For,
+ onCleanup,
  onMount,
  Show,
- onCleanup,
 } from "solid-js";
-import { useUI } from "@/store/ui";
-import { useHotkeys } from "@/libs/hotkeys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { WorkspaceCreateDialog } from "@/components/WorkspaceCreateDialog";
 import { listActionsByWorkspace, listVariablesByWorkspace } from "@/libs/api";
 import { cn } from "@/libs/cn";
+import { useHotkeys } from "@/libs/hotkeys";
+import { useUI } from "@/store/ui";
 import { setAppWindowTitle } from "@/libs/windowTitle";
 import { useWorkspaceStore } from "@/store/workspace";
 import type { NewWorkspace, Workspace } from "@/types/database";
@@ -236,7 +236,9 @@ export const WorkspacesListPage: Component = () => {
        type="text"
        placeholder="search workspaces..."
        value={searchQuery()}
-       ref={(el) => (searchInputRef = el)}
+       ref={(el) => {
+        searchInputRef = el;
+       }}
        onInput={(e) => setSearchQuery(e.currentTarget.value)}
        class="flex h-11 w-full rounded-lg border border-input bg-card px-4 py-2 pl-10 pr-10 text-sm shadow-md placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring border-ring) disabled:(cursor-not-allowed opacity-50) transition-all"
       />

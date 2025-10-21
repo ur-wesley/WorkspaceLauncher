@@ -6428,7 +6428,7 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 
 [[package]]
 name = "workspacelauncher"
-version = "0.3.6"
+version = "0.3.8"
 dependencies = [
  "chrono",
  "nix 0.27.1",

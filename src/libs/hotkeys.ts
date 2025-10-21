@@ -1,5 +1,5 @@
-import { createEffect, onCleanup, createSignal } from "solid-js";
 import { useKeyDownList } from "@solid-primitives/keyboard";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 
 let dialogOpenCount = 0;
 
@@ -27,7 +27,8 @@ export type HotkeyId =
   | "stopAll"
   | "navigateDashboard"
   | "navigateSettings"
-  | "openActiveActionsManager";
+  | "openActiveActionsManager"
+  | "toggleSidebar";
 
 export type HotkeyBinding = { keys: string[] };
 export type HotkeyMap = Record<HotkeyId, HotkeyBinding>;
@@ -45,6 +46,7 @@ const defaultBindings: HotkeyMap = {
   navigateDashboard: { keys: ["Control", "Shift", "d"] },
   navigateSettings: { keys: ["Control", "Shift", "s"] },
   openActiveActionsManager: { keys: ["Control", "Shift", "t"] },
+  toggleSidebar: { keys: ["Control", "b"] },
 };
 
 export type HotkeyContext = "global" | "workspaceDetail" | "workspacesList";
@@ -83,32 +85,29 @@ function normalizeKeyName(key: string): string {
 }
 
 function matchCombo(pressedRaw: Set<string>, combo: string[]): boolean {
-
   const pressed = new Set<string>();
-  pressedRaw.forEach((k) => pressed.add(normalizeKeyName(k)));
+  for (const key of pressedRaw) {
+    pressed.add(normalizeKeyName(key));
+  }
   if (pressed.size !== combo.length) return false;
   for (const key of combo) if (!pressed.has(key)) return false;
   return true;
 }
 
-export function useHotkeys(
-  ctx: HotkeyContext,
-  handlers: Partial<Record<HotkeyId, () => void>>,
-) {
+export function useHotkeys(ctx: HotkeyContext, handlers: Partial<Record<HotkeyId, () => void>>) {
   console.debug("[hotkeys] init", { ctx, handlers: Object.keys(handlers) });
 
   let pressed: () => string[];
   try {
     const keyDownList = useKeyDownList();
     pressed = keyDownList;
-  } catch (error) {
-
+  } catch (_error) {
     const [pressedKeys, setPressedKeys] = createSignal<string[]>([]);
     pressed = pressedKeys;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = normalizeKeyName(e.key);
-      setPressedKeys(prev => {
+      setPressedKeys((prev) => {
         if (!prev.includes(key)) {
           return [...prev, key];
         }
@@ -118,7 +117,7 @@ export function useHotkeys(
 
     const handleKeyUp = (e: KeyboardEvent) => {
       const key = normalizeKeyName(e.key);
-      setPressedKeys(prev => prev.filter(k => k !== key));
+      setPressedKeys((prev) => prev.filter((k) => k !== key));
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -137,16 +136,16 @@ export function useHotkeys(
     console.debug("[hotkeys] pressed", Array.from(current));
     if (current.size === 0) return;
 
-
     if (isAnyDialogOpen() && matchCombo(current, ["Control", "s"])) {
       console.debug("[hotkeys] Ctrl+S in dialog - submitting form");
 
       const dialogs = document.querySelectorAll('[role="dialog"]');
       if (dialogs.length > 0) {
-
         const activeDialog = dialogs[dialogs.length - 1];
 
-        const buttons = activeDialog.querySelectorAll('button[type="submit"], button:not([type="button"]):not([aria-label*="Close"])');
+        const buttons = activeDialog.querySelectorAll(
+          'button[type="submit"], button:not([type="button"]):not([aria-label*="Close"])',
+        );
         if (buttons.length > 0) {
           const submitButton = buttons[buttons.length - 1] as HTMLButtonElement;
           if (!submitButton.disabled) {
@@ -157,7 +156,6 @@ export function useHotkeys(
       }
       return;
     }
-
 
     if (isAnyDialogOpen()) {
       console.debug("[hotkeys] skipping - dialog is open");
@@ -179,13 +177,12 @@ export function useHotkeys(
       return false;
     };
 
-
     if (tryInvoke("openCommander")) return;
     if (tryInvoke("createWorkspace")) return;
     if (tryInvoke("navigateDashboard")) return;
     if (tryInvoke("navigateSettings")) return;
     if (tryInvoke("openActiveActionsManager")) return;
-
+    if (tryInvoke("toggleSidebar")) return;
 
     if (ctx === "workspaceDetail") {
       if (tryInvoke("createAction")) return;
@@ -206,13 +203,11 @@ export function useHotkeys(
     const current = new Set(pressed().map((k) => normalizeKeyName(k)));
     current.add(normalizeKeyName(event.key));
 
-
     if (isAnyDialogOpen() && matchCombo(current, ["Control", "s"])) {
       console.debug("[hotkeys] preventing Ctrl+S default (browser save)");
       event.preventDefault();
       return;
     }
-
 
     if (isAnyDialogOpen()) {
       return;
@@ -224,13 +219,15 @@ export function useHotkeys(
       "navigateSettings",
       "openActiveActionsManager",
       ...(ctx === "workspaceDetail"
-        ? ([("createAction" as HotkeyId),
-        ("createVariable" as HotkeyId),
-        ("import" as HotkeyId),
-        ("share" as HotkeyId),
-        ("focusSearch" as HotkeyId),
-        ("runAll" as HotkeyId),
-        ("stopAll" as HotkeyId)])
+        ? [
+          "createAction" as HotkeyId,
+          "createVariable" as HotkeyId,
+          "import" as HotkeyId,
+          "share" as HotkeyId,
+          "focusSearch" as HotkeyId,
+          "runAll" as HotkeyId,
+          "stopAll" as HotkeyId,
+        ]
         : ([] as HotkeyId[])),
       ...(ctx === "workspacesList" ? (["focusSearch"] as HotkeyId[]) : ([] as HotkeyId[])),
     ];
@@ -261,15 +258,10 @@ export function useHotkeys(
   };
 
   createEffect(() => {
-
     void pressed();
     handle();
   });
 
   window.addEventListener("keydown", preventIfMatched, { capture: true });
-  onCleanup(() => window.removeEventListener("keydown", preventIfMatched, { capture: true } as any));
+  onCleanup(() => window.removeEventListener("keydown", preventIfMatched, { capture: true }));
 }
-
-
-
-
