@@ -48,18 +48,13 @@ export function isDuplicateName(
 	targetId: number,
 	items: Array<{ id: number; name: string }>,
 	selectedIds: Set<number>,
-	renamedMap: Map<number, string>
+	renamedMap: Map<number, string>,
 ): boolean {
-	const getName = (item: { id: number; name: string }) =>
-		renamedMap.get(item.id) || item.name;
+	const getName = (item: { id: number; name: string }) => renamedMap.get(item.id) || item.name;
 
-	const targetName = getName(
-		items.find((item) => item.id === targetId) || { id: targetId, name: "" }
-	);
+	const targetName = getName(items.find((item) => item.id === targetId) || { id: targetId, name: "" });
 
-	const allNames = items
-		.filter((item) => selectedIds.has(item.id))
-		.map((item) => getName(item));
+	const allNames = items.filter((item) => selectedIds.has(item.id)).map((item) => getName(item));
 
 	return allNames.filter((name) => name === targetName).length > 1;
 }
@@ -69,7 +64,7 @@ export function isDuplicateName(
  */
 export function getEffectiveName<T extends { id: number; name: string }>(
 	item: T,
-	renamedMap: Map<number, string>
+	renamedMap: Map<number, string>,
 ): string {
 	return renamedMap.get(item.id) || item.name;
 }
@@ -90,11 +85,7 @@ export function toggleIdInSet(id: number, currentSet: Set<number>): Set<number> 
 /**
  * Updates a rename map
  */
-export function updateRenameMap(
-	id: number,
-	newName: string,
-	currentMap: Map<number, string>
-): Map<number, string> {
+export function updateRenameMap(id: number, newName: string, currentMap: Map<number, string>): Map<number, string> {
 	const newMap = new Map(currentMap);
 	if (newName.trim()) {
 		newMap.set(id, newName);

@@ -1,20 +1,17 @@
-import type { Action, Tool, Workspace } from "@/types/database";
+import type { Action, NewTheme, Theme, Tool, Workspace } from "@/types/database";
 import type { ExportData } from "./share";
 
 export interface ImportOptions {
 	selectedWorkspaces: Set<number>;
 	selectedActions: Set<number>;
 	selectedTools: Set<number>;
+	selectedThemes: Set<number>;
 	renamedWorkspaces: Map<number, string>;
 	renamedActions: Map<number, string>;
 }
 
 export interface ImportCallbacks {
-	createWorkspace: (data: {
-		name: string;
-		description?: string;
-		icon?: string;
-	}) => Promise<{ id: number } | null>;
+	createWorkspace: (data: { name: string; description?: string; icon?: string }) => Promise<{ id: number } | null>;
 	createTool: (data: {
 		name: string;
 		description?: string;
@@ -37,6 +34,7 @@ export interface ImportCallbacks {
 		os_overrides: string | null;
 		order_index: number;
 	}) => Promise<void>;
+	createTheme: (data: NewTheme) => Promise<void>;
 }
 
 export interface ImportResult {
@@ -53,7 +51,7 @@ async function importWorkspaces(
 	workspaces: Workspace[],
 	selectedIds: Set<number>,
 	renamedMap: Map<number, string>,
-	createWorkspace: ImportCallbacks["createWorkspace"]
+	createWorkspace: ImportCallbacks["createWorkspace"],
 ): Promise<{ idMap: Map<number, number>; count: number }> {
 	const idMap = new Map<number, number>();
 	let count = 0;
@@ -83,7 +81,7 @@ async function importWorkspaces(
 async function importTools(
 	tools: Tool[],
 	selectedIds: Set<number>,
-	createTool: ImportCallbacks["createTool"]
+	createTool: ImportCallbacks["createTool"],
 ): Promise<number> {
 	let count = 0;
 
@@ -109,6 +107,30 @@ async function importTools(
 	return count;
 }
 
+async function importThemes(
+	themes: Theme[],
+	selectedIds: Set<number>,
+	createTheme: ImportCallbacks["createTheme"],
+): Promise<number> {
+	let count = 0;
+
+	for (const theme of themes) {
+		if (!selectedIds.has(theme.id)) continue;
+
+		await createTheme({
+			name: theme.name,
+			description: theme.description || undefined,
+			light_colors: theme.light_colors,
+			dark_colors: theme.dark_colors,
+			is_predefined: theme.is_predefined,
+		});
+
+		count++;
+	}
+
+	return count;
+}
+
 /**
  * Imports actions
  */
@@ -117,7 +139,7 @@ async function importActions(
 	selectedIds: Set<number>,
 	renamedMap: Map<number, string>,
 	workspaceIdMap: Map<number, number>,
-	createAction: ImportCallbacks["createAction"]
+	createAction: ImportCallbacks["createAction"],
 ): Promise<number> {
 	let count = 0;
 	let skipped = 0;
@@ -125,15 +147,11 @@ async function importActions(
 	for (const action of actions) {
 		if (!selectedIds.has(action.id)) continue;
 
-
-		const mappedWorkspaceId = action.workspace_id
-			? workspaceIdMap.get(action.workspace_id)
-			: undefined;
-
+		const mappedWorkspaceId = action.workspace_id ? workspaceIdMap.get(action.workspace_id) : undefined;
 
 		if (!mappedWorkspaceId) {
 			console.warn(
-				`Skipping action "${action.name}" - workspace not imported (original workspace_id: ${action.workspace_id})`
+				`Skipping action "${action.name}" - workspace not imported (original workspace_id: ${action.workspace_id})`,
 			);
 			skipped++;
 			continue;
@@ -166,36 +184,31 @@ async function importActions(
 export async function performImport(
 	data: ExportData,
 	options: ImportOptions,
-	callbacks: ImportCallbacks
+	callbacks: ImportCallbacks,
 ): Promise<ImportResult> {
 	try {
 		let totalImported = 0;
 
-
-		const { idMap: workspaceIdMap, count: workspaceCount } =
-			await importWorkspaces(
-				data.workspaces || [],
-				options.selectedWorkspaces,
-				options.renamedWorkspaces,
-				callbacks.createWorkspace
-			);
+		const { idMap: workspaceIdMap, count: workspaceCount } = await importWorkspaces(
+			data.workspaces || [],
+			options.selectedWorkspaces,
+			options.renamedWorkspaces,
+			callbacks.createWorkspace,
+		);
 		totalImported += workspaceCount;
 
-
-		const toolCount = await importTools(
-			data.tools || [],
-			options.selectedTools,
-			callbacks.createTool
-		);
+		const toolCount = await importTools(data.tools || [], options.selectedTools, callbacks.createTool);
 		totalImported += toolCount;
 
+		const themeCount = await importThemes(data.themes || [], options.selectedThemes, callbacks.createTheme);
+		totalImported += themeCount;
 
 		const actionCount = await importActions(
 			data.actions || [],
 			options.selectedActions,
 			options.renamedActions,
 			workspaceIdMap,
-			callbacks.createAction
+			callbacks.createAction,
 		);
 		totalImported += actionCount;
 

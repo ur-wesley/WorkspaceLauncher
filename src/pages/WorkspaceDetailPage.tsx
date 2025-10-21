@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "@solidjs/router";
-import { createEffect, createSignal, onMount, onCleanup, Show } from "solid-js";
-import { ActionDialog } from "@/components/ActionDialog";
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { ActionAIPromptDialog } from "@/components/ActionAIPromptDialog";
+import { ActionDialog } from "@/components/ActionDialog";
 import { ActionHistoryView } from "@/components/ActionHistoryView";
 import { ActionRunHistory } from "@/components/ActionRunHistory";
 import { DeleteActionDialog } from "@/components/DeleteActionDialog";
@@ -39,18 +39,18 @@ import { VariableDialog } from "@/components/VariableDialog";
 import { WorkspaceEditDialog } from "@/components/WorkspaceEditDialog";
 import { stopProcess } from "@/libs/api";
 import { cn } from "@/libs/cn";
+import { useHotkeys } from "@/libs/hotkeys";
 import {
  launchAction as launchActionTS,
  launchWorkspace as launchWorkspaceTS,
  prepareVariables,
 } from "@/libs/launcher";
 import { showToast } from "@/libs/toast";
-import { useHotkeys } from "@/libs/hotkeys";
 import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
+import { useUI } from "@/store/ui";
 import { useVariableStore } from "@/store/variable";
 import { useWorkspaceStore } from "@/store/workspace";
-import { useUI } from "@/store/ui";
 import type { Action, Workspace } from "@/types/database";
 
 export default function WorkspaceDetailPage() {
@@ -165,8 +165,19 @@ export default function WorkspaceDetailPage() {
     const tag = target.tagName;
     const isEditable = (target as HTMLElement).isContentEditable;
     const inDialog = !!target.closest('[role="dialog"]');
-    const interactiveTags = ["INPUT", "TEXTAREA", "SELECT", "BUTTON" as const];
-    if (isEditable || interactiveTags.includes(tag as any) || inDialog) {
+    const interactiveTags: Array<"INPUT" | "TEXTAREA" | "SELECT" | "BUTTON"> = [
+     "INPUT",
+     "TEXTAREA",
+     "SELECT",
+     "BUTTON",
+    ];
+    if (
+     isEditable ||
+     interactiveTags.includes(
+      tag as "INPUT" | "TEXTAREA" | "SELECT" | "BUTTON"
+     ) ||
+     inDialog
+    ) {
      return;
     }
    }
@@ -627,7 +638,9 @@ export default function WorkspaceDetailPage() {
            <input
             type="text"
             placeholder="filter actions..."
-            ref={(el) => (filterActionsRef = el)}
+            ref={(el) => {
+             filterActionsRef = el;
+            }}
             class="flex h-9 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring border-ring)"
             onInput={(e) => setActionsQuery(e.currentTarget.value)}
            />
@@ -871,7 +884,9 @@ export default function WorkspaceDetailPage() {
            <input
             type="text"
             placeholder="filter variables..."
-            ref={(el) => (filterVarsRef = el)}
+            ref={(el) => {
+             filterVarsRef = el;
+            }}
             class="flex h-9 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring border-ring)"
             onInput={(e) => setVarsQuery(e.currentTarget.value)}
            />

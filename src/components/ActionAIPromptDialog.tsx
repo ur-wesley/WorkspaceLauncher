@@ -207,9 +207,9 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
  const generatedPrompt = () => {
   const description = userDescription().trim();
   if (!description) {
-   return AI_PROMPT + "\n\n[Describe what you want your action to do above]";
+   return `${AI_PROMPT}\n\n[Describe what you want your action to do above]`;
   }
-  return AI_PROMPT + `\n\nUser Request: ${description}`;
+  return `${AI_PROMPT}\n\nUser Request: ${description}`;
  };
 
  const isValidJSON = () => {

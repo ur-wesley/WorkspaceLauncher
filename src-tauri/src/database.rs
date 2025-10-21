@@ -162,6 +162,30 @@ pub struct NewTool {
     pub category: Option<String>,
 }
 
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Theme {
+    pub id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub is_predefined: bool,
+    pub is_active: bool,
+    pub light_colors: String,
+    pub dark_colors: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewTheme {
+    pub name: String,
+    pub description: Option<String>,
+    pub is_predefined: Option<bool>,
+    pub light_colors: String,
+    pub dark_colors: String,
+}
+
 pub fn get_migrations() -> Vec<Migration> {
     vec![
         Migration {
@@ -198,6 +222,12 @@ pub fn get_migrations() -> Vec<Migration> {
             version: 6,
             description: "Add track_process column to actions table",
             sql: include_str!("../migrations/006_add_track_process_to_actions.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 7,
+            description: "Add themes table for customizable color themes",
+            sql: include_str!("../migrations/007_add_themes.sql"),
             kind: MigrationKind::Up,
         },
     ]

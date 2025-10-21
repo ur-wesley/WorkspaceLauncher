@@ -8,6 +8,7 @@ import {
 } from "solid-js";
 import { useRunStore } from "@/store";
 import { useWorkspaceStore } from "@/store/workspace";
+import type { RunningAction } from "@/types/database";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -18,7 +19,6 @@ import {
  DialogHeader,
  DialogTitle,
 } from "./ui/dialog";
-import type { RunningAction } from "@/types/database";
 
 interface ActiveActionsManagerDialogProps {
  open: boolean;
@@ -87,7 +87,7 @@ export const ActiveActionsManagerDialog: Component<
      actions: [],
     });
    }
-   groups.get(action.workspace_id)!.actions.push(action);
+   groups.get(action.workspace_id)?.actions.push(action);
   }
 
   return Array.from(groups.values()).sort((a, b) =>
