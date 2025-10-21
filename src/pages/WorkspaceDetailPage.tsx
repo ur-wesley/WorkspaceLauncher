@@ -46,6 +46,7 @@ import {
  prepareVariables,
 } from "@/libs/launcher";
 import { showToast } from "@/libs/toast";
+import { setAppWindowTitle } from "@/libs/windowTitle";
 import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
 import { useUI } from "@/store/ui";
@@ -156,6 +157,11 @@ export default function WorkspaceDetailPage() {
    void handleLaunchWorkspace();
    ui.actions.clearRunAll();
   }
+ });
+
+ createEffect(() => {
+  const workspace = currentWorkspace();
+  setAppWindowTitle(workspace?.name);
  });
 
  const handleKeyDown = (e: KeyboardEvent) => {
@@ -308,6 +314,20 @@ export default function WorkspaceDetailPage() {
   const workspace = currentWorkspace();
   if (!workspace) return;
 
+  const existingRunningIds = new Set(runningActionIds());
+  const actionsToLaunch = actionStore.actions.filter(
+   (action) => !existingRunningIds.has(action.id)
+  );
+
+  if (actionsToLaunch.length === 0) {
+   showToast({
+    title: "Actions Already Running",
+    description: "All actions in this workspace are already running",
+    variant: "default",
+   });
+   return;
+  }
+
   setIsLaunching(true);
   try {
    console.log("Launching workspace:", workspace.id);
@@ -320,10 +340,10 @@ export default function WorkspaceDetailPage() {
 
    console.log("Launch context:", context);
 
-   const results = await launchWorkspaceTS(actionStore.actions, context);
+   const results = await launchWorkspaceTS(actionsToLaunch, context);
 
    const successCount = results.filter((r) => r.success).length;
-   const totalCount = results.length;
+   const totalCount = actionsToLaunch.length;
 
    showToast({
     title: "Workspace Launched",
@@ -341,6 +361,7 @@ export default function WorkspaceDetailPage() {
    });
   } finally {
    setIsLaunching(false);
+   updateRunningActionsCount();
   }
  };
 

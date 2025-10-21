@@ -18,6 +18,7 @@ import { listActionsByWorkspace, listVariablesByWorkspace } from "@/libs/api";
 import { cn } from "@/libs/cn";
 import { useHotkeys } from "@/libs/hotkeys";
 import { useUI } from "@/store/ui";
+import { setAppWindowTitle } from "@/libs/windowTitle";
 import { useWorkspaceStore } from "@/store/workspace";
 import type { NewWorkspace, Workspace } from "@/types/database";
 
@@ -55,6 +56,7 @@ export const WorkspacesListPage: Component = () => {
   actions.loadWorkspaces();
   ui.actions.setWorkspaceContext(null);
   ui.actions.setFocusSearch(() => searchInputRef?.focus());
+  setAppWindowTitle();
  });
  onCleanup(() => ui.actions.setFocusSearch(undefined));
 
