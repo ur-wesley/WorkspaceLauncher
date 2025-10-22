@@ -1,11 +1,10 @@
 import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { ActionAIPromptDialog } from "@/components/ActionAIPromptDialog";
-import { ActionDialog } from "@/components/ActionDialog";
 import { ActionHistoryView } from "@/components/ActionHistoryView";
 import { ActionRunHistory } from "@/components/ActionRunHistory";
+import { ActionDialogStepper as ActionDialog } from "@/components/action/ActionDialogStepper";
 import { DeleteActionDialog } from "@/components/DeleteActionDialog";
-import { DeleteVariableDialog } from "@/components/DeleteVariableDialog";
 import { RunningActionsPanel } from "@/components/RunningActionsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,8 @@ import {
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
-import { VariableDialog } from "@/components/VariableDialog";
+import { DeleteVariableDialog } from "@/components/variable/DeleteVariableDialog";
+import { VariableDialog } from "@/components/variable/VariableDialog";
 import { WorkspaceEditDialog } from "@/components/WorkspaceEditDialog";
 import { stopProcess } from "@/libs/api";
 import { cn } from "@/libs/cn";
@@ -558,38 +558,40 @@ export default function WorkspaceDetailPage() {
 			<Show when={currentWorkspace()} fallback={<div class="p-4 sm:p-6 lg:p-8">Loading workspace...</div>}>
 				{(workspace) => (
 					<>
-						<div class="w-full flex flex-col sm:flex-row justify-between items-start gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 bg-muted/30 shadow-sm border-b border-border">
-							<div class="flex-1 min-w-0 w-full sm:w-auto">
+						<div class="w-full flex flex-col sm:flex-row justify-between items-start gap-4 px-4 py-4">
+							<div class="flex-1 min-w-0 w-full sm:w-auto space-y-4">
 								<h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold truncate">{workspace().name}</h1>
 								<Show when={workspace().description}>
-									<div class="mt-2">
-										<p
-											class={cn(
-												"text-muted-foreground whitespace-pre-line text-sm sm:text-base",
-												!showFullDescription() && "line-clamp-4",
-											)}
-										>
-											{workspace().description}
-										</p>
-									</div>
-									<Show
-										when={isDescriptionExpandable(workspace().description, {
-											minCharacters: 200,
-											minLineBreaks: 2,
-										})}
-									>
-										<button
-											type="button"
-											onClick={() => {
-												const next = !showFullDescription();
-												setShowFullDescription(next);
-												setWorkspaceDescriptionExpanded(workspace().id, next);
-											}}
-											class="text-sm text-primary hover:underline mt-0.5 inline-block"
-										>
-											{showFullDescription() ? "Show less" : "Show more"}
-										</button>
-									</Show>
+									<Card class="bg-muted/80 shadow-md">
+										<CardContent class="p-5">
+											<p
+												class={cn(
+													"text-muted-foreground whitespace-pre-line text-sm sm:text-base",
+													!showFullDescription() && "line-clamp-4",
+												)}
+											>
+												{workspace().description}
+											</p>
+											<Show
+												when={isDescriptionExpandable(workspace().description, {
+													minCharacters: 200,
+													minLineBreaks: 2,
+												})}
+											>
+												<button
+													type="button"
+													onClick={() => {
+														const next = !showFullDescription();
+														setShowFullDescription(next);
+														setWorkspaceDescriptionExpanded(workspace().id, next);
+													}}
+													class="text-sm text-primary hover:underline mt-2 inline-block"
+												>
+													{showFullDescription() ? "Show less" : "Show more"}
+												</button>
+											</Show>
+										</CardContent>
+									</Card>
 								</Show>
 							</div>
 							<div class="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
@@ -616,11 +618,7 @@ export default function WorkspaceDetailPage() {
 							</div>
 						</div>
 
-						<Tabs
-							value={activeTab()}
-							onChange={handleTabChange}
-							class="flex-1 flex flex-col w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 min-h-0"
-						>
+						<Tabs value={activeTab()} onChange={handleTabChange} class="flex-1 flex flex-col w-full px-4 py-4 min-h-0">
 							<TabsList class="mb-4 w-full sm:w-auto flex-wrap sm:flex-nowrap">
 								<TabsTrigger value="actions" class="flex-1 sm:flex-initial min-w-0">
 									<div class="i-mdi-play-circle w-4 h-4 mr-2 flex-shrink-0" />
@@ -716,7 +714,7 @@ export default function WorkspaceDetailPage() {
 													} catch {}
 
 													return (
-														<div class="group rounded-lg bg-muted/30 hover:bg-muted/50 shadow-sm hover:shadow-md transition-all duration-200">
+														<div class="group rounded-lg bg-muted/40 hover:bg-muted/60 shadow-sm hover:shadow-md transition-all duration-200">
 															<div class="p-3">
 																<div class="flex items-center justify-between mb-2 gap-2">
 																	<div class="flex items-center gap-3 flex-1 min-w-0">
@@ -742,6 +740,24 @@ export default function WorkspaceDetailPage() {
 																			<Show when={action.action_type !== "tool"}>
 																				<Badge variant="default" class="text-xs font-medium capitalize shrink-0">
 																					{action.action_type}
+																				</Badge>
+																			</Show>
+																			<Show when={action.detached}>
+																				<Badge
+																					variant="outline"
+																					class="text-xs font-medium shrink-0 border-orange-200 text-orange-700 dark:border-orange-800 dark:text-orange-300"
+																				>
+																					<div class="i-mdi-launch w-3 h-3 mr-1" />
+																					Detached
+																				</Badge>
+																			</Show>
+																			<Show when={action.track_process}>
+																				<Badge
+																					variant="outline"
+																					class="text-xs font-medium shrink-0 border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-300"
+																				>
+																					<div class="i-mdi-chart-line w-3 h-3 mr-1" />
+																					Tracked
 																				</Badge>
 																			</Show>
 																		</div>
@@ -905,7 +921,7 @@ export default function WorkspaceDetailPage() {
 										>
 											<div class="space-y-3">
 												{variableStore.variables.map((variable) => (
-													<div class="group rounded-lg bg-muted/30 hover:bg-muted/50 shadow-sm hover:shadow-md transition-all duration-200">
+													<div class="group rounded-lg bg-muted/40 hover:bg-muted/60 shadow-sm hover:shadow-md transition-all duration-200">
 														<div class="p-3">
 															<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
 																<div class="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
