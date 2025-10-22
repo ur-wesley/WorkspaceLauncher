@@ -10,6 +10,11 @@ import { listActionsByWorkspace, listVariablesByWorkspace } from "@/libs/api";
 import { cn } from "@/libs/cn";
 import { useHotkeys } from "@/libs/hotkeys";
 import { setAppWindowTitle } from "@/libs/windowTitle";
+import {
+	getWorkspaceDescriptionExpanded,
+	isDescriptionExpandable,
+	setWorkspaceDescriptionExpanded,
+} from "@/libs/workspaceDescriptionToggle";
 import { useUI } from "@/store/ui";
 import { useWorkspaceStore } from "@/store/workspace";
 import type { NewWorkspace, Workspace } from "@/types/database";
@@ -102,10 +107,15 @@ export const WorkspacesListPage: Component = () => {
 		const stats = createMemo(() => {
 			return workspaceStats().get(props.workspace.id) || { actions: 0, variables: 0 };
 		});
-		const [showFullDescription, setShowFullDescription] = createSignal(false);
+		const [showFullDescription, setShowFullDescription] = createSignal(
+			getWorkspaceDescriptionExpanded(props.workspace.id),
+		);
 
-		const isDescriptionLong = createMemo(() => {
-			return props.workspace.description && props.workspace.description.length > 100;
+		const canExpandDescription = createMemo(() => {
+			return isDescriptionExpandable(props.workspace.description, {
+				minCharacters: 120,
+				minLineBreaks: 2,
+			});
 		});
 
 		return (
@@ -145,13 +155,15 @@ export const WorkspacesListPage: Component = () => {
 						</Button>
 					</div>
 				</CardHeader>
-				<Show when={props.workspace.description && isDescriptionLong()}>
+				<Show when={props.workspace.description && canExpandDescription()}>
 					<div class="px-6 -mt-2 pb-3">
 						<button
 							type="button"
 							onClick={(e) => {
 								e.stopPropagation();
-								setShowFullDescription(!showFullDescription());
+								const next = !showFullDescription();
+								setShowFullDescription(next);
+								setWorkspaceDescriptionExpanded(props.workspace.id, next);
 							}}
 							class="text-xs text-primary hover:underline inline-block"
 						>

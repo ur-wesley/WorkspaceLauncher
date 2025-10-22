@@ -32,6 +32,11 @@ import {
 import { buildWorkspaceScript, formatScriptFilename } from "@/libs/scriptBuilder";
 import { showToast } from "@/libs/toast";
 import { setAppWindowTitle } from "@/libs/windowTitle";
+import {
+	getWorkspaceDescriptionExpanded,
+	isDescriptionExpandable,
+	setWorkspaceDescriptionExpanded,
+} from "@/libs/workspaceDescriptionToggle";
 import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
 import { useUI } from "@/store/ui";
@@ -120,6 +125,7 @@ export default function WorkspaceDetailPage() {
 
 		const workspace = workspaceCtx.store.workspaces.find((w: Workspace) => w.id === id);
 		setCurrentWorkspace(workspace || null);
+		setShowFullDescription(getWorkspaceDescriptionExpanded(id));
 
 		if (!workspace && workspaceCtx.store.workspaces.length > 0) {
 			navigate("/");
@@ -566,10 +572,19 @@ export default function WorkspaceDetailPage() {
 											{workspace().description}
 										</p>
 									</div>
-									<Show when={(workspace().description?.length ?? 0) > 200}>
+									<Show
+										when={isDescriptionExpandable(workspace().description, {
+											minCharacters: 200,
+											minLineBreaks: 2,
+										})}
+									>
 										<button
 											type="button"
-											onClick={() => setShowFullDescription(!showFullDescription())}
+											onClick={() => {
+												const next = !showFullDescription();
+												setShowFullDescription(next);
+												setWorkspaceDescriptionExpanded(workspace().id, next);
+											}}
 											class="text-sm text-primary hover:underline mt-0.5 inline-block"
 										>
 											{showFullDescription() ? "Show less" : "Show more"}
