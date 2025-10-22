@@ -230,5 +230,11 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: include_str!("../migrations/007_add_themes.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 8,
+            description: "Fix boolean columns to use proper SQLite boolean handling",
+            sql: include_str!("../migrations/008_fix_boolean_columns.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }

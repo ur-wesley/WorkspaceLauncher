@@ -18,6 +18,13 @@ import type {
 	Workspace,
 } from "@/types/database";
 
+const sqliteBoolean = (value: number | boolean | string): boolean => {
+	if (typeof value === "string") {
+		return value === "true" || value === "1";
+	}
+	return Boolean(value);
+};
+
 export interface LaunchActionRequest {
 	workspace_id: number;
 	action_id: number;
@@ -212,37 +219,39 @@ export async function deleteWorkspace(id: number): Promise<Result<void, ApiError
 	}
 }
 
-export async function createAction(action: NewAction): Promise<Result<Action, ApiError>> {
+export async function createAction(newAction: NewAction): Promise<Result<Action, ApiError>> {
 	try {
-		console.log("createAction called with:", action);
+		console.log("createAction called with:", newAction);
 		const db = getDatabase();
 		console.log("Database instance obtained");
 
 		const result = await db.execute(
 			"INSERT INTO actions (workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
 			[
-				action.workspace_id,
-				action.name,
-				action.action_type,
-				action.config,
-				action.dependencies || null,
-				action.timeout_seconds || null,
-				action.detached,
-				action.track_process,
-				action.os_overrides || null,
-				action.order_index,
+				newAction.workspace_id,
+				newAction.name,
+				newAction.action_type,
+				newAction.config,
+				newAction.dependencies || null,
+				newAction.timeout_seconds || null,
+				newAction.detached,
+				newAction.track_process,
+				newAction.os_overrides || null,
+				newAction.order_index,
 			],
 		);
 		console.log("Action inserted, ID:", result.lastInsertId);
 
-		const rows = await db.select<Action[]>(
+		const rows = await db.select<RawActionRow[]>(
 			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
 			[result.lastInsertId],
 		);
 		if (rows.length === 0) {
 			throw new Error("Failed to retrieve created action");
 		}
-		return ok(rows[0]);
+
+		const action = convertDatabaseRowToAction(rows[0]);
+		return ok(action);
 	} catch (error) {
 		return err({ message: `Failed to create action: ${error}` });
 	}
@@ -251,14 +260,16 @@ export async function createAction(action: NewAction): Promise<Result<Action, Ap
 export async function getAction(id: number): Promise<Result<Action, ApiError>> {
 	try {
 		const db = getDatabase();
-		const rows = await db.select<Action[]>(
+		const rows = await db.select<RawActionRow[]>(
 			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
 			[id],
 		);
 		if (rows.length === 0) {
 			throw new Error("Action not found");
 		}
-		return ok(rows[0]);
+
+		const action = convertDatabaseRowToAction(rows[0]);
+		return ok(action);
 	} catch (error) {
 		return err({ message: `Failed to get action: ${error}` });
 	}
@@ -267,12 +278,13 @@ export async function getAction(id: number): Promise<Result<Action, ApiError>> {
 export async function listActionsByWorkspace(workspaceId: number): Promise<Result<Action[], ApiError>> {
 	try {
 		const db = getDatabase();
-		return ok(
-			await db.select<Action[]>(
-				"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE workspace_id = $1 ORDER BY order_index ASC",
-				[workspaceId],
-			),
+		const rows = await db.select<RawActionRow[]>(
+			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE workspace_id = $1 ORDER BY order_index ASC",
+			[workspaceId],
 		);
+
+		const actions: Action[] = rows.map((row) => convertDatabaseRowToAction(row));
+		return ok(actions);
 	} catch (error) {
 		return err({ message: `Failed to list actions: ${error}` });
 	}
@@ -297,14 +309,16 @@ export async function updateAction(id: number, action: NewAction): Promise<Resul
 				id,
 			],
 		);
-		const rows = await db.select<Action[]>(
+		const rows = await db.select<RawActionRow[]>(
 			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
 			[id],
 		);
 		if (rows.length === 0) {
 			throw new Error("Action not found");
 		}
-		return ok(rows[0]);
+
+		const updatedAction = convertDatabaseRowToAction(rows[0]);
+		return ok(updatedAction);
 	} catch (error) {
 		return err({ message: `Failed to update action: ${error}` });
 	}
@@ -331,11 +345,35 @@ interface RawVariableRow {
 	updated_at: string;
 }
 
+interface RawActionRow {
+	id: number;
+	workspace_id: number;
+	name: string;
+	action_type: string;
+	config: string;
+	dependencies: string | null;
+	timeout_seconds: number | null;
+	detached: number | boolean;
+	track_process: number | boolean;
+	os_overrides: string | null;
+	order_index: number;
+	created_at: string;
+	updated_at: string;
+}
+
+function convertDatabaseRowToAction(row: RawActionRow): Action {
+	return {
+		...row,
+		detached: sqliteBoolean(row.detached),
+		track_process: sqliteBoolean(row.track_process),
+	};
+}
+
 function convertDatabaseRowToVariable(row: RawVariableRow): Variable {
 	const converted = {
 		...row,
-		is_secure: Boolean(row.is_secure === "true" || row.is_secure === 1 || row.is_secure === true),
-		enabled: Boolean(row.enabled === "true" || row.enabled === 1 || row.enabled === true),
+		is_secure: sqliteBoolean(row.is_secure),
+		enabled: sqliteBoolean(row.enabled),
 	};
 
 	console.log("API: Converting database row:", {

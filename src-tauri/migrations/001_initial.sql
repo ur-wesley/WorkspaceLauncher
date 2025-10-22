@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS actions (
     config TEXT NOT NULL DEFAULT '{}',
     dependencies TEXT, -- JSON array of action IDs
     timeout_seconds INTEGER,
-    detached BOOLEAN NOT NULL DEFAULT FALSE,
+    detached INTEGER NOT NULL DEFAULT 0 CHECK (detached IN (0, 1)),
     os_overrides TEXT, -- JSON object
     order_index INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS variables (
     workspace_id INTEGER NOT NULL,
     key TEXT NOT NULL,
     value TEXT NOT NULL,
-    is_secure BOOLEAN NOT NULL DEFAULT FALSE,
-    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    is_secure INTEGER NOT NULL DEFAULT 0 CHECK (is_secure IN (0, 1)),
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE,
