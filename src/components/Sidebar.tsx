@@ -232,124 +232,101 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 								};
 
 								return (
-									<div class="relative group">
-										<A
-											href={`/w/${workspace.id}`}
-											class={cn(
-												"flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full",
-												"hover:bg-accent hover:text-accent-foreground",
-												isWorkspaceActive(workspace.id) ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-												props.collapsed && "justify-center px-0 py-2",
-											)}
-											title={props.collapsed ? workspace.name : undefined}
-										>
-											<div
-												class={cn(
-													"w-2 h-2 flex-shrink-0 transition-opacity duration-200",
-													props.collapsed ? "opacity-0 hidden" : "opacity-100",
-													hasRunningActions() && "rounded-full bg-green-500 animate-pulse",
-												)}
-												title={hasRunningActions() ? "Has running actions" : undefined}
-											/>
-
-											<Show
-												when={workspace.icon}
-												fallback={<span class="iconify w-5 h-5 flex-shrink-0" data-icon="mdi:folder" />}
+									<div
+										class={cn(
+											"group flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors",
+											"hover:bg-accent hover:text-accent-foreground",
+											isWorkspaceActive(workspace.id)
+												? "bg-accent text-accent-foreground"
+												: "bg-card text-muted-foreground",
+										)}
+									>
+										{props.collapsed ? (
+											<A
+												href={`/w/${workspace.id}`}
+												class="relative flex items-center justify-center w-9 h-9"
+												title={workspace.name}
 											>
 												<span
-													class={cn("iconify flex-shrink-0", props.collapsed ? "w-5 h-5" : "w-4 h-4")}
-													data-icon={`mdi:${workspace.icon?.replace(/^i-mdi-/, "")}`}
+													class={cn("iconify w-6 h-6", workspace.icon ? "" : "text-muted-foreground")}
+													data-icon={`mdi:${(workspace.icon ?? "folder").replace(/^i-mdi-/, "")}`}
 												/>
-											</Show>
+												<Show when={isPinned()}>
+													<span class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-card shadow">
+														<div class="i-mdi-pin w-2 h-2 text-primary" />
+													</span>
+												</Show>
+												<Show when={hasRunningActions()}>
+													<span class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-green-500 animate-pulse ring-1 ring-card" />
+												</Show>
+											</A>
+										) : (
+											<>
+												<div class="flex items-center gap-1.5 flex-1 min-w-0">
+													<Button
+														size="icon"
+														variant="ghost"
+														class={cn(
+															"h-6 w-6 flex-shrink-0 rounded-full transition-colors",
+															"bg-card text-muted-foreground",
+															"group-hover:bg-accent group-hover:text-accent-foreground",
+															isWorkspaceActive(workspace.id) && "bg-accent text-accent-foreground",
+														)}
+														onclick={handleRunWorkspace}
+														disabled={isLaunching()}
+														title={hasRunningActions() ? "Stop running actions" : "Run all actions"}
+													>
+														<Show
+															when={hasRunningActions()}
+															fallback={<div class="i-mdi-play w-4 h-4 text-green-600" />}
+														>
+															<div class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+														</Show>
+													</Button>
 
-											<div
-												class={cn(
-													"absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse transition-opacity duration-200",
-													props.collapsed && hasRunningActions() ? "opacity-100" : "opacity-0 hidden",
-												)}
-											/>
+													<A
+														href={`/w/${workspace.id}`}
+														class="flex items-center gap-1.5 flex-1 min-w-0"
+														title={props.collapsed ? workspace.name : undefined}
+													>
+														<span
+															class={cn("iconify w-5 h-5 flex-shrink-0", !workspace.icon && "text-muted-foreground")}
+															data-icon={`mdi:${(workspace.icon ?? "folder").replace(/^i-mdi-/, "")}`}
+														/>
+														<span class="truncate">{workspace.name}</span>
+													</A>
+												</div>
 
-											<span
-												class={cn(
-													"truncate flex-1 transition-opacity duration-200",
-													props.collapsed ? "opacity-0 hidden" : "opacity-100",
-												)}
-											>
-												{workspace.name}
-											</span>
-
-											<div
-												class={cn(
-													"w-14 flex-shrink-0 transition-opacity duration-200",
-													props.collapsed ? "opacity-0 hidden" : "opacity-100",
-												)}
-											/>
-										</A>
-
-										<div
-											class={cn(
-												"absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 transition-opacity",
-												props.collapsed ? "opacity-0 hidden" : "opacity-0 group-hover:opacity-100",
-											)}
-										>
-											<Button
-												size="sm"
-												variant="ghost"
-												class="h-6 w-6 p-0"
-												onclick={handleRunWorkspace}
-												disabled={isLaunching()}
-												title="Run all actions"
-											>
-												<div
+												<Button
+													size="icon"
+													variant="ghost"
 													class={cn(
-														"w-3 h-3",
-														isLaunching() ? "i-mdi-loading animate-spin" : "i-mdi-play text-green-600",
+														"h-6 w-6 rounded-full transition-colors",
+														isPinned()
+															? "opacity-100 bg-card text-primary"
+															: "opacity-0 bg-card text-muted-foreground group-hover:opacity-100 group-hover:bg-accent group-hover:text-accent-foreground",
 													)}
-												/>
-											</Button>
-
-											<Button
-												size="sm"
-												variant="ghost"
-												class="h-6 w-6 p-0"
-												onclick={(e) => {
-													e.preventDefault();
-													e.stopPropagation();
-													actions.togglePinWorkspace(workspace.id);
-												}}
-												title={isPinned() ? "Unpin workspace" : "Pin workspace"}
-											>
-												<div class={cn("w-3 h-3", isPinned() ? "i-mdi-pin text-primary" : "i-mdi-pin-outline")} />
-											</Button>
-										</div>
-
-										<Show when={isPinned()}>
-											<div
-												class={cn(
-													"absolute right-7 top-1/2 -translate-y-1/2 transition-opacity pointer-events-none",
-													props.collapsed ? "opacity-0 hidden" : "opacity-100 group-hover:opacity-0",
-												)}
-											>
-												<div class="i-mdi-pin w-3 h-3 text-primary" />
-											</div>
-										</Show>
-
-										<div
-											class={cn(
-												"absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-primary transition-opacity duration-200",
-												props.collapsed && isPinned() ? "opacity-100" : "opacity-0 hidden",
-											)}
-										/>
+													onclick={(e) => {
+														e.preventDefault();
+														e.stopPropagation();
+														actions.togglePinWorkspace(workspace.id);
+													}}
+													title={isPinned() ? "Unpin workspace" : "Pin workspace"}
+												>
+													<div class={cn("w-3 h-3", isPinned() ? "i-mdi-pin" : "i-mdi-pin-outline")} />
+												</Button>
+											</>
+										)}
 									</div>
 								);
 							}}
 						</For>
 
 						{store.workspaces.length === 0 && !store.loading && (
-							<div class="text-xs text-muted-foreground px-2 py-4 text-center">No workspaces yet</div>
+							<div class="text-xs text-muted-foreground p-2 text-center">No workspaces yet</div>
 						)}
 
-						{store.loading && <div class="text-xs text-muted-foreground px-2 py-4 text-center">Loading...</div>}
+						{store.loading && <div class="text-xs text-muted-foreground p-2 text-center">Loading...</div>}
 					</div>
 				</div>
 			</div>
