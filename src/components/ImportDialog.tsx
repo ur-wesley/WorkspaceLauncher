@@ -356,6 +356,17 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 				if (!newWorkspaceId) continue;
 
 				const name = getActionName(action.id);
+
+				const detached =
+					typeof action.detached === "string"
+						? action.detached === "true" || action.detached === "1"
+						: Boolean(action.detached);
+
+				const track_process =
+					typeof action.track_process === "string"
+						? action.track_process === "true" || action.track_process === "1"
+						: Boolean(action.track_process);
+
 				await actionActions.addAction({
 					name,
 					workspace_id: newWorkspaceId,
@@ -363,8 +374,8 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 					config: action.config,
 					dependencies: action.dependencies,
 					timeout_seconds: action.timeout_seconds,
-					detached: action.detached,
-					track_process: action.track_process,
+					detached,
+					track_process,
 					os_overrides: action.os_overrides,
 					order_index: action.order_index,
 				});

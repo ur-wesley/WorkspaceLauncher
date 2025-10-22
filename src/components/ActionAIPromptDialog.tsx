@@ -305,6 +305,16 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 					}
 				}
 
+				const detached =
+					typeof action.detached === "string"
+						? action.detached === "true" || action.detached === "1"
+						: Boolean(action.detached ?? false);
+
+				const track_process =
+					typeof action.track_process === "string"
+						? action.track_process === "true" || action.track_process === "1"
+						: Boolean(action.track_process ?? true);
+
 				validatedActions.push({
 					workspace_id: props.workspaceId,
 					name: action.name,
@@ -312,8 +322,8 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 					config: typeof action.config === "string" ? action.config : JSON.stringify(action.config),
 					dependencies: action.dependencies || null,
 					timeout_seconds: action.timeout_seconds || null,
-					detached: action.detached ?? false,
-					track_process: action.track_process ?? true,
+					detached,
+					track_process,
 					os_overrides: action.os_overrides || null,
 					order_index: action.order_index ?? 0,
 				});

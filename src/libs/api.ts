@@ -221,9 +221,7 @@ export async function deleteWorkspace(id: number): Promise<Result<void, ApiError
 
 export async function createAction(newAction: NewAction): Promise<Result<Action, ApiError>> {
 	try {
-		console.log("createAction called with:", newAction);
 		const db = getDatabase();
-		console.log("Database instance obtained");
 
 		const result = await db.execute(
 			"INSERT INTO actions (workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
@@ -234,13 +232,12 @@ export async function createAction(newAction: NewAction): Promise<Result<Action,
 				newAction.config,
 				newAction.dependencies || null,
 				newAction.timeout_seconds || null,
-				newAction.detached,
-				newAction.track_process,
+				newAction.detached ? 1 : 0,
+				newAction.track_process ? 1 : 0,
 				newAction.os_overrides || null,
 				newAction.order_index,
 			],
 		);
-		console.log("Action inserted, ID:", result.lastInsertId);
 
 		const rows = await db.select<RawActionRow[]>(
 			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
@@ -302,8 +299,8 @@ export async function updateAction(id: number, action: NewAction): Promise<Resul
 				action.config,
 				action.dependencies || null,
 				action.timeout_seconds || null,
-				action.detached,
-				action.track_process,
+				action.detached ? 1 : 0,
+				action.track_process ? 1 : 0,
 				action.os_overrides || null,
 				action.order_index,
 				id,

@@ -159,6 +159,16 @@ async function importActions(
 
 		const actionName = renamedMap.get(action.id) || action.name;
 
+		const detached =
+			typeof action.detached === "string"
+				? action.detached === "true" || action.detached === "1"
+				: Boolean(action.detached);
+
+		const track_process =
+			typeof action.track_process === "string"
+				? action.track_process === "true" || action.track_process === "1"
+				: Boolean(action.track_process);
+
 		await createAction({
 			name: actionName,
 			workspace_id: mappedWorkspaceId,
@@ -166,8 +176,8 @@ async function importActions(
 			config: action.config,
 			dependencies: action.dependencies,
 			timeout_seconds: action.timeout_seconds,
-			detached: action.detached,
-			track_process: action.track_process,
+			detached,
+			track_process,
 			os_overrides: action.os_overrides,
 			order_index: action.order_index,
 		});
