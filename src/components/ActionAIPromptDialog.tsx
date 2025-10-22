@@ -2,13 +2,13 @@ import type { Component } from "solid-js";
 import { createSignal } from "solid-js";
 import { Button } from "@/components/ui/button";
 import {
- Dialog,
- DialogContent,
- DialogDescription,
- DialogFooter,
- DialogHeader,
- DialogTitle,
- DialogTrigger,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
 } from "@/components/ui/dialog";
 import { createAction } from "@/libs/api";
 import { showToast } from "@/libs/toast";
@@ -18,30 +18,25 @@ import type { NewAction } from "@/types/database";
 const VARIABLE_PATTERN = /\$\{([^}]+)\}/g;
 
 function extractVariablesFromText(value: string | undefined | null): string[] {
- if (!value) return [];
- const matches = value.match(VARIABLE_PATTERN) ?? [];
- return matches
-  .map((match) => match.slice(2, -1))
-  .filter((variable) => variable.length > 0);
+	if (!value) return [];
+	const matches = value.match(VARIABLE_PATTERN) ?? [];
+	return matches.map((match) => match.slice(2, -1)).filter((variable) => variable.length > 0);
 }
 
 function extractVariablesFromAction(action: Partial<NewAction>): Set<string> {
- const variables = new Set<string>();
+	const variables = new Set<string>();
 
- const configStr =
-  typeof action.config === "string"
-   ? action.config
-   : JSON.stringify(action.config);
+	const configStr = typeof action.config === "string" ? action.config : JSON.stringify(action.config);
 
- for (const varName of extractVariablesFromText(configStr)) {
-  variables.add(varName);
- }
+	for (const varName of extractVariablesFromText(configStr)) {
+		variables.add(varName);
+	}
 
- for (const varName of extractVariablesFromText(action.name)) {
-  variables.add(varName);
- }
+	for (const varName of extractVariablesFromText(action.name)) {
+		variables.add(varName);
+	}
 
- return variables;
+	return variables;
 }
 
 const AI_PROMPT = `I need help creating an action configuration for my workspace launcher app.
@@ -192,302 +187,283 @@ interface Action {
 Now, what action do you want to create?`;
 
 interface ActionAIPromptDialogProps {
- workspaceId: number;
- onImportSuccess?: () => void;
+	workspaceId: number;
+	onImportSuccess?: () => void;
 }
 
-export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
- props
-) => {
- const [variableStore, variableActions] = useVariableStore();
- const [open, setOpen] = createSignal(false);
- const [userDescription, setUserDescription] = createSignal("");
- const [jsonInput, setJsonInput] = createSignal("");
+export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props) => {
+	const [variableStore, variableActions] = useVariableStore();
+	const [open, setOpen] = createSignal(false);
+	const [userDescription, setUserDescription] = createSignal("");
+	const [jsonInput, setJsonInput] = createSignal("");
 
- const generatedPrompt = () => {
-  const description = userDescription().trim();
-  if (!description) {
-   return `${AI_PROMPT}\n\n[Describe what you want your action to do above]`;
-  }
-  return `${AI_PROMPT}\n\nUser Request: ${description}`;
- };
+	const generatedPrompt = () => {
+		const description = userDescription().trim();
+		if (!description) {
+			return `${AI_PROMPT}\n\n[Describe what you want your action to do above]`;
+		}
+		return `${AI_PROMPT}\n\nUser Request: ${description}`;
+	};
 
- const isValidJSON = () => {
-  try {
-   const trimmed = jsonInput().trim();
-   if (!trimmed) return false;
-   JSON.parse(trimmed);
-   return true;
-  } catch {
-   return false;
-  }
- };
+	const isValidJSON = () => {
+		try {
+			const trimmed = jsonInput().trim();
+			if (!trimmed) return false;
+			JSON.parse(trimmed);
+			return true;
+		} catch {
+			return false;
+		}
+	};
 
- const copyPrompt = async () => {
-  try {
-   await navigator.clipboard.writeText(generatedPrompt());
-   showToast({
-    title: "Prompt Copied",
-    description: "Paste this into ChatGPT/Claude to generate your action",
-    variant: "success",
-   });
-  } catch (error) {
-   showToast({
-    title: "Copy Failed",
-    description: `Failed to copy: ${error}`,
-    variant: "destructive",
-   });
-  }
- };
+	const copyPrompt = async () => {
+		try {
+			await navigator.clipboard.writeText(generatedPrompt());
+			showToast({
+				title: "Prompt Copied",
+				description: "Paste this into ChatGPT/Claude to generate your action",
+				variant: "success",
+			});
+		} catch (error) {
+			showToast({
+				title: "Copy Failed",
+				description: `Failed to copy: ${error}`,
+				variant: "destructive",
+			});
+		}
+	};
 
- const readFromClipboard = async () => {
-  try {
-   const text = await navigator.clipboard.readText();
-   setJsonInput(text);
+	const readFromClipboard = async () => {
+		try {
+			const text = await navigator.clipboard.readText();
+			setJsonInput(text);
 
-   try {
-    const parsed = JSON.parse(text);
-    const prettified = JSON.stringify(parsed, null, 2);
-    setJsonInput(prettified);
-    showToast({
-     title: "JSON Read & Prettified",
-     description: "Clipboard content has been formatted",
-     variant: "success",
-    });
-   } catch {
-    showToast({
-     title: "Content Read",
-     description: "Pasted from clipboard",
-     variant: "success",
-    });
-   }
-  } catch (error) {
-   showToast({
-    title: "Read Failed",
-    description: `Failed to read clipboard: ${error}`,
-    variant: "destructive",
-   });
-  }
- };
+			try {
+				const parsed = JSON.parse(text);
+				const prettified = JSON.stringify(parsed, null, 2);
+				setJsonInput(prettified);
+				showToast({
+					title: "JSON Read & Prettified",
+					description: "Clipboard content has been formatted",
+					variant: "success",
+				});
+			} catch {
+				showToast({
+					title: "Content Read",
+					description: "Pasted from clipboard",
+					variant: "success",
+				});
+			}
+		} catch (error) {
+			showToast({
+				title: "Read Failed",
+				description: `Failed to read clipboard: ${error}`,
+				variant: "destructive",
+			});
+		}
+	};
 
- const handlePaste = (e: ClipboardEvent) => {
-  e.preventDefault();
-  const pastedText = e.clipboardData?.getData("text");
-  if (!pastedText) return;
+	const handlePaste = (e: ClipboardEvent) => {
+		e.preventDefault();
+		const pastedText = e.clipboardData?.getData("text");
+		if (!pastedText) return;
 
-  try {
-   const parsed = JSON.parse(pastedText);
-   const prettified = JSON.stringify(parsed, null, 2);
-   setJsonInput(prettified);
-  } catch {
-   setJsonInput(pastedText);
-  }
- };
+		try {
+			const parsed = JSON.parse(pastedText);
+			const prettified = JSON.stringify(parsed, null, 2);
+			setJsonInput(prettified);
+		} catch {
+			setJsonInput(pastedText);
+		}
+	};
 
- const handleImport = async () => {
-  try {
-   const parsed = JSON.parse(jsonInput());
+	const handleImport = async () => {
+		try {
+			const parsed = JSON.parse(jsonInput());
 
-   const actionsToImport: Partial<NewAction>[] = Array.isArray(parsed)
-    ? parsed
-    : [parsed];
+			const actionsToImport: Partial<NewAction>[] = Array.isArray(parsed) ? parsed : [parsed];
 
-   const availableVariables = new Set(
-    variableStore.variables.map((v) => v.key)
-   );
-   const allMissingVariables = new Set<string>();
+			const availableVariables = new Set(variableStore.variables.map((v) => v.key));
+			const allMissingVariables = new Set<string>();
 
-   const validatedActions: NewAction[] = [];
-   for (const action of actionsToImport) {
-    if (!action.name) {
-     throw new Error(`Action missing name: ${JSON.stringify(action)}`);
-    }
-    if (!action.action_type) {
-     throw new Error(`Action "${action.name}" missing action_type`);
-    }
-    if (!action.config) {
-     throw new Error(`Action "${action.name}" missing config`);
-    }
+			const validatedActions: NewAction[] = [];
+			for (const action of actionsToImport) {
+				if (!action.name) {
+					throw new Error(`Action missing name: ${JSON.stringify(action)}`);
+				}
+				if (!action.action_type) {
+					throw new Error(`Action "${action.name}" missing action_type`);
+				}
+				if (!action.config) {
+					throw new Error(`Action "${action.name}" missing config`);
+				}
 
-    const varsInAction = extractVariablesFromAction(action);
-    for (const varName of varsInAction) {
-     if (!availableVariables.has(varName)) {
-      allMissingVariables.add(varName);
-     }
-    }
+				const varsInAction = extractVariablesFromAction(action);
+				for (const varName of varsInAction) {
+					if (!availableVariables.has(varName)) {
+						allMissingVariables.add(varName);
+					}
+				}
 
-    validatedActions.push({
-     workspace_id: props.workspaceId,
-     name: action.name,
-     action_type: action.action_type,
-     config:
-      typeof action.config === "string"
-       ? action.config
-       : JSON.stringify(action.config),
-     dependencies: action.dependencies || null,
-     timeout_seconds: action.timeout_seconds || null,
-     detached: action.detached ?? false,
-     track_process: action.track_process ?? true,
-     os_overrides: action.os_overrides || null,
-     order_index: action.order_index ?? 0,
-    });
-   }
+				validatedActions.push({
+					workspace_id: props.workspaceId,
+					name: action.name,
+					action_type: action.action_type,
+					config: typeof action.config === "string" ? action.config : JSON.stringify(action.config),
+					dependencies: action.dependencies || null,
+					timeout_seconds: action.timeout_seconds || null,
+					detached: action.detached ?? false,
+					track_process: action.track_process ?? true,
+					os_overrides: action.os_overrides || null,
+					order_index: action.order_index ?? 0,
+				});
+			}
 
-   if (allMissingVariables.size > 0) {
-    for (const varName of allMissingVariables) {
-     await variableActions.addVariable({
-      workspace_id: props.workspaceId,
-      key: varName,
-      value: "",
-      is_secure: false,
-      enabled: true,
-     });
-    }
-    await variableActions.loadVariables(props.workspaceId);
-   }
+			if (allMissingVariables.size > 0) {
+				for (const varName of allMissingVariables) {
+					await variableActions.addVariable({
+						workspace_id: props.workspaceId,
+						key: varName,
+						value: "",
+						is_secure: false,
+						enabled: true,
+					});
+				}
+				await variableActions.loadVariables(props.workspaceId);
+			}
 
-   let successCount = 0;
-   let failedCount = 0;
+			let successCount = 0;
+			let failedCount = 0;
 
-   for (const newAction of validatedActions) {
-    const result = await createAction(newAction);
-    if (result.isOk()) {
-     successCount++;
-    } else {
-     failedCount++;
-     console.error(
-      `Failed to import action "${newAction.name}":`,
-      result.error.message
-     );
-    }
-   }
+			for (const newAction of validatedActions) {
+				const result = await createAction(newAction);
+				if (result.isOk()) {
+					successCount++;
+				} else {
+					failedCount++;
+					console.error(`Failed to import action "${newAction.name}":`, result.error.message);
+				}
+			}
 
-   if (successCount > 0) {
-    const varMessage =
-     allMissingVariables.size > 0
-      ? ` Created ${allMissingVariables.size} variable${
-         allMissingVariables.size !== 1 ? "s" : ""
-        }.`
-      : "";
+			if (successCount > 0) {
+				const varMessage =
+					allMissingVariables.size > 0
+						? ` Created ${allMissingVariables.size} variable${allMissingVariables.size !== 1 ? "s" : ""}.`
+						: "";
 
-    showToast({
-     title: "Actions Imported",
-     description: `Successfully imported ${successCount} action${
-      successCount !== 1 ? "s" : ""
-     }.${varMessage}`,
-     variant: "success",
-    });
-    setOpen(false);
-    setUserDescription("");
-    setJsonInput("");
-    props.onImportSuccess?.();
-   }
+				showToast({
+					title: "Actions Imported",
+					description: `Successfully imported ${successCount} action${successCount !== 1 ? "s" : ""}.${varMessage}`,
+					variant: "success",
+				});
+				setOpen(false);
+				setUserDescription("");
+				setJsonInput("");
+				props.onImportSuccess?.();
+			}
 
-   if (failedCount > 0) {
-    showToast({
-     title: "Import Incomplete",
-     description: `${failedCount} action${
-      failedCount !== 1 ? "s" : ""
-     } failed to import. Check console for details.`,
-     variant: "destructive",
-    });
-   }
-  } catch (error) {
-   showToast({
-    title: "Invalid JSON",
-    description:
-     error instanceof Error ? error.message : "Failed to parse JSON",
-    variant: "destructive",
-   });
-  }
- };
+			if (failedCount > 0) {
+				showToast({
+					title: "Import Incomplete",
+					description: `${failedCount} action${
+						failedCount !== 1 ? "s" : ""
+					} failed to import. Check console for details.`,
+					variant: "destructive",
+				});
+			}
+		} catch (error) {
+			showToast({
+				title: "Invalid JSON",
+				description: error instanceof Error ? error.message : "Failed to parse JSON",
+				variant: "destructive",
+			});
+		}
+	};
 
- return (
-  <Dialog open={open()} onOpenChange={setOpen}>
-   <DialogTrigger
-    as={(props: { onClick?: () => void }) => (
-     <Button variant="outline" size="sm" {...props}>
-      <div class="i-mdi-robot w-4 h-4 mr-2" />
-      AI Assistant
-     </Button>
-    )}
-   />
-   <DialogContent class="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-    <DialogHeader>
-     <DialogTitle class="flex items-center gap-2">
-      <div class="i-mdi-robot w-5 h-5" />
-      AI Action Generator
-     </DialogTitle>
-     <DialogDescription>
-      Step 1: Describe what you want, copy the prompt. <br />
-      Step 2: Paste the AI's JSON response (single object or array) to import.
-     </DialogDescription>
-    </DialogHeader>
+	return (
+		<Dialog open={open()} onOpenChange={setOpen}>
+			<DialogTrigger
+				as={(props: { onClick?: () => void }) => (
+					<Button variant="outline" size="sm" {...props}>
+						<div class="i-mdi-robot w-4 h-4 mr-2" />
+						AI Assistant
+					</Button>
+				)}
+			/>
+			<DialogContent class="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+				<DialogHeader>
+					<DialogTitle class="flex items-center gap-2">
+						<div class="i-mdi-robot w-5 h-5" />
+						AI Action Generator
+					</DialogTitle>
+					<DialogDescription>
+						Step 1: Describe what you want, copy the prompt. <br />
+						Step 2: Paste the AI's JSON response (single object or array) to import.
+					</DialogDescription>
+				</DialogHeader>
 
-    <div class="flex-1 overflow-auto space-y-4 p-1">
-     <div class="space-y-2">
-      <div class="flex items-center justify-between">
-       <div class="text-sm font-medium">Step 1: Describe Your Action</div>
-       <Button size="sm" onClick={copyPrompt}>
-        <div class="i-mdi-content-copy w-4 h-4 mr-2" />
-        Copy Prompt
-       </Button>
-      </div>
-      <textarea
-       value={userDescription()}
-       onInput={(e) => setUserDescription(e.currentTarget.value)}
-       class="min-h-[100px] font-sans text-sm resize-none w-full p-3 rounded-md border border-input bg-background"
-       placeholder="Example: I want to launch FiveM and connect to a specific server..."
-      />
-      <div class="text-xs text-muted-foreground">
-       Describe what you want your action to do. Click "Copy Prompt" to get the
-       full prompt with your description.
-      </div>
-     </div>
+				<div class="flex-1 overflow-auto space-y-4 p-1">
+					<div class="space-y-2">
+						<div class="flex items-center justify-between">
+							<div class="text-sm font-medium">Step 1: Describe Your Action</div>
+							<Button size="sm" onClick={copyPrompt}>
+								<div class="i-mdi-content-copy w-4 h-4 mr-2" />
+								Copy Prompt
+							</Button>
+						</div>
+						<textarea
+							value={userDescription()}
+							onInput={(e) => setUserDescription(e.currentTarget.value)}
+							class="min-h-[100px] font-sans text-sm resize-none w-full p-3 rounded-md border border-input bg-background"
+							placeholder="Example: I want to launch FiveM and connect to a specific server..."
+						/>
+						<div class="text-xs text-muted-foreground">
+							Describe what you want your action to do. Click "Copy Prompt" to get the full prompt with your
+							description.
+						</div>
+					</div>
 
-     <div class="relative">
-      <div class="absolute inset-0 flex items-center">
-       <span class="w-full border-t" />
-      </div>
-      <div class="relative flex justify-center text-xs uppercase">
-       <span class="bg-background px-2 text-muted-foreground">
-        Then paste AI response below
-       </span>
-      </div>
-     </div>
+					<div class="relative">
+						<div class="absolute inset-0 flex items-center">
+							<span class="w-full border-t" />
+						</div>
+						<div class="relative flex justify-center text-xs uppercase">
+							<span class="bg-background px-2 text-muted-foreground">Then paste AI response below</span>
+						</div>
+					</div>
 
-     <div class="space-y-2">
-      <div class="flex items-center justify-between">
-       <div class="text-sm font-medium">Step 2: Import JSON Response</div>
-       <Button size="sm" variant="outline" onClick={readFromClipboard}>
-        <div class="i-mdi-clipboard-text w-4 h-4 mr-2" />
-        Read from Clipboard
-       </Button>
-      </div>
-      <textarea
-       value={jsonInput()}
-       onInput={(e) => setJsonInput(e.currentTarget.value)}
-       onPaste={handlePaste}
-       class="min-h-[250px] font-mono text-xs resize-none w-full p-3 rounded-md border border-input bg-background"
-       placeholder='Paste JSON here (single object or array): { "name": "..." } or [{ "name": "..." }, ...]'
-      />
-      <div class="text-xs text-muted-foreground">
-       Paste the JSON response from ChatGPT/Claude here (single action object or
-       array of actions), or click "Read from Clipboard".
-      </div>
-     </div>
-    </div>
+					<div class="space-y-2">
+						<div class="flex items-center justify-between">
+							<div class="text-sm font-medium">Step 2: Import JSON Response</div>
+							<Button size="sm" variant="outline" onClick={readFromClipboard}>
+								<div class="i-mdi-clipboard-text w-4 h-4 mr-2" />
+								Read from Clipboard
+							</Button>
+						</div>
+						<textarea
+							value={jsonInput()}
+							onInput={(e) => setJsonInput(e.currentTarget.value)}
+							onPaste={handlePaste}
+							class="min-h-[250px] font-mono text-xs resize-none w-full p-3 rounded-md border border-input bg-background"
+							placeholder='Paste JSON here (single object or array): { "name": "..." } or [{ "name": "..." }, ...]'
+						/>
+						<div class="text-xs text-muted-foreground">
+							Paste the JSON response from ChatGPT/Claude here (single action object or array of actions), or click
+							"Read from Clipboard".
+						</div>
+					</div>
+				</div>
 
-    <DialogFooter class="flex gap-2">
-     <Button variant="outline" onClick={() => setOpen(false)}>
-      Close
-     </Button>
-     <Button onClick={handleImport} disabled={!isValidJSON()} variant="default">
-      <div class="i-mdi-import w-4 h-4 mr-2" />
-      Import Action
-     </Button>
-    </DialogFooter>
-   </DialogContent>
-  </Dialog>
- );
+				<DialogFooter class="flex gap-2">
+					<Button variant="outline" onClick={() => setOpen(false)}>
+						Close
+					</Button>
+					<Button onClick={handleImport} disabled={!isValidJSON()} variant="default">
+						<div class="i-mdi-import w-4 h-4 mr-2" />
+						Import Action
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
 };
