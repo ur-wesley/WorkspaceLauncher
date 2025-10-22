@@ -1,10 +1,10 @@
 import { useNavigate } from "@solidjs/router";
 import type { JSX, ParentComponent } from "solid-js";
-import { ActionDialog } from "@/components/ActionDialog";
 import { ActiveActionsManagerDialog } from "@/components/ActiveActionsManagerDialog";
+import { ActionDialogStepper as ActionDialog } from "@/components/action/ActionDialogStepper";
 import { Commander } from "@/components/Commander";
 import { Sidebar } from "@/components/Sidebar";
-import { VariableDialog } from "@/components/VariableDialog";
+import { VariableDialog } from "@/components/variable/VariableDialog";
 import { WorkspaceCreateDialog } from "@/components/WorkspaceCreateDialog";
 import { useHotkeys } from "@/libs/hotkeys";
 import { UIProvider, useUI } from "@/store/ui";
