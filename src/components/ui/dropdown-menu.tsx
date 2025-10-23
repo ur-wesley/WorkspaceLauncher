@@ -45,7 +45,7 @@ export const DropdownMenuContent = <T extends ValidComponent = "div">(
 		<DropdownMenuPrimitive.Portal>
 			<DropdownMenuPrimitive.Content
 				class={cn(
-					"min-w-8rem z-50 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) focus-visible:(outline-none ring-1.5 ring-ring) transition-shadow",
+					"min-w-8rem z-50 overflow-hidden rounded-md bg-muted/95 backdrop-blur-sm p-1 text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.4)] data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) focus-visible:(outline-none ring-1.5 ring-ring) transition-shadow",
 					local.class,
 				)}
 				{...rest}
@@ -67,7 +67,7 @@ export const DropdownMenuItem = <T extends ValidComponent = "div">(
 	return (
 		<DropdownMenuPrimitive.Item
 			class={cn(
-				"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:(bg-accent text-accent-foreground) data-[disabled]:(pointer-events-none opacity-50)",
+				"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:(bg-primary text-primary-foreground) focus:(bg-primary text-primary-foreground) data-[disabled]:(pointer-events-none opacity-50)",
 				local.inset && "pl-8",
 				local.class,
 			)}
@@ -136,7 +136,7 @@ export const DropdownMenuSubTrigger = <T extends ValidComponent = "div">(
 	return (
 		<DropdownMenuPrimitive.SubTrigger
 			class={cn(
-				"flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[expanded]:bg-accent",
+				"flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:(bg-primary text-primary-foreground) focus:(bg-primary text-primary-foreground) data-[expanded]:(bg-primary text-primary-foreground)",
 				local.class,
 			)}
 			{...rest}
@@ -170,7 +170,7 @@ export const DropdownMenuSubContent = <T extends ValidComponent = "div">(
 		<DropdownMenuPrimitive.Portal>
 			<DropdownMenuPrimitive.SubContent
 				class={cn(
-					"min-w-8rem z-50 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95)",
+					"min-w-8rem z-50 overflow-hidden rounded-md bg-muted/95 backdrop-blur-sm p-1 text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.4)] data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95)",
 					local.class,
 				)}
 				{...rest}
@@ -193,7 +193,7 @@ export const DropdownMenuCheckboxItem = <T extends ValidComponent = "div">(
 	return (
 		<DropdownMenuPrimitive.CheckboxItem
 			class={cn(
-				"relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:(bg-accent text-accent-foreground) data-[disabled]:(pointer-events-none opacity-50)",
+				"relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:(bg-primary text-primary-foreground) focus:(bg-primary text-primary-foreground) data-[disabled]:(pointer-events-none opacity-50)",
 				local.class,
 			)}
 			{...rest}
@@ -230,7 +230,7 @@ export const DropdownMenuRadioItem = <T extends ValidComponent = "div">(
 	return (
 		<DropdownMenuPrimitive.RadioItem
 			class={cn(
-				"relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:(bg-accent text-accent-foreground) data-[disabled]:(pointer-events-none opacity-50)",
+				"relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:(bg-primary text-primary-foreground) focus:(bg-primary text-primary-foreground) data-[disabled]:(pointer-events-none opacity-50)",
 				local.class,
 			)}
 			{...rest}
