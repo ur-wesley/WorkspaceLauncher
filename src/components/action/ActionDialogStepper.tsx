@@ -336,20 +336,17 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 	};
 
 	const configureForAction = (action: Action) => {
-		// Reset all fields first to ensure clean state
 		resetCustomFields();
 		setPlaceholderValues({});
 		setMissingVariables([]);
 		setShowAdvanced(false);
 
-		// Set basic action properties
 		setName(action.name);
 		setOrderIndex(action.order_index);
 		setTimeoutSeconds(action.timeout_seconds ?? null);
 		setDetached(action.detached ?? false);
 		setTrackProcess(action.track_process ?? true);
 
-		// Parse and apply configuration
 		const parsedConfig = parseToolActionConfig(action.config);
 		if (parsedConfig?.source === "saved") {
 			applySavedConfig(parsedConfig);
@@ -361,25 +358,21 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 			return;
 		}
 
-		// Fallback to default tool selection
 		chooseDefaultTool();
 	};
 
 	const configureForNewAction = () => {
-		// Reset all fields first to ensure clean state
 		resetCustomFields();
 		setPlaceholderValues({});
 		setMissingVariables([]);
 		setShowAdvanced(false);
 
-		// Set default values for new action
 		setName("");
 		setOrderIndex(actionStore.actions.length);
 		setTimeoutSeconds(30);
 		setDetached(false);
 		setTrackProcess(true);
 
-		// Choose appropriate default tool
 		chooseDefaultTool();
 	};
 
