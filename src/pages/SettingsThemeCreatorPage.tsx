@@ -1,6 +1,6 @@
 import { A, useNavigate, useSearchParams } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createSignal, onMount } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import { ThemeCreator } from "@/components/ThemeCreator";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/store/theme";
@@ -20,7 +20,7 @@ export const SettingsThemeCreatorPage: Component = () => {
 		| undefined
 	>();
 
-	onMount(() => {
+	createEffect(() => {
 		const themeId = searchParams.id;
 		if (themeId) {
 			const theme = themeStore.themes.find((t) => t.id === Number(themeId));
@@ -66,15 +66,28 @@ export const SettingsThemeCreatorPage: Component = () => {
 		navigate("/settings?tab=themes");
 	};
 
+	const handleHeaderSave = () => {
+		const saveButton = document.querySelector("[data-theme-save-button]") as HTMLButtonElement;
+		if (saveButton) {
+			saveButton.click();
+		}
+	};
+
 	return (
 		<div class="h-full w-full flex flex-col">
 			<div class="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8 border-b">
-				<A href="/settings?tab=themes">
-					<Button variant="outline">
-						<div class="i-mdi-arrow-left w-4 h-4 mr-2" />
-						Back
+				<div class="flex items-center gap-3">
+					<A href="/settings?tab=themes">
+						<Button variant="outline">
+							<div class="i-mdi-arrow-left w-4 h-4 mr-2" />
+							Back
+						</Button>
+					</A>
+					<Button onClick={handleHeaderSave}>
+						<div class="i-mdi-content-save w-4 h-4 mr-2" />
+						Save Theme
 					</Button>
-				</A>
+				</div>
 				<div class="text-right">
 					<h1 class="text-2xl font-bold">{searchParams.id ? "Edit Theme" : "Create Theme"}</h1>
 					<p class="text-sm text-muted-foreground">Customize colors for light and dark modes</p>
