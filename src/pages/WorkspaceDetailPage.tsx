@@ -310,7 +310,9 @@ export default function WorkspaceDetailPage() {
 		if (stoppedCount > 0) {
 			showToast({
 				title: "Actions Stopped",
-				description: `Stopped ${stoppedCount} of ${runningActions.length} running action${runningActions.length !== 1 ? "s" : ""}`,
+				description: `Stopped ${stoppedCount} of ${
+					runningActions.length
+				} running action${runningActions.length !== 1 ? "s" : ""}`,
 				variant: failedCount > 0 ? "default" : "success",
 			});
 		}
