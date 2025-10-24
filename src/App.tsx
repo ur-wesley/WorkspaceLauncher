@@ -5,7 +5,8 @@ import type { Component } from "solid-js";
 import { createSignal, Match, onCleanup, onMount, Suspense, Switch } from "solid-js";
 import { Layout } from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
-import { checkDatabaseSchema, initializeDatabase, listenToActionEvents } from "@/libs/api";
+import { checkDatabaseSchema, createRun, initializeDatabase, listenToActionEvents } from "@/libs/api";
+import type { ActionCompletedEvent } from "@/libs/api/types";
 import { checkForUpdatesOnStartup } from "@/libs/updater";
 import { SettingsHotkeysPage } from "@/pages/SettingsHotkeysPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -14,10 +15,44 @@ import WorkspaceDetailPage from "@/pages/WorkspaceDetailPage";
 import { WorkspacesListPage } from "@/pages/WorkspacesListPage";
 import { startPidChecker, stopPidChecker } from "@/services/pidChecker";
 import { StoreProvider } from "@/store";
+import type { NewRun } from "@/types/database";
 
 const App: Component = () => {
 	const [initialized, setInitialized] = createSignal(false);
 	const [error, setError] = createSignal<string | null>(null);
+
+	const handleActionCompleted = (event: CustomEvent<ActionCompletedEvent>) => {
+		const { action_id, workspace_id, exit_code, success } = event.detail;
+
+		let status: "success" | "failed" | "cancelled" = "failed";
+		if (success) {
+			status = "success";
+		} else if (exit_code !== undefined && exit_code !== null) {
+			status = exit_code === 0 ? "success" : "failed";
+		}
+
+		const newRun: NewRun = {
+			workspace_id,
+			action_id,
+			status,
+			started_at: new Date().toISOString(),
+			completed_at: new Date().toISOString(),
+			exit_code: exit_code ?? undefined,
+			error_message: success ? undefined : "Action completed with errors",
+		};
+
+		createRun(newRun)
+			.then((result) => {
+				if (result.isErr()) {
+					console.error("Failed to create run record:", result.error);
+				} else {
+					console.log("Created run record for action-completed event:", result.value);
+				}
+			})
+			.catch((error) => {
+				console.error("Error creating run record:", error);
+			});
+	};
 
 	onMount(async () => {
 		try {
@@ -43,6 +78,8 @@ const App: Component = () => {
 
 			listenToActionEvents();
 
+			window.addEventListener("action-completed", handleActionCompleted as EventListener);
+
 			startPidChecker();
 
 			checkForUpdatesOnStartup().catch((err) => {
@@ -59,6 +96,7 @@ const App: Component = () => {
 
 	onCleanup(() => {
 		stopPidChecker();
+		window.removeEventListener("action-completed", handleActionCompleted as EventListener);
 	});
 
 	return (

@@ -28,7 +28,13 @@ async function createCompletedRun(
 	exitCode: number | null,
 	errorMessage: string | null,
 ): Promise<void> {
-	const status = exitCode === 0 ? "success" : "failed";
+	let status: "success" | "failed" | "cancelled" = "success";
+	if (exitCode !== null) {
+		status = exitCode === 0 ? "success" : "failed";
+	} else if (errorMessage) {
+		status = "failed";
+	}
+
 	const newRun: NewRun = {
 		workspace_id: workspaceId,
 		action_id: actionId,
