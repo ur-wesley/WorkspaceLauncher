@@ -1,4 +1,4 @@
-import { ask } from "@tauri-apps/plugin-dialog";
+import { ask, message } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import type { DownloadEvent } from "@tauri-apps/plugin-updater";
 import { check } from "@tauri-apps/plugin-updater";
@@ -7,7 +7,7 @@ export async function checkForUpdates(silent = false): Promise<void> {
 	try {
 		const update = await check();
 
-		if (update?.available) {
+		if (update) {
 			const yes = await ask(
 				`Update to version ${update.version} is available!\n\nRelease notes:\n${update.body}\n\nWould you like to install it now?`,
 				{
@@ -40,19 +40,23 @@ export async function checkForUpdates(silent = false): Promise<void> {
 				await relaunch();
 			}
 		} else if (!silent) {
-			await ask("You are already running the latest version.", {
+			await message("You are already running the latest version.", {
 				title: "No Updates",
 				kind: "info",
-				okLabel: "OK",
+				buttons: {
+					ok: "OK"
+				}
 			});
 		}
 	} catch (error) {
 		console.error("Failed to check for updates:", error);
 		if (!silent) {
-			await ask(`Failed to check for updates: ${error}`, {
+			await message(`Failed to check for updates: ${error}`, {
 				title: "Update Check Failed",
 				kind: "error",
-				okLabel: "OK",
+				buttons: {
+					ok: "OK"
+				}
 			});
 		}
 	}
