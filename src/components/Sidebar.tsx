@@ -128,7 +128,13 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 			)}
 		>
 			<div class="bg-muted/30 shadow-sm">
-				<A href="/" class="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
+				<A
+					href="/"
+					class={cn(
+						"flex items-center p-4 hover:bg-muted/50 transition-colors",
+						props.collapsed ? "justify-center" : "gap-3",
+					)}
+				>
 					<ImageRoot>
 						<Image src="/icon.png" />
 						<ImageFallback>WSL</ImageFallback>
