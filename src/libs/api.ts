@@ -964,3 +964,431 @@ export async function stopProcess(processId: number): Promise<Result<void, strin
 		return err(`Failed to stop process: ${error}`);
 	}
 }
+
+export async function resetDatabase(): Promise<Result<void, ApiError>> {
+	try {
+		const db = getDatabase();
+
+		try {
+			await db.select("SELECT 1 FROM themes LIMIT 1");
+		} catch (_error) {
+			console.log("Database appears corrupted, recreating...");
+
+			const dropTables = [
+				"DROP TABLE IF EXISTS runs",
+				"DROP TABLE IF EXISTS variables",
+				"DROP TABLE IF EXISTS actions",
+				"DROP TABLE IF EXISTS workspaces",
+				"DROP TABLE IF EXISTS tools",
+				"DROP TABLE IF EXISTS themes",
+				"DROP TABLE IF EXISTS settings",
+			];
+
+			for (const dropQuery of dropTables) {
+				try {
+					await db.execute(dropQuery);
+				} catch (dropError) {
+					console.log(`Could not drop table: ${dropError}`);
+				}
+			}
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS settings (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					key TEXT UNIQUE NOT NULL,
+					value TEXT NOT NULL,
+					created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS themes (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					description TEXT,
+					light_colors TEXT NOT NULL,
+					dark_colors TEXT NOT NULL,
+					is_predefined BOOLEAN DEFAULT 0,
+					created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS tools (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					description TEXT,
+					tool_type TEXT NOT NULL,
+					command TEXT NOT NULL,
+					enabled BOOLEAN DEFAULT 1,
+					category TEXT,
+					created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS workspaces (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					description TEXT,
+					icon TEXT,
+					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS actions (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					workspace_id INTEGER NOT NULL,
+					name TEXT NOT NULL,
+					action_type TEXT NOT NULL,
+					config TEXT NOT NULL DEFAULT '{}',
+					dependencies TEXT,
+					timeout_seconds INTEGER,
+					detached INTEGER NOT NULL DEFAULT 0 CHECK (detached IN (0, 1)),
+					os_overrides TEXT,
+					order_index INTEGER NOT NULL DEFAULT 0,
+					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS variables (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					workspace_id INTEGER NOT NULL,
+					key TEXT NOT NULL,
+					value TEXT NOT NULL,
+					is_secure INTEGER NOT NULL DEFAULT 0 CHECK (is_secure IN (0, 1)),
+					enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE,
+					UNIQUE(workspace_id, key)
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS runs (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					workspace_id INTEGER NOT NULL,
+					action_id INTEGER NOT NULL,
+					status TEXT NOT NULL,
+					started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					completed_at DATETIME,
+					output TEXT,
+					error TEXT,
+					FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE,
+					FOREIGN KEY (action_id) REFERENCES actions (id) ON DELETE CASCADE
+				)
+			`);
+
+			return ok(undefined);
+		}
+
+		const tables = ["runs", "variables", "actions", "workspaces", "tools", "themes", "settings"];
+
+		for (const table of tables) {
+			await db.execute(`DELETE FROM ${table}`);
+		}
+
+		return ok(undefined);
+	} catch (error) {
+		console.error("Failed to reset database:", error);
+		return err({
+			message: `Failed to reset database: ${error}`,
+			code: "DB_RESET_ERROR",
+		});
+	}
+}
+
+export async function backupAndResetDatabase(): Promise<Result<string, ApiError>> {
+	try {
+		const db = getDatabase();
+
+		let workspaces: Workspace[] = [];
+		let actions: Action[] = [];
+		let variables: Variable[] = [];
+		let tools: Tool[] = [];
+		let themes: Theme[] = [];
+		let settings: Setting[] = [];
+
+		try {
+			workspaces = await db.select<Workspace[]>("SELECT * FROM workspaces");
+			actions = await db.select<Action[]>("SELECT * FROM actions");
+			variables = await db.select<Variable[]>("SELECT * FROM variables");
+			tools = await db.select<Tool[]>("SELECT * FROM tools");
+			themes = await db.select<Theme[]>("SELECT * FROM themes");
+			settings = await db.select<Setting[]>("SELECT * FROM settings");
+		} catch (_backupError) {
+			console.log("Some tables don't exist, creating empty backup...");
+		}
+
+		const exportData = {
+			workspaces,
+			actions,
+			variables,
+			tools,
+			themes,
+			settings,
+		};
+
+		const timestamp =
+			new Date().toISOString().replace(/[:.]/g, "-").split("T")[0] +
+			"_" +
+			new Date().toISOString().replace(/[:.]/g, "-").split("T")[1].split(".")[0];
+		const backupFilename = `workspace-launcher-backup-${timestamp}.json`;
+
+		const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+		const { join } = await import("@tauri-apps/api/path");
+		const { appDataDir } = await import("@tauri-apps/api/path");
+
+		const appDataDirPath = await appDataDir();
+		const backupPath = await join(appDataDirPath, backupFilename);
+
+		await writeTextFile(backupPath, JSON.stringify(exportData, null, 2));
+
+		try {
+			await db.select("SELECT 1 FROM themes LIMIT 1");
+			const tables = ["runs", "variables", "actions", "workspaces", "tools", "themes", "settings"];
+			for (const table of tables) {
+				await db.execute(`DELETE FROM ${table}`);
+			}
+		} catch (_error) {
+			console.log("Database appears corrupted, recreating...");
+
+			const dropTables = [
+				"DROP TABLE IF EXISTS runs",
+				"DROP TABLE IF EXISTS variables",
+				"DROP TABLE IF EXISTS actions",
+				"DROP TABLE IF EXISTS workspaces",
+				"DROP TABLE IF EXISTS tools",
+				"DROP TABLE IF EXISTS themes",
+				"DROP TABLE IF EXISTS settings",
+			];
+
+			for (const dropQuery of dropTables) {
+				try {
+					await db.execute(dropQuery);
+				} catch (dropError) {
+					console.log(`Could not drop table: ${dropError}`);
+				}
+			}
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS settings (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					key TEXT UNIQUE NOT NULL,
+					value TEXT NOT NULL,
+					created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS themes (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					description TEXT,
+					light_colors TEXT NOT NULL,
+					dark_colors TEXT NOT NULL,
+					is_predefined BOOLEAN DEFAULT 0,
+					created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS tools (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					description TEXT,
+					tool_type TEXT NOT NULL,
+					command TEXT NOT NULL,
+					enabled BOOLEAN DEFAULT 1,
+					category TEXT,
+					created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS workspaces (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					description TEXT,
+					icon TEXT,
+					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS actions (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					workspace_id INTEGER NOT NULL,
+					name TEXT NOT NULL,
+					action_type TEXT NOT NULL,
+					config TEXT NOT NULL DEFAULT '{}',
+					dependencies TEXT,
+					timeout_seconds INTEGER,
+					detached INTEGER NOT NULL DEFAULT 0 CHECK (detached IN (0, 1)),
+					os_overrides TEXT,
+					order_index INTEGER NOT NULL DEFAULT 0,
+					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS variables (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					workspace_id INTEGER NOT NULL,
+					key TEXT NOT NULL,
+					value TEXT NOT NULL,
+					is_secure INTEGER NOT NULL DEFAULT 0 CHECK (is_secure IN (0, 1)),
+					enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE,
+					UNIQUE(workspace_id, key)
+				)
+			`);
+
+			await db.execute(`
+				CREATE TABLE IF NOT EXISTS runs (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					workspace_id INTEGER NOT NULL,
+					action_id INTEGER NOT NULL,
+					status TEXT NOT NULL,
+					started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+					completed_at DATETIME,
+					output TEXT,
+					error TEXT,
+					FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE,
+					FOREIGN KEY (action_id) REFERENCES actions (id) ON DELETE CASCADE
+				)
+			`);
+		}
+
+		if (
+			workspaces.length > 0 ||
+			actions.length > 0 ||
+			variables.length > 0 ||
+			tools.length > 0 ||
+			themes.length > 0 ||
+			settings.length > 0
+		) {
+			console.log("Restoring backed up data...");
+
+			for (const workspace of workspaces) {
+				await db.execute(
+					`INSERT INTO workspaces (id, name, description, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+					[
+						workspace.id,
+						workspace.name,
+						workspace.description,
+						workspace.icon,
+						workspace.created_at,
+						workspace.updated_at,
+					],
+				);
+			}
+
+			for (const tool of tools) {
+				await db.execute(
+					`INSERT INTO tools (id, name, description, tool_type, command, enabled, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						tool.id,
+						tool.name,
+						tool.description,
+						tool.tool_type,
+						tool.command,
+						tool.enabled,
+						tool.category,
+						tool.created_at,
+						tool.updated_at,
+					],
+				);
+			}
+
+			for (const theme of themes) {
+				await db.execute(
+					`INSERT INTO themes (id, name, description, light_colors, dark_colors, is_predefined, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						theme.id,
+						theme.name,
+						theme.description,
+						theme.light_colors,
+						theme.dark_colors,
+						theme.is_predefined,
+						theme.created_at,
+						theme.updated_at,
+					],
+				);
+			}
+
+			for (const setting of settings) {
+				await db.execute(`INSERT INTO settings (id, key, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, [
+					setting.id,
+					setting.key,
+					setting.value,
+					setting.created_at,
+					setting.updated_at,
+				]);
+			}
+
+			for (const action of actions) {
+				await db.execute(
+					`INSERT INTO actions (id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, os_overrides, order_index, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						action.id,
+						action.workspace_id,
+						action.name,
+						action.action_type,
+						action.config,
+						action.dependencies,
+						action.timeout_seconds,
+						action.detached ? 1 : 0,
+						action.os_overrides,
+						action.order_index,
+						action.created_at,
+						action.updated_at,
+					],
+				);
+			}
+
+			for (const variable of variables) {
+				await db.execute(
+					`INSERT INTO variables (id, workspace_id, key, value, is_secure, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						variable.id,
+						variable.workspace_id,
+						variable.key,
+						variable.value,
+						variable.is_secure ? 1 : 0,
+						variable.enabled ? 1 : 0,
+						variable.created_at,
+						variable.updated_at,
+					],
+				);
+			}
+
+			console.log("Data restoration completed successfully");
+		}
+
+		return ok(backupPath);
+	} catch (error) {
+		console.error("Failed to backup and reset database:", error);
+		return err({
+			message: `Failed to backup and reset database: ${error}`,
+			code: "DB_BACKUP_RESET_ERROR",
+		});
+	}
+}

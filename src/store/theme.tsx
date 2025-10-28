@@ -169,7 +169,11 @@ export const ThemeProvider: ParentComponent = (props) => {
 			try {
 				const result = await activateThemeApi(id);
 				if (result.isOk()) {
-					await actions.loadThemes();
+					const activeTheme = store.themes.find((theme) => theme.id === id);
+					if (activeTheme) {
+						setStore({ activeTheme });
+						applyThemeFromThemeObject(activeTheme);
+					}
 					showToast({
 						title: "Theme activated",
 						description: "Theme applied successfully",
