@@ -44,8 +44,8 @@ export async function checkForUpdates(silent = false): Promise<void> {
 				title: "No Updates",
 				kind: "info",
 				buttons: {
-					ok: "OK"
-				}
+					ok: "OK",
+				},
 			});
 		}
 	} catch (error) {
@@ -55,8 +55,8 @@ export async function checkForUpdates(silent = false): Promise<void> {
 				title: "Update Check Failed",
 				kind: "error",
 				buttons: {
-					ok: "OK"
-				}
+					ok: "OK",
+				},
 			});
 		}
 	}
