@@ -173,7 +173,7 @@ export const SettingsPage: Component = () => {
 
 	return (
 		<div class="h-full w-full flex flex-col">
-			<div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
+			<div class="flex-1 px-4 py-4">
 				<div class="flex items-center justify-between mb-6">
 					<div>
 						<h1 class="text-3xl font-bold">Settings</h1>
