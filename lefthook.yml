@@ -5,3 +5,5 @@ pre-commit:
    run: bun run format
   lint:
    run: bun run lint
+  stage:
+   run: git add {staged_files}

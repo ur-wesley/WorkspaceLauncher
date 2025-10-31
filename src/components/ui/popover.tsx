@@ -12,8 +12,9 @@ export const PopoverDescription = PopoverPrimitive.Description;
 export const Popover = (props: PopoverRootProps) => {
 	const merge = mergeProps<PopoverRootProps[]>(
 		{
+			shift: 4,
 			gutter: 4,
-			flip: false,
+			flip: true,
 		},
 		props,
 	);
