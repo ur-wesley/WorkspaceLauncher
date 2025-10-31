@@ -1,6 +1,6 @@
 import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createSignal, For, onMount } from "solid-js";
+import { createSignal, For } from "solid-js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +10,6 @@ import { useThemeStore } from "@/store/theme";
 export const ThemesSettings: Component = () => {
 	const [themeStore, themeActions] = useThemeStore();
 	const [expandedThemes, setExpandedThemes] = createSignal<Set<number>>(new Set());
-
-	onMount(() => {
-		themeActions.loadThemes();
-	});
 
 	const toggleTheme = (themeId: number) => {
 		const newSet = new Set(expandedThemes());
@@ -27,7 +23,7 @@ export const ThemesSettings: Component = () => {
 
 	const getThemeColor = (theme: { dark_colors: string; light_colors: string }, isDark: boolean) => {
 		try {
-			const colors = JSON.parse(isDark ? theme.dark_colors : theme.light_colors);
+			const colors = JSON.parse(isDark ? theme.dark_colors : theme.light_colors) as Record<string, string>;
 			return colors.primary || "#3b82f6";
 		} catch {
 			return "#3b82f6";
