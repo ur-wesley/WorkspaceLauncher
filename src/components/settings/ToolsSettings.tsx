@@ -16,7 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToolStore } from "@/store/tool";
-import type { Tool } from "@/types/database";
 
 const AddToolTrigger = (props: { onClick?: () => void }) => (
 	<Button onClick={props.onClick}>
@@ -52,7 +51,7 @@ const DeleteToolTrigger = (props: { onClick?: () => void }) => (
 );
 
 export const ToolsSettings: Component = () => {
-	const [toolStore, toolActions] = useToolStore();
+	const [, toolActions] = useToolStore();
 	const [expandedTools, setExpandedTools] = createSignal<Set<number>>(new Set());
 
 	onMount(() => {
@@ -73,6 +72,8 @@ export const ToolsSettings: Component = () => {
 		setExpandedTools(newSet);
 	};
 
+	const groupedTools = () => toolActions.getToolsGroupedByCategory();
+
 	const getToolTypeColor = (type: string) => {
 		switch (type) {
 			case "cli":
@@ -84,18 +85,6 @@ export const ToolsSettings: Component = () => {
 		}
 	};
 
-	const groupedTools = () => {
-		const groups: Record<string, Tool[]> = {};
-		for (const tool of toolStore.tools) {
-			const category = tool.category || "Uncategorized";
-			if (!groups[category]) {
-				groups[category] = [];
-			}
-			groups[category].push(tool);
-		}
-		return groups;
-	};
-
 	return (
 		<div class="space-y-4">
 			<Card>
@@ -105,13 +94,7 @@ export const ToolsSettings: Component = () => {
 							<CardTitle>Tool Library</CardTitle>
 							<CardDescription>Manage CLI tools and binaries for action creation</CardDescription>
 						</div>
-						<ToolDialog
-							trigger={AddToolTrigger}
-							onSubmit={async (newTool) => {
-								await toolActions.createTool(newTool);
-								toolActions.loadTools();
-							}}
-						/>
+						<ToolDialog trigger={AddToolTrigger} />
 					</div>
 				</CardHeader>
 				<CardContent>
@@ -167,24 +150,9 @@ export const ToolsSettings: Component = () => {
 																		<TooltipContent>Tool options</TooltipContent>
 																	</Tooltip>
 																	<DropdownMenuContent>
-																		<ToolDialog
-																			tool={tool}
-																			trigger={EditToolTrigger}
-																			onSubmit={async (updatedTool) => {
-																				await toolActions.updateTool(tool.id, updatedTool);
-																				toolActions.loadTools();
-																			}}
-																		/>
+																		<ToolDialog tool={tool} trigger={EditToolTrigger} />
 																		<DropdownMenuSeparator />
-																		<DeleteToolDialog
-																			toolId={tool.id}
-																			toolName={tool.name}
-																			trigger={DeleteToolTrigger}
-																			onConfirm={async () => {
-																				await toolActions.deleteTool(tool.id);
-																				toolActions.loadTools();
-																			}}
-																		/>
+																		<DeleteToolDialog tool={tool} trigger={DeleteToolTrigger} />
 																	</DropdownMenuContent>
 																</DropdownMenu>
 															</div>

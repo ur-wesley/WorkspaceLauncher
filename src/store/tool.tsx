@@ -16,6 +16,7 @@ interface ToolStoreActions {
 	updateTool: (id: number, tool: Partial<NewTool>) => Promise<void>;
 	deleteTool: (id: number) => Promise<void>;
 	toggleTool: (id: number, enabled: boolean) => Promise<void>;
+	getToolsGroupedByCategory: () => Record<string, Tool[]>;
 }
 
 const ToolStoreContext = createContext<[ToolStoreState, ToolStoreActions]>();
@@ -166,6 +167,16 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 					variant: "destructive",
 				});
 			}
+		},
+
+		getToolsGroupedByCategory() {
+			const groups: Record<string, Tool[]> = {};
+			for (const tool of store.tools) {
+				const category = tool.category || "Uncategorized";
+				if (!groups[category]) groups[category] = [];
+				groups[category].push(tool);
+			}
+			return groups;
 		},
 	};
 
