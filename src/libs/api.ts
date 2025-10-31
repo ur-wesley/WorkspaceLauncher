@@ -1309,7 +1309,7 @@ export async function backupAndResetDatabase(): Promise<Result<string, ApiError>
 						tool.name,
 						tool.description,
 						tool.tool_type,
-						tool.command,
+						tool.template,
 						tool.enabled,
 						tool.category,
 						tool.created_at,
