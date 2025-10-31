@@ -258,7 +258,7 @@ export const GeneralSettings: Component = () => {
 			<Card>
 				<CardHeader>
 					<CardTitle class="flex items-center gap-2">
-						<span class="iconify w-5 h-5" data-icon="mdi:database-backup" />
+						<span class="iconify w-5 h-5" data-icon="mdi:backup-restore" />
 						Backup & Reset Database
 					</CardTitle>
 					<CardDescription>Create a backup of all data, then reset the database</CardDescription>
@@ -272,7 +272,7 @@ export const GeneralSettings: Component = () => {
 							</p>
 						</div>
 						<Button variant="outline" onClick={() => setBackupDialogOpen(true)}>
-							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:database-backup" />
+							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:backup-restore" />
 							Backup & Reset
 						</Button>
 					</div>
