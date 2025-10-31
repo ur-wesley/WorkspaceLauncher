@@ -1,0 +1,98 @@
+---
+layout: ../../layouts/DocsLayout.astro
+title: Best Practices
+---
+
+# Best Practices
+
+Expert tips for getting the most out of WorkspaceLauncher.
+
+## Workspace Design
+
+### Start Simple
+Begin with 3-5 essential actions. Add complexity gradually.
+
+### Logical Ordering
+```
+1. Database/Infrastructure first
+2. Backend services
+3. Frontend applications
+4. Monitoring/dashboards
+5. Documentation URLs
+```
+
+### Naming Conventions
+- **Clear**: "Production Server" not "Server 1"
+- **Consistent**: Use prefixes across projects
+- **Descriptive**: "React Dev with Hot Reload"
+
+## Variable Management
+
+### Use Workspace-Level Variables
+Store common values once:
+```bash
+PROJECT_ROOT=${USER}\Projects\App
+TEAM_GIT_ORG=https://github.com/myorg
+```
+
+### Override When Needed
+Environment-specific values:
+```bash
+# Developer's local path
+PROJECT_ROOT=C:\Dev\App
+```
+
+### Document Variables
+Add comments in workspace notes about what each variable contains.
+
+## Performance
+
+### Add Strategic Delays
+```bash
+1. Heavy app launch → 3 sec delay
+2. Server start → 5 sec delay
+3. Quick commands → no delay
+```
+
+### Monitor Startup Time
+Keep total launch time under 30 seconds when possible.
+
+### Kill Unused Processes
+Use the running panel to free resources.
+
+## Collaboration
+
+### Share Templates
+Create team template library in version control.
+
+### Document Workflows
+Include README files explaining workspace purpose.
+
+### Review Regularly
+Team check-ins to update shared configurations.
+
+## Security
+
+### Avoid Sensitive Data
+Don't hardcode passwords or API keys in actions.
+
+### Use Environment Variables
+Store secrets outside workspace configurations.
+
+### Review Imports
+Check imported workspaces before running.
+
+## Maintenance
+
+### Quarterly Cleanup
+Remove unused workspaces and old templates.
+
+### Update Regularly
+Keep action paths and URLs current.
+
+### Backup Often
+Export important workspaces regularly.
+
+---
+
+**Need Help?** Visit our [GitHub Issues](https://github.com/ur-wesley/WorkspaceLauncher/issues) or submit a feature request!

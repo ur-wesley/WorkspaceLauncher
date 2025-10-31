@@ -1,0 +1,66 @@
+---
+interface Props {
+  currentSlug?: string;
+}
+
+const { currentSlug = '' } = Astro.props;
+
+const docs = [
+  { title: 'Getting Started', items: [
+    { slug: 'creating-workspaces', title: 'Creating Workspaces' },
+    { slug: 'adding-actions', title: 'Adding Actions' },
+    { slug: 'variables', title: 'Using Variables' },
+  ]},
+  { title: 'Features & Tips', items: [
+    { slug: 'workspace-management', title: 'Workspace Management' },
+    { slug: 'process-tracking', title: 'Process Tracking' },
+    { slug: 'tool-templates', title: 'Tool Templates' },
+    { slug: 'sharing', title: 'Import & Export' },
+  ]},
+  { title: 'Advanced', items: [
+    { slug: 'themes', title: 'Custom Themes' },
+    { slug: 'shortcuts', title: 'Keyboard Shortcuts' },
+    { slug: 'best-practices', title: 'Best Practices' },
+  ]},
+];
+
+const isActive = (slug: string) => currentSlug === slug;
+---
+
+<aside class="w-64 flex-shrink-0 hidden lg:block">
+  <nav class="sticky top-20 space-y-8">
+    <a
+      href="/docs"
+      class={`block px-4 py-2 rounded-lg transition-colors ${
+        currentSlug === '' 
+          ? 'bg-gray-800 text-white font-semibold' 
+          : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+      }`}
+    >
+      Overview
+    </a>
+    {docs.map((section) => (
+      <div>
+        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">
+          {section.title}
+        </h3>
+        <ul class="space-y-1">
+          {section.items.map((item) => (
+            <li>
+              <a
+                href={`/docs/${item.slug}`}
+                class={`block px-4 py-2 rounded-lg transition-colors ${
+                  isActive(item.slug)
+                    ? 'bg-gray-800 text-white font-semibold'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
+              >
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </nav>
+</aside>

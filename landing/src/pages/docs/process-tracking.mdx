@@ -1,0 +1,55 @@
+---
+layout: ../../layouts/DocsLayout.astro
+title: Process Tracking
+---
+
+# Process Tracking
+
+Monitor running actions and manage processes effectively.
+
+## Real-Time Monitoring
+
+When you launch a workspace, the **Running Actions** panel shows:
+
+- **Active status**: Which actions are currently running
+- **Progress**: Real-time updates on each action
+- **Logs**: Output from commands and scripts
+- **Errors**: Clear error messages if something fails
+
+## Process Management
+
+### View History
+See all past runs:
+- Success/failure status
+- Execution time
+- Timestamps
+- Error logs for debugging
+
+### Kill Processes
+Stop running actions:
+1. Open the running panel
+2. Click stop on any action
+3. Process terminates cleanly
+
+**Tip**: Always kill processes through WorkspaceLauncher to ensure proper cleanup.
+
+## Troubleshooting
+
+### Process Won't Start
+- Check file paths are correct
+- Verify applications are installed
+- Look for permission issues
+
+### Process Won't Stop
+- Use the kill button in the panel
+- Check Task Manager if unresponsive
+- Restart the application if needed
+
+### Unexpected Behavior
+- Review action logs
+- Check variable values
+- Test commands manually first
+
+**Pro Tip**: Keep the logs panel open while testing new workspaces to catch issues early.
+
+Next: [Tool Templates](/docs/tool-templates) →

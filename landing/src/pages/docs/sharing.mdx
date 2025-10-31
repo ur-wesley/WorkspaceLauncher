@@ -1,0 +1,57 @@
+---
+layout: ../../layouts/DocsLayout.astro
+title: Sharing & Import/Export
+---
+
+# Sharing & Import/Export
+
+Share your workspace configurations with your team or sync across devices.
+
+## Exporting Workspaces
+
+### Single Workspace
+1. Right-click a workspace
+2. Select "Export"
+3. Choose format:
+   - **JSON File**: Save to disk
+   - **Clipboard**: Copy for sharing
+
+### Multiple Workspaces
+Export all at once for backup or team sharing.
+
+## Importing Workspaces
+
+### From File
+1. Click "Import"
+2. Select JSON file
+3. Review configuration
+4. Confirm import
+
+### From Clipboard
+Paste exported JSON directly.
+
+## Team Collaboration
+
+### Version Control
+Store workspace JSON files in Git:
+```
+workspaces/
+  frontend-dev.json
+  backend-dev.json
+  shared-templates.json
+```
+
+### New Team Member Setup
+1. Clone repository
+2. Import workspace files
+3. Configure local paths (variables)
+4. Ready to work!
+
+## Best Practices
+
+- **Review before import**: Check for sensitive data
+- **Use variables**: Keep personal paths out of exports
+- **Document**: Include README with your workspace configs
+- **Version**: Tag workspace exports with version numbers
+
+Next: [Themes](/docs/themes) →

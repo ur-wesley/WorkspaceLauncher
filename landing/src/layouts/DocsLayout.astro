@@ -1,0 +1,34 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Navigation from '../components/Navigation.astro';
+import Footer from '../components/Footer.astro';
+import DocsSidebar from '../components/DocsSidebar.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = 'Documentation', description } = Astro.props;
+const fullTitle = title !== 'Documentation' ? `${title} - WorkspaceLauncher` : 'WorkspaceLauncher Documentation';
+
+const urlPath = Astro.url.pathname;
+const currentSlug = urlPath === '/docs' || urlPath === '/docs/' 
+  ? '' 
+  : urlPath.replace('/docs/', '').replace('/', '');
+---
+
+<BaseLayout title={fullTitle} description={description}>
+  <Navigation />
+  <main class="min-h-screen bg-gray-900">
+    <div class="section-container py-16">
+      <div class="flex gap-12">
+        <DocsSidebar currentSlug={currentSlug} />
+        <div class="flex-1 min-w-0 prose prose-invert prose-lg max-w-none">
+          <slot />
+        </div>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

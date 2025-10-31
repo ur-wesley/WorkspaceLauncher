@@ -1,0 +1,54 @@
+---
+layout: ../../layouts/DocsLayout.astro
+title: Adding Actions
+---
+
+# Adding Actions to Your Workspace
+
+Actions are the building blocks of your workspace. Each action performs a specific task when you launch your workspace.
+
+## Action Types
+
+### Launch Applications
+Open any installed application on your system.
+
+**Tip**: Great for launching your editor, browser, or communication tools.
+
+### Open URLs
+Navigate to specific web pages automatically.
+
+**Tip**: Useful for opening dashboards, documentation, or monitoring tools.
+
+### Run Commands
+Execute shell commands, PowerShell scripts, or batch files.
+
+**Example**: 
+```bash
+npm run dev
+```
+
+**Tip**: Start servers, run scripts, or perform custom operations.
+
+### Delays
+Add pauses between actions to ensure proper sequencing.
+
+**Tip**: Some applications need time to start before others can connect to them.
+
+## Best Practices
+
+1. **Order matters**: Place dependencies first (e.g., start database before backend)
+2. **Use delays**: Add 2-5 second delays between heavy applications
+3. **Test incrementally**: Add one action at a time and test
+4. **Use variables**: Make paths and URLs dynamic with variables
+
+## Example Configuration
+
+```
+1. Launch VS Code → Open project folder
+2. Delay → 2 seconds
+3. Launch Terminal → Run dev server
+4. Delay → 3 seconds
+5. Open URL → localhost:3000
+```
+
+Next: [Using Variables](/docs/variables) →

@@ -1,0 +1,58 @@
+---
+layout: ../../layouts/DocsLayout.astro
+title: Tool Templates
+---
+
+# Tool Templates
+
+Create reusable tool configurations to use across multiple workspaces.
+
+## What Are Tool Templates?
+
+Templates are pre-configured actions that you can quickly add to any workspace. Instead of configuring the same editor or terminal repeatedly, create it once as a template.
+
+## Creating Templates
+
+1. **Configure** an action (e.g., VS Code settings)
+2. **Save as Template** from the action menu
+3. **Name it** descriptively (e.g., "VS Code - Frontend")
+4. **Use variables** for dynamic paths
+
+## Example Templates
+
+### Terminal with Custom Shell
+```
+Tool: Terminal
+Path: C:\Program Files\Git\bin\bash.exe
+Working Dir: ${PROJECT_ROOT}
+Title: Project Terminal
+```
+
+### Database GUI
+```
+Tool: DBeaver
+Connection: ${DB_HOST}:${DB_PORT}
+Database: ${DB_NAME}
+```
+
+### Code Editor
+```
+Tool: VS Code
+Workspace: ${PROJECT_ROOT}${PROJECT_NAME}.code-workspace
+Extensions: Auto-install list
+```
+
+## Sharing Templates
+
+- **Export**: Save template to JSON file
+- **Import**: Load into any workspace
+- **Team**: Share via version control
+
+## Tips
+
+- **Use placeholders**: Templates with variables are more flexible
+- **Name clearly**: "Docker Dev Env" vs "Template 1"
+- **Version control**: Track template changes in Git
+- **Document**: Add notes explaining configuration choices
+
+Next: [Sharing Workspaces](/docs/sharing) →

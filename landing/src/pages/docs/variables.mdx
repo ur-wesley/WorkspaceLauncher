@@ -1,0 +1,68 @@
+---
+layout: ../../layouts/DocsLayout.astro
+title: Using Variables
+---
+
+# Using Variables
+
+Variables make your configurations flexible and reusable. Use them to avoid hardcoding paths, ports, or other values.
+
+## Variable Syntax
+
+Use `${VARIABLE_NAME}` anywhere you need dynamic values.
+
+Example:
+```
+${PROJECT_ROOT}/backend
+${SERVER_PORT}
+${API_URL}
+```
+
+## Scope Levels
+
+### Workspace Variables
+Available to all environments within a workspace.
+
+**Use for**: Shared paths, common ports, team settings
+
+### Environment Variables
+Specific to one environment, can override workspace variables.
+
+**Use for**: Developer-specific paths, local ports, personal preferences
+
+## Common Use Cases
+
+### Project Paths
+```bash
+# Variable
+PROJECT_ROOT = C:\Projects\MyApp
+
+# Usage in action
+${PROJECT_ROOT}\backend\start.ps1
+```
+
+### Dynamic Ports
+```
+# Variable
+BACKEND_PORT = 8080
+
+# Usage
+http://localhost:${BACKEND_PORT}/health
+```
+
+### Team Collaboration
+```bash
+# Workspace variable
+REPO_URL = https://github.com/team/project
+
+# Everyone uses same URL
+git clone ${REPO_URL}
+```
+
+## Tips
+
+- **Name clearly**: `API_URL` is better than `URL1`
+- **Use defaults**: Set values at workspace level, override only when needed
+- **Document**: Add notes about what each variable should contain
+
+Next: [Process Tracking](/docs/process-tracking) →
