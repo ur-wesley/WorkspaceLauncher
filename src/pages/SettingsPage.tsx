@@ -23,8 +23,8 @@ export const SettingsPage: Component = () => {
 	});
 
 	return (
-		<div class="container mx-auto py-6">
-			<div class="max-w-4xl">
+		<div class="container mx-auto p-4">
+			<div class="max-w-4xl flex flex-col gap-4">
 				<div class="mb-6">
 					<h1 class="text-3xl font-bold">Settings</h1>
 					<p class="text-muted-foreground">Manage your application preferences and configuration</p>
