@@ -1,27 +1,17 @@
 import type { Component } from "solid-js";
-import { createSignal, onMount } from "solid-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
+import { useSettingsStore } from "@/store/settings";
 import { useThemeStore } from "@/store/theme";
+import { SETTING_KEYS } from "@/types/database";
 
 export const AppearanceSettings: Component = () => {
 	const [themeStore, themeActions] = useThemeStore();
-	const [darkMode, setDarkMode] = createSignal(false);
+	const { actions: settingsActions } = useSettingsStore();
 
-	onMount(() => {
-		const isDark = document.documentElement.getAttribute("data-kb-theme") === "dark";
-		setDarkMode(isDark);
-	});
-
-	const toggleDarkMode = () => {
-		const newMode = !darkMode();
-		setDarkMode(newMode);
-		document.documentElement.setAttribute("data-kb-theme", newMode ? "dark" : "light");
-	};
-
-	const handleThemeChange = (value: string) => {
+	const handleThemeChange = (value: string | null) => {
 		const themeId = Number(value);
 		if (Number.isNaN(themeId)) return;
 		themeActions.activateTheme(themeId);
@@ -43,7 +33,12 @@ export const AppearanceSettings: Component = () => {
 							<p class="text-sm font-medium">Dark Mode</p>
 							<p class="text-sm text-muted-foreground">Toggle between light and dark mode</p>
 						</div>
-						<Switch checked={darkMode()} onChange={toggleDarkMode}>
+						<Switch
+							checked={settingsActions.getSettingWithDefault(SETTING_KEYS.APPEARANCE_THEME_MODE, "light") === "dark"}
+							onChange={(val) => {
+								settingsActions.setDarkMode(val);
+							}}
+						>
 							<SwitchControl>
 								<SwitchThumb />
 							</SwitchControl>
@@ -53,12 +48,11 @@ export const AppearanceSettings: Component = () => {
 					<Separator />
 
 					<div class="space-y-2">
-						<label for="active-theme-select" class="text-sm font-medium">
+						<p id="active-theme-label" class="text-sm font-medium">
 							Active Theme
-						</label>
+						</p>
 						<Select
-							id="active-theme-select"
-							value={themeStore.activeTheme?.id.toString()}
+							value={themeStore.activeTheme ? themeStore.activeTheme.id.toString() : null}
 							onChange={handleThemeChange}
 							options={themeStore.themes.map((t) => t.id.toString())}
 							placeholder="Select a theme"
@@ -68,7 +62,7 @@ export const AppearanceSettings: Component = () => {
 								</SelectItem>
 							)}
 						>
-							<SelectTrigger>
+							<SelectTrigger id="active-theme-trigger" aria-labelledby="active-theme-label">
 								<SelectValue<string>>
 									{(state) =>
 										themeStore.themes.find((t) => t.id.toString() === state.selectedOption())?.name || "Select theme"

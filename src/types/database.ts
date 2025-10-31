@@ -282,6 +282,7 @@ export const SETTING_KEYS = {
 	DEFAULT_SHELL_MACOS: "default_shell_macos",
 	DEFAULT_SHELL_LINUX: "default_shell_linux",
 	LOG_RETENTION_DAYS: "log_retention_days",
+	APPEARANCE_THEME_MODE: "appearance_theme_mode",
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

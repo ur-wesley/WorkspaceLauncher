@@ -3,6 +3,7 @@ import { createStore } from "solid-js/store";
 import * as api from "@/libs/api";
 import { showToast } from "@/libs/toast";
 import type { SettingKey } from "@/types/database";
+import { SETTING_KEYS } from "@/types/database";
 
 interface SettingsStore {
 	settings: Record<string, string>;
@@ -14,6 +15,8 @@ interface SettingsActions {
 	getSetting: (key: SettingKey) => string | undefined;
 	setSetting: (key: SettingKey, value: string) => Promise<boolean>;
 	getSettingWithDefault: (key: SettingKey, defaultValue: string) => string;
+	getDarkMode: () => boolean;
+	setDarkMode: (enabled: boolean) => Promise<boolean>;
 }
 
 interface SettingsContextValue {
@@ -78,6 +81,18 @@ export const SettingsProvider: ParentComponent = (props) => {
 
 		getSettingWithDefault(key: SettingKey, defaultValue: string) {
 			return store.settings[key] ?? defaultValue;
+		},
+
+		getDarkMode() {
+			const mode = store.settings[SETTING_KEYS.APPEARANCE_THEME_MODE];
+			if (!mode) return document.documentElement.dataset.kbTheme === "dark";
+			return mode === "dark";
+		},
+
+		async setDarkMode(enabled: boolean) {
+			document.documentElement.dataset.kbTheme = enabled ? "dark" : "light";
+			const value = enabled ? "dark" : "light";
+			return await actions.setSetting(SETTING_KEYS.APPEARANCE_THEME_MODE, value);
 		},
 	};
 
