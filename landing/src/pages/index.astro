@@ -8,6 +8,8 @@ import Hero from "../components/Hero";
 // biome-ignore lint/correctness/noUnusedImports: Used in template
 import Features from "../components/Features";
 // biome-ignore lint/correctness/noUnusedImports: Used in template
+import Screenshots from "../components/Screenshots";
+// biome-ignore lint/correctness/noUnusedImports: Used in template
 import TechStack from "../components/TechStack";
 // biome-ignore lint/correctness/noUnusedImports: Used in template
 import Footer from "../components/Footer.astro";
@@ -22,6 +24,7 @@ const version = packageJson.version;
   <main>
     <Hero client:load version={version} />
     <Features client:load />
+    <Screenshots client:load />
     <TechStack client:load />
   </main>
   <Footer />
