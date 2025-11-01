@@ -1,21 +1,21 @@
 ---
-import BaseLayout from './BaseLayout.astro';
-import Navigation from '../components/Navigation.astro';
-import Footer from '../components/Footer.astro';
-import DocsSidebar from '../components/DocsSidebar.astro';
+// biome-ignore lint/correctness/noUnusedImports: Used in template
+import BaseLayout from "./BaseLayout.astro";
+// biome-ignore lint/correctness/noUnusedImports: Used in template
+import Navigation from "../components/Navigation.astro";
+// biome-ignore lint/correctness/noUnusedImports: Used in template
+import Footer from "../components/Footer.astro";
+// biome-ignore lint/correctness/noUnusedImports: Used in template
+import DocsSidebar from "../components/DocsSidebar.astro";
 
-interface Props {
-  title?: string;
-  description?: string;
-}
-
-const { title = 'Documentation', description } = Astro.props;
-const fullTitle = title !== 'Documentation' ? `${title} - WorkspaceLauncher` : 'WorkspaceLauncher Documentation';
+// biome-ignore lint/correctness/noUnusedVariables: Used in template
+const { title = "Documentation", description } = Astro.props;
+// biome-ignore lint/correctness/noUnusedVariables: Used in template
+const fullTitle = title !== "Documentation" ? `${title} - WorkspaceLauncher` : "WorkspaceLauncher Documentation";
 
 const urlPath = Astro.url.pathname;
-const currentSlug = urlPath === '/docs' || urlPath === '/docs/' 
-  ? '' 
-  : urlPath.replace('/docs/', '').replace('/', '');
+// biome-ignore lint/correctness/noUnusedVariables: Used in template
+const currentSlug = urlPath === "/docs" || urlPath === "/docs/" ? "" : urlPath.replace("/docs/", "").replace("/", "");
 ---
 
 <BaseLayout title={fullTitle} description={description}>

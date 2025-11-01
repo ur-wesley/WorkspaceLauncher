@@ -1,29 +1,36 @@
 ---
-interface Props {
-  currentSlug?: string;
-}
+const { currentSlug = "" } = Astro.props;
 
-const { currentSlug = '' } = Astro.props;
-
+// biome-ignore lint/correctness/noUnusedVariables: Used in template
 const docs = [
-  { title: 'Getting Started', items: [
-    { slug: 'creating-workspaces', title: 'Creating Workspaces' },
-    { slug: 'adding-actions', title: 'Adding Actions' },
-    { slug: 'variables', title: 'Using Variables' },
-  ]},
-  { title: 'Features & Tips', items: [
-    { slug: 'workspace-management', title: 'Workspace Management' },
-    { slug: 'process-tracking', title: 'Process Tracking' },
-    { slug: 'tool-templates', title: 'Tool Templates' },
-    { slug: 'sharing', title: 'Import & Export' },
-  ]},
-  { title: 'Advanced', items: [
-    { slug: 'themes', title: 'Custom Themes' },
-    { slug: 'shortcuts', title: 'Keyboard Shortcuts' },
-    { slug: 'best-practices', title: 'Best Practices' },
-  ]},
+	{
+		title: "Getting Started",
+		items: [
+			{ slug: "creating-workspaces", title: "Creating Workspaces" },
+			{ slug: "adding-actions", title: "Adding Actions" },
+			{ slug: "variables", title: "Using Variables" },
+		],
+	},
+	{
+		title: "Features & Tips",
+		items: [
+			{ slug: "workspace-management", title: "Workspace Management" },
+			{ slug: "process-tracking", title: "Process Tracking" },
+			{ slug: "tool-templates", title: "Tool Templates" },
+			{ slug: "sharing", title: "Import & Export" },
+		],
+	},
+	{
+		title: "Advanced",
+		items: [
+			{ slug: "themes", title: "Custom Themes" },
+			{ slug: "shortcuts", title: "Keyboard Shortcuts" },
+			{ slug: "best-practices", title: "Best Practices" },
+		],
+	},
 ];
 
+// biome-ignore lint/correctness/noUnusedVariables: Used in template
 const isActive = (slug: string) => currentSlug === slug;
 ---
 

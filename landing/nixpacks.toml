@@ -18,3 +18,5 @@ cmd = "echo 'Static files are served by nginx'"
 staticPublishDir = "dist"
 
 
+
+

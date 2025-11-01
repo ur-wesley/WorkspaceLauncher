@@ -7,11 +7,11 @@ import mdx from "@astrojs/mdx";
 
 // https://astro.build/config
 export default defineConfig({
- integrations: [
-  solidJs(),
-  UnoCSS({
-   injectReset: true,
-  }),
-  mdx(),
- ],
+	integrations: [
+		solidJs(),
+		UnoCSS({
+			injectReset: true,
+		}),
+		mdx(),
+	],
 });
