@@ -1,4 +1,4 @@
-import { onMount, onCleanup, createSignal } from "solid-js";
+import { onMount, onCleanup, createSignal, createEffect } from "solid-js";
 
 interface ReleaseInfo {
 	published_at: string;
@@ -13,18 +13,33 @@ const words = [
 	{
 		text: "Workspaces",
 		gradient: "from-primary-400 via-blue-400 to-primary-400",
+		bokehColor: "bg-primary-400",
 	},
 	{
 		text: "Gaming Sessions",
 		gradient: "from-purple-400 via-pink-400 to-purple-400",
+		bokehColor: "bg-purple-400",
 	},
 	{
 		text: "Dev Environments",
 		gradient: "from-green-400 via-emerald-400 to-green-400",
+		bokehColor: "bg-green-400",
 	},
-	{ text: "Apps", gradient: "from-orange-400 via-red-400 to-orange-400" },
-	{ text: "Workflows", gradient: "from-cyan-400 via-blue-400 to-cyan-400" },
-	{ text: "Projects", gradient: "from-indigo-400 via-purple-400 to-indigo-400" },
+	{
+		text: "Apps",
+		gradient: "from-orange-400 via-red-400 to-orange-400",
+		bokehColor: "bg-orange-400",
+	},
+	{
+		text: "Workflows",
+		gradient: "from-cyan-400 via-blue-400 to-cyan-400",
+		bokehColor: "bg-cyan-400",
+	},
+	{
+		text: "Projects",
+		gradient: "from-indigo-400 via-purple-400 to-indigo-400",
+		bokehColor: "bg-indigo-400",
+	},
 ];
 
 const Hero = (props: Props) => {
@@ -33,16 +48,37 @@ const Hero = (props: Props) => {
 	const [isAnimating, setIsAnimating] = createSignal(false);
 	const [isClicking, setIsClicking] = createSignal(false);
 	const [clickPosition, setClickPosition] = createSignal({ x: 50, y: 50 });
+	const [bokehPosition, setBokehPosition] = createSignal({ x: 50, y: 50 });
+	const [bokehBlur, setBokehBlur] = createSignal("blur-3xl");
 
 	let intervalId: ReturnType<typeof setInterval> | undefined;
+	let textRef: HTMLSpanElement | undefined;
 
 	const currentWord = () => words[currentWordIndex()];
 
-	const getRandomPosition = () => {
+	const getRandomPosition = (textElement?: HTMLSpanElement) => {
+		if (!textElement?.parentElement) {
+			return {
+				x: Math.random() * 80 + 10,
+				y: Math.random() * 80 + 10,
+			};
+		}
+		const textLeft = textElement.offsetLeft;
+		const textWidth = textElement.offsetWidth;
+		const parentWidth = textElement.parentElement.offsetWidth;
+
+		const relativeX = (textLeft / parentWidth) * 100;
+		const relativeWidth = (textWidth / parentWidth) * 100;
+
 		return {
-			x: Math.random() * 80 + 10,
+			x: relativeX + Math.random() * relativeWidth,
 			y: Math.random() * 80 + 10,
 		};
+	};
+
+	const getRandomBlur = () => {
+		const blurs = ["blur-xl", "blur-2xl", "blur-3xl"];
+		return blurs[Math.floor(Math.random() * blurs.length)];
 	};
 
 	const handleAnimationEnd = () => {
@@ -58,11 +94,25 @@ const Hero = (props: Props) => {
 	};
 
 	const changeWord = () => {
-		setClickPosition(getRandomPosition());
+		if (textRef) {
+			setClickPosition(getRandomPosition(textRef));
+			setBokehPosition(getRandomPosition(textRef));
+		} else {
+			setClickPosition(getRandomPosition());
+			setBokehPosition(getRandomPosition());
+		}
+		setBokehBlur(getRandomBlur());
 		setIsClicking(true);
 		setIsAnimating(true);
 		setTimeout(handleWordChange, 300);
 	};
+
+	createEffect(() => {
+		if (textRef && !isAnimating()) {
+			setBokehPosition(getRandomPosition(textRef));
+			setBokehBlur(getRandomBlur());
+		}
+	});
 
 	onMount(async () => {
 		try {
@@ -126,10 +176,27 @@ const Hero = (props: Props) => {
 							<h1 class="font-bold text-white mb-6 drop-shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-visible">
 								<div class="text-3xl md:text-4xl lg:text-5xl mb-4">Launch Your</div>
 								<div class="block w-full min-h-[1.5em] relative select-none text-5xl md:text-7xl lg:text-8xl my-6 overflow-visible pb-2">
+									<div
+										class="absolute pointer-events-none transition-opacity duration-500"
+										aria-hidden="true"
+										style={{
+											left: `${bokehPosition().x}%`,
+											top: `${bokehPosition().y}%`,
+											transform: "translate(-50%, -50%)",
+											opacity: isAnimating() ? 0 : 1,
+										}}
+									>
+										<div
+											class={`${
+												currentWord().bokehColor
+											} w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full ${bokehBlur()} opacity-30`}
+										></div>
+									</div>
 									<span
-										class={`inline-block w-full leading-normal bg-gradient-to-r ${
+										ref={textRef}
+										class={`inline-block leading-normal bg-gradient-to-r ${
 											currentWord().gradient
-										} bg-clip-text text-transparent transition-all duration-500 ${
+										} bg-clip-text text-transparent transition-all duration-500 relative z-10 ${
 											isAnimating()
 												? "opacity-0 translate-y-8 scale-95 blur-sm"
 												: "opacity-100 translate-y-0 scale-100 blur-0"
@@ -137,7 +204,7 @@ const Hero = (props: Props) => {
 									>
 										{currentWord().text}
 									</span>
-									{isClicking() && (
+									{isClicking() && textRef && (
 										<span
 											class="absolute pointer-events-none"
 											aria-hidden="true"
