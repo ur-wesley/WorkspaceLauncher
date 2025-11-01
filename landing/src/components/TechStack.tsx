@@ -69,7 +69,8 @@ const TechStack = () => {
 			<div class="section-container relative z-10">
 				<div class="text-center mb-20">
 					<h2 class="text-4xl md:text-5xl font-bold text-white mb-4">
-						Built with <span class="bg-gradient-to-r from-primary-400 to-blue-400 bg-clip-text text-transparent">Modern Tech</span>
+						Built with{" "}
+						<span class="bg-gradient-to-r from-primary-400 to-blue-400 bg-clip-text text-transparent">Modern Tech</span>
 					</h2>
 					<p class="text-xl text-gray-400 max-w-2xl mx-auto">
 						Leveraging cutting-edge technologies for performance, reliability, and an exceptional user experience
@@ -81,7 +82,9 @@ const TechStack = () => {
 							<div
 								class={`group relative bg-gray-900/50 border ${tech.borderColor} rounded-xl p-6 hover:border-opacity-100 transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 hover:-translate-y-1 cursor-pointer`}
 							>
-								<div class={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-5 rounded-xl transition-opacity duration-300`}></div>
+								<div
+									class={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-5 rounded-xl transition-opacity duration-300`}
+								></div>
 								<div class="relative">
 									<div class="flex items-center gap-4 mb-3">
 										<div class="text-4xl">{tech.icon}</div>

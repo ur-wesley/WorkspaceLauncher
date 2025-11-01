@@ -1,15 +1,7 @@
 import { onMount, createSignal } from "solid-js";
 
 interface ReleaseInfo {
-	version: string;
-	notes: string;
-	pub_date: string;
-	platforms: {
-		"windows-x86_64": {
-			signature: string;
-			url: string;
-		};
-	};
+	published_at: string;
 }
 
 interface Props {
@@ -17,22 +9,19 @@ interface Props {
 }
 
 const Hero = (props: Props) => {
-	const [releaseInfo, setReleaseInfo] = createSignal<ReleaseInfo | null>(null);
-	const [isLoading, setIsLoading] = createSignal(true);
+	const [releaseDate, setReleaseDate] = createSignal<string | null>(null);
 
 	onMount(async () => {
 		try {
-			const response = await fetch(
-				"https://github.com/ur-wesley/WorkspaceLauncher/releases/latest/download/latest.json",
-			);
+			const response = await fetch("https://api.github.com/repos/ur-wesley/WorkspaceLauncher/releases/latest");
 			if (response.ok) {
-				const data = await response.json();
-				setReleaseInfo(data);
+				const data: ReleaseInfo = await response.json();
+				if (data.published_at) {
+					setReleaseDate(data.published_at);
+				}
 			}
 		} catch (error) {
 			console.error("Failed to fetch release info:", error);
-		} finally {
-			setIsLoading(false);
 		}
 	});
 
@@ -43,8 +32,8 @@ const Hero = (props: Props) => {
 	};
 	const releasePageUrl = () => `https://github.com/ur-wesley/WorkspaceLauncher/releases/tag/v${version()}`;
 	const formattedDate = () => {
-		if (!releaseInfo()?.pub_date) return "";
-		const date = new Date(releaseInfo()?.pub_date ?? "");
+		if (!releaseDate()) return "";
+		const date = new Date(releaseDate() ?? "");
 		return date.toLocaleDateString("en-US", {
 			year: "numeric",
 			month: "long",
@@ -68,7 +57,7 @@ const Hero = (props: Props) => {
 				>
 					<span class="text-primary-400 text-sm font-medium">Version {version()} Available</span>
 				</a>
-				{releaseInfo() && !isLoading() && <p class="text-xs text-gray-500 mb-8">Released on {formattedDate()}</p>}
+				{releaseDate() && <p class="text-xs text-gray-500 mb-8">Released on {formattedDate()}</p>}
 				<h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
 					Launch Your Workspaces
 					<br />
