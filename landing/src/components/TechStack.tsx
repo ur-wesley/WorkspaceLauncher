@@ -60,37 +60,45 @@ const technologies: Technology[] = [
 
 const TechStack = () => {
 	return (
-		<section class="relative py-32 bg-gradient-to-b from-gray-800 to-gray-900 overflow-hidden">
-			<div class="absolute inset-0 bg-gradient-to-r from-primary-500/5 via-transparent to-blue-500/5"></div>
+		<section class="relative min-h-screen lg:h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
 			<div class="absolute inset-0 overflow-hidden">
-				<div class="absolute top-1/4 right-0 w-96 h-96 bg-primary-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-				<div class="absolute bottom-1/4 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+				<div class="absolute inset-0 bg-gradient-to-r from-primary-500/10 via-transparent to-blue-500/10"></div>
+				<div class="absolute top-1/3 right-1/4 w-[32rem] h-[32rem] bg-primary-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-float"></div>
+				<div class="absolute bottom-1/3 left-1/4 w-[32rem] h-[32rem] bg-blue-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-float animation-delay-2000"></div>
+				<div class="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-500/15 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-float animation-delay-3000"></div>
+				<div class="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
 			</div>
-			<div class="section-container relative z-10">
-				<div class="text-center mb-20">
-					<h2 class="text-4xl md:text-5xl font-bold text-white mb-4">
+			<div class="section-container relative z-10 py-16">
+				<div class="text-center mb-16">
+					<h2 class="text-5xl md:text-6xl font-bold text-white mb-6">
 						Built with{" "}
-						<span class="bg-gradient-to-r from-primary-400 to-blue-400 bg-clip-text text-transparent">Modern Tech</span>
+						<span class="bg-gradient-to-r from-primary-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+							Modern Tech
+						</span>
 					</h2>
-					<p class="text-xl text-gray-400 max-w-2xl mx-auto">
+					<p class="text-2xl text-gray-300 max-w-3xl mx-auto">
 						Leveraging cutting-edge technologies for performance, reliability, and an exceptional user experience
 					</p>
 				</div>
-				<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
 					{technologies.map((tech) => {
 						const content = (
 							<div
-								class={`group relative bg-gray-900/50 border ${tech.borderColor} rounded-xl p-6 hover:border-opacity-100 transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 hover:-translate-y-1 cursor-pointer`}
+								class={`group relative bg-gray-900/60 backdrop-blur-sm border ${tech.borderColor} rounded-2xl p-8 hover:border-opacity-100 transition-all duration-300 hover:shadow-2xl hover:shadow-primary-500/20 hover:-translate-y-2 cursor-pointer hover:bg-gray-900/80`}
 							>
 								<div
-									class={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-5 rounded-xl transition-opacity duration-300`}
+									class={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity duration-300`}
 								></div>
 								<div class="relative">
-									<div class="flex items-center gap-4 mb-3">
-										<div class="text-4xl">{tech.icon}</div>
-										<h3 class="text-xl font-bold text-white">{tech.name}</h3>
+									<div class="flex items-center gap-5 mb-4">
+										<div class="text-5xl group-hover:scale-110 transition-transform duration-300">{tech.icon}</div>
+										<h3 class="text-2xl font-bold text-white group-hover:text-primary-400 transition-colors">
+											{tech.name}
+										</h3>
 									</div>
-									<p class="text-gray-400 leading-relaxed text-sm">{tech.description}</p>
+									<p class="text-gray-400 leading-relaxed text-lg group-hover:text-gray-300 transition-colors">
+										{tech.description}
+									</p>
 								</div>
 							</div>
 						);
