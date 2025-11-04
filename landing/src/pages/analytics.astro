@@ -1,0 +1,18 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navigation from "../components/Navigation.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<BaseLayout title="Analytics - WorkspaceLauncher">
+  <Navigation />
+  <main>
+    <iframe plausible-embed src="https://workspacelauncher.w4y.io/analytics?embed=true&theme=dark" scrolling="no" frameborder="0" loading="lazy" style="width: 1px; min-width: 100%; height: 1600px;"></iframe>
+    <div style="font-size: 14px; padding-bottom: 14px;">Stats powered by <a target="_blank" style="color: #4F46E5; text-decoration: underline;" href="https://plausible.io">Plausible Analytics</a></div>
+    <script async src="https://analytics.w4y.io/js/embed.host.js"></script>
+  </main>
+  <Footer />
+  
+</BaseLayout>
+
+
