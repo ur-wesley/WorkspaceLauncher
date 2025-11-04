@@ -277,7 +277,6 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 						}}
 					>
 						<div class="p-6 flex flex-col gap-6">
-							{/* Typography Section */}
 							<div class="flex flex-col gap-3">
 								<h4 class="text-lg font-semibold" style={{ color: "var(--foreground)" }}>
 									Typography
@@ -298,7 +297,6 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 								</div>
 							</div>
 
-							{/* Buttons Section */}
 							<div class="flex flex-col gap-3">
 								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
 									Buttons
@@ -317,7 +315,6 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 								</div>
 							</div>
 
-							{/* Badges Section */}
 							<div class="flex flex-col gap-3">
 								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
 									Badges
@@ -363,7 +360,6 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 								</div>
 							</div>
 
-							{/* Form Controls Section */}
 							<div class="flex flex-col gap-3">
 								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
 									Form Controls
@@ -432,7 +428,6 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 								</div>
 							</div>
 
-							{/* Surface Colors Section */}
 							<div class="flex flex-col gap-3">
 								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
 									Surface Colors
@@ -485,7 +480,6 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 								</div>
 							</div>
 
-							{/* Borders and Ring Section */}
 							<div class="flex flex-col gap-3">
 								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
 									Borders & Focus
