@@ -1,9 +1,6 @@
 ---
 // biome-ignore lint/correctness/noUnusedVariables: Used in template
-const {
- title = "WorkspaceLauncher",
- description = "Launch your workspaces in one click",
-} = Astro.props;
+const { title = "WorkspaceLauncher", description = "Launch your workspaces in one click" } = Astro.props;
 ---
 
 <!doctype html>
@@ -15,10 +12,7 @@ const {
   <meta name="generator" content={Astro.generator} />
   <meta name="description" content={description} />
   <title>{title}</title>
-  <script
-   defer
-   data-domain="workspacelauncher.w4y.io"
-   src="https://analytics.w4y.io/js/script.js"></script>
+  <script defer data-domain="workspacelauncher.w4y.io" src="https://analytics.w4y.io/js/script.js"></script>
  </head>
  <body class="bg-gray-900 text-white antialiased">
   <slot />
