@@ -37,7 +37,8 @@ export const GeneralSettings: Component = () => {
 		} catch (error) {
 			showToast({
 				title: "Failed to open data folder",
-				description: error instanceof Error ? error.message : "Unknown error occurred",
+				description:
+					error instanceof Error ? error.message : "Unknown error occurred",
 				variant: "destructive",
 			});
 		}
@@ -157,7 +158,9 @@ export const GeneralSettings: Component = () => {
 					<div class="flex items-center justify-between">
 						<div class="space-y-1">
 							<p class="text-sm font-medium">Data location</p>
-							<p class="text-sm text-muted-foreground">Open the application data folder</p>
+							<p class="text-sm text-muted-foreground">
+								Open the application data folder
+							</p>
 						</div>
 						<Button variant="outline" onClick={openDataLocation}>
 							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:folder-open" />
