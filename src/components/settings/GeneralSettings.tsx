@@ -22,6 +22,20 @@ export const GeneralSettings: Component = () => {
 	const [autoLaunch, setAutoLaunch] = createSignal(false);
 	const [resetDialogOpen, setResetDialogOpen] = createSignal(false);
 	const [backupDialogOpen, setBackupDialogOpen] = createSignal(false);
+	const openDataLocation = async () => {
+		try {
+			const { appDataDir } = await import("@tauri-apps/api/path");
+			const { openPath } = await import("@tauri-apps/plugin-opener");
+			const dir = await appDataDir();
+			await openPath(dir);
+		} catch (error) {
+			showToast({
+				title: "Failed to open data folder",
+				description: error instanceof Error ? error.message : "Unknown error occurred",
+				variant: "destructive",
+			});
+		}
+	};
 
 	onMount(() => {
 		autostartHandler.isEnabled().then((enabled) => {
@@ -124,6 +138,19 @@ export const GeneralSettings: Component = () => {
 								<SwitchThumb />
 							</SwitchControl>
 						</Switch>
+					</div>
+
+					<Separator />
+
+					<div class="flex items-center justify-between">
+						<div class="space-y-1">
+							<p class="text-sm font-medium">Data location</p>
+							<p class="text-sm text-muted-foreground">Open the application data folder</p>
+						</div>
+						<Button variant="outline" onClick={openDataLocation}>
+							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:folder-open" />
+							Open Folder
+						</Button>
 					</div>
 
 					<Separator />
