@@ -69,9 +69,12 @@ export function saveBindings(bindings: HotkeyMap) {
 function normalizeKeyName(key: string): string {
 	let normalized = key;
 
-	if (key.startsWith("Key") && key.length === 4) normalized = key.slice(3).toLowerCase();
-	else if (key.startsWith("Digit") && key.length === 6) normalized = key.slice(5);
-	else if (key.startsWith("Numpad") && key.length > 6) normalized = key.slice(6);
+	if (key.startsWith("Key") && key.length === 4)
+		normalized = key.slice(3).toLowerCase();
+	else if (key.startsWith("Digit") && key.length === 6)
+		normalized = key.slice(5);
+	else if (key.startsWith("Numpad") && key.length > 6)
+		normalized = key.slice(6);
 	else if (key.length === 1) normalized = key.toLowerCase();
 	else if (key.toLowerCase().includes("control")) normalized = "Control";
 	else if (key.toUpperCase() === "CTRL") normalized = "Control";
@@ -94,7 +97,10 @@ function matchCombo(pressedRaw: Set<string>, combo: string[]): boolean {
 	return true;
 }
 
-export function useHotkeys(ctx: HotkeyContext, handlers: Partial<Record<HotkeyId, () => void>>) {
+export function useHotkeys(
+	ctx: HotkeyContext,
+	handlers: Partial<Record<HotkeyId, () => void>>,
+) {
 	console.debug("[hotkeys] init", { ctx, handlers: Object.keys(handlers) });
 
 	let pressed: () => string[];
@@ -173,7 +179,11 @@ export function useHotkeys(ctx: HotkeyContext, handlers: Partial<Record<HotkeyId
 				handlers[id]?.();
 				return true;
 			}
-			console.debug("[hotkeys] no-match", { id, need: binding.keys, have: Array.from(current) });
+			console.debug("[hotkeys] no-match", {
+				id,
+				need: binding.keys,
+				have: Array.from(current),
+			});
 			return false;
 		};
 
@@ -229,7 +239,9 @@ export function useHotkeys(ctx: HotkeyContext, handlers: Partial<Record<HotkeyId
 						"stopAll" as HotkeyId,
 					]
 				: ([] as HotkeyId[])),
-			...(ctx === "workspacesList" ? (["focusSearch"] as HotkeyId[]) : ([] as HotkeyId[])),
+			...(ctx === "workspacesList"
+				? (["focusSearch"] as HotkeyId[])
+				: ([] as HotkeyId[])),
 		];
 		for (const id of relevant) {
 			const binding = bindings[id];
@@ -263,5 +275,7 @@ export function useHotkeys(ctx: HotkeyContext, handlers: Partial<Record<HotkeyId
 	});
 
 	window.addEventListener("keydown", preventIfMatched, { capture: true });
-	onCleanup(() => window.removeEventListener("keydown", preventIfMatched, { capture: true }));
+	onCleanup(() =>
+		window.removeEventListener("keydown", preventIfMatched, { capture: true }),
+	);
 }

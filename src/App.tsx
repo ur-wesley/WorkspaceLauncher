@@ -2,11 +2,29 @@ import { ColorModeProvider, ColorModeScript } from "@kobalte/core";
 import { MetaProvider } from "@solidjs/meta";
 import { Route, Router } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createSignal, Match, onCleanup, onMount, Suspense, Switch } from "solid-js";
+import {
+	createSignal,
+	Match,
+	onCleanup,
+	onMount,
+	Suspense,
+	Switch,
+} from "solid-js";
 import { Layout } from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
-import { checkDatabaseSchema, createRun, initializeDatabase, listenToActionEvents } from "@/libs/api";
+import {
+	checkDatabaseSchema,
+	createRun,
+	initializeDatabase,
+	listAutoLaunchActions,
+	listenToActionEvents,
+	listVariablesByWorkspace,
+} from "@/libs/api";
 import type { ActionCompletedEvent } from "@/libs/api/types";
+import {
+	launchAction as launchActionTS,
+	prepareVariables,
+} from "@/libs/launcher";
 import { checkForUpdatesOnStartup } from "@/libs/updater";
 import { SettingsHotkeysPage } from "@/pages/SettingsHotkeysPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -14,6 +32,7 @@ import { SettingsThemeCreatorPage } from "@/pages/SettingsThemeCreatorPage";
 import WorkspaceDetailPage from "@/pages/WorkspaceDetailPage";
 import { WorkspacesListPage } from "@/pages/WorkspacesListPage";
 import { startPidChecker, stopPidChecker } from "@/services/pidChecker";
+import { runningActionsService } from "@/services/runningActions";
 import { StoreProvider } from "@/store";
 import type { NewRun } from "@/types/database";
 
@@ -46,7 +65,10 @@ const App: Component = () => {
 				if (result.isErr()) {
 					console.error("Failed to create run record:", result.error);
 				} else {
-					console.log("Created run record for action-completed event:", result.value);
+					console.log(
+						"Created run record for action-completed event:",
+						result.value,
+					);
 				}
 			})
 			.catch((error) => {
@@ -78,13 +100,78 @@ const App: Component = () => {
 
 			listenToActionEvents();
 
-			window.addEventListener("action-completed", handleActionCompleted as EventListener);
+			window.addEventListener(
+				"action-completed",
+				handleActionCompleted as EventListener,
+			);
 
 			startPidChecker();
 
 			checkForUpdatesOnStartup().catch((err) => {
 				console.error("Failed to check for updates:", err);
 			});
+
+			try {
+				const autoActionsResult = await listAutoLaunchActions();
+				if (autoActionsResult.isOk() && autoActionsResult.value.length > 0) {
+					console.log(
+						`Auto-launching ${autoActionsResult.value.length} actions...`,
+					);
+
+					// Launch each auto-start action using the same TypeScript launcher as normal launching
+					for (const action of autoActionsResult.value) {
+						try {
+							// Check if action is already running (same logic as normal launching)
+							const runningActions = runningActionsService.getByWorkspace(
+								action.workspace_id,
+							);
+							const isAlreadyRunning = runningActions.some(
+								(ra) => ra.action_id === action.id,
+							);
+
+							if (isAlreadyRunning) {
+								console.log(
+									`Skipping auto-launch for ${action.name} - already running`,
+								);
+								continue;
+							}
+
+							// Get variables for the workspace
+							const variablesResult = await listVariablesByWorkspace(
+								action.workspace_id,
+							);
+							const variables = variablesResult.isOk()
+								? variablesResult.value
+								: [];
+
+							// Prepare variables and context exactly like normal launching
+							const variableMap = prepareVariables(variables);
+							const context = {
+								workspaceId: action.workspace_id,
+								variables: variableMap,
+							};
+
+							// Launch the action using the same TypeScript launcher
+							const result = await launchActionTS(action, context);
+
+							if (result.success) {
+								console.log(`Auto-launched action: ${action.name}`);
+							} else {
+								console.error(
+									`Auto-launch failed for ${action.name}: ${result.message}`,
+								);
+							}
+						} catch (actionError) {
+							console.error(
+								`Failed to auto-launch action ${action.name}:`,
+								actionError,
+							);
+						}
+					}
+				}
+			} catch (e) {
+				console.error("Auto-launch startup failed:", e);
+			}
 
 			console.log("App initialization complete");
 			setInitialized(true);
@@ -96,7 +183,10 @@ const App: Component = () => {
 
 	onCleanup(() => {
 		stopPidChecker();
-		window.removeEventListener("action-completed", handleActionCompleted as EventListener);
+		window.removeEventListener(
+			"action-completed",
+			handleActionCompleted as EventListener,
+		);
 	});
 
 	return (
@@ -104,7 +194,9 @@ const App: Component = () => {
 			<Match when={error()}>
 				<div class="flex items-center justify-center h-screen bg-destructive/10">
 					<div class="bg-card rounded-lg shadow-md p-4 max-w-md">
-						<h1 class="text-2xl font-bold text-destructive mb-2">Initialization Error</h1>
+						<h1 class="text-2xl font-bold text-destructive mb-2">
+							Initialization Error
+						</h1>
 						<p class="text-muted-foreground">{error()}</p>
 					</div>
 				</div>
@@ -126,11 +218,23 @@ const App: Component = () => {
 								<Suspense>
 									<Route component={Layout}>
 										<Route path="/" component={WorkspacesListPage} />
-										<Route path="/w/:workspaceId" component={WorkspaceDetailPage} />
+										<Route
+											path="/w/:workspaceId"
+											component={WorkspaceDetailPage}
+										/>
 										<Route path="/settings" component={SettingsPage} />
-										<Route path="/settings/hotkeys" component={SettingsHotkeysPage} />
-										<Route path="/settings/themes/create" component={SettingsThemeCreatorPage} />
-										<Route path="/settings/themes/edit" component={SettingsThemeCreatorPage} />
+										<Route
+											path="/settings/hotkeys"
+											component={SettingsHotkeysPage}
+										/>
+										<Route
+											path="/settings/themes/create"
+											component={SettingsThemeCreatorPage}
+										/>
+										<Route
+											path="/settings/themes/edit"
+											component={SettingsThemeCreatorPage}
+										/>
 									</Route>
 								</Suspense>
 							</MetaProvider>

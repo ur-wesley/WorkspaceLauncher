@@ -1,7 +1,11 @@
 import * as v from "valibot";
 
 export const basicInfoSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, "Action name is required"), v.maxLength(100)),
+	name: v.pipe(
+		v.string(),
+		v.minLength(1, "Action name is required"),
+		v.maxLength(100),
+	),
 });
 
 export const toolSelectionSchema = v.object({

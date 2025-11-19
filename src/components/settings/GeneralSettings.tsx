@@ -5,7 +5,13 @@ import { DatabaseResetDialog } from "@/components/DatabaseResetDialog";
 import { ImportDialog } from "@/components/ImportDialog";
 import { ShareDialog } from "@/components/ShareDialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
 import * as api from "@/libs/api";
@@ -42,7 +48,8 @@ export const GeneralSettings: Component = () => {
 		} catch (error) {
 			showToast({
 				title: "Failed to update autostart",
-				description: error instanceof Error ? error.message : "Unknown error occurred",
+				description:
+					error instanceof Error ? error.message : "Unknown error occurred",
 				variant: "destructive",
 			});
 			setAutoLaunch(!enabled);
@@ -55,7 +62,8 @@ export const GeneralSettings: Component = () => {
 			if (result.isOk()) {
 				showToast({
 					title: "Database Reset",
-					description: "Database has been reset successfully. All data has been cleared.",
+					description:
+						"Database has been reset successfully. All data has been cleared.",
 				});
 				toolActions.loadTools();
 				themeActions.loadThemes();
@@ -69,7 +77,8 @@ export const GeneralSettings: Component = () => {
 		} catch (error) {
 			showToast({
 				title: "Reset Failed",
-				description: error instanceof Error ? error.message : "Unknown error occurred",
+				description:
+					error instanceof Error ? error.message : "Unknown error occurred",
 				variant: "destructive",
 			});
 		}
@@ -96,7 +105,8 @@ export const GeneralSettings: Component = () => {
 		} catch (error) {
 			showToast({
 				title: "Backup & Reset Failed",
-				description: error instanceof Error ? error.message : "Unknown error occurred",
+				description:
+					error instanceof Error ? error.message : "Unknown error occurred",
 				variant: "destructive",
 			});
 		}
@@ -111,7 +121,9 @@ export const GeneralSettings: Component = () => {
 						<div class="i-mdi-cog w-5 h-5" />
 						General & Hotkeys
 					</CardTitle>
-					<CardDescription>Application preferences and keyboard shortcuts</CardDescription>
+					<CardDescription>
+						Application preferences and keyboard shortcuts
+					</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
 					<div class="flex items-center justify-between">
@@ -130,7 +142,9 @@ export const GeneralSettings: Component = () => {
 
 					<div class="space-y-2">
 						<p class="text-sm font-medium">Keyboard Shortcuts</p>
-						<p class="text-sm text-muted-foreground">Configure global hotkeys for quick access</p>
+						<p class="text-sm text-muted-foreground">
+							Configure global hotkeys for quick access
+						</p>
 						<A href="/settings/hotkeys">
 							<Button variant="outline" class="w-full">
 								<div class="i-mdi-keyboard-settings w-4 h-4 mr-2" />
@@ -153,7 +167,9 @@ export const GeneralSettings: Component = () => {
 					<div class="flex items-center justify-between">
 						<div>
 							<p class="text-sm font-medium">Application Updates</p>
-							<p class="text-sm text-muted-foreground">Current version: {version || "dev"}</p>
+							<p class="text-sm text-muted-foreground">
+								Current version: {version || "dev"}
+							</p>
 						</div>
 						<Button onClick={() => checkForUpdates(false)}>
 							<div class="i-mdi-update w-4 h-4 mr-2" />
@@ -164,9 +180,17 @@ export const GeneralSettings: Component = () => {
 					<Separator />
 
 					<div class="flex gap-2">
-						<a href="https://github.com/ur-wesley/WorkspaceLauncher" target="_blank" rel="noreferrer" class="flex-1">
+						<a
+							href="https://github.com/ur-wesley/WorkspaceLauncher"
+							target="_blank"
+							rel="noreferrer"
+							class="flex-1"
+						>
 							<Button variant="outline" class="w-full">
-								<span class="iconify w-4 h-4 mr-2" data-icon="mdi:source-repository" />
+								<span
+									class="iconify w-4 h-4 mr-2"
+									data-icon="mdi:source-repository"
+								/>
 								Repository
 							</Button>
 						</a>
@@ -191,13 +215,17 @@ export const GeneralSettings: Component = () => {
 						<span class="iconify w-5 h-5" data-icon="mdi:share-variant" />
 						Share & Import
 					</CardTitle>
-					<CardDescription>Export your data to share with others or backup, and import data</CardDescription>
+					<CardDescription>
+						Export your data to share with others or backup, and import data
+					</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-3">
 					<div class="flex items-start gap-3">
 						<div class="flex-1 space-y-1">
 							<p class="text-sm font-medium">Export Data</p>
-							<p class="text-sm text-muted-foreground">Select and export workspaces and tools to a file or clipboard</p>
+							<p class="text-sm text-muted-foreground">
+								Select and export workspaces and tools to a file or clipboard
+							</p>
 						</div>
 						<ShareDialog
 							trigger={(props) => (
@@ -214,7 +242,9 @@ export const GeneralSettings: Component = () => {
 					<div class="flex items-start gap-3">
 						<div class="flex-1 space-y-1">
 							<p class="text-sm font-medium">Import Data</p>
-							<p class="text-sm text-muted-foreground">Import workspaces and tools from a file or clipboard</p>
+							<p class="text-sm text-muted-foreground">
+								Import workspaces and tools from a file or clipboard
+							</p>
 						</div>
 						<ImportDialog
 							trigger={(props: { onClick?: () => void }) => (
@@ -236,19 +266,27 @@ export const GeneralSettings: Component = () => {
 						<span class="iconify w-5 h-5" data-icon="mdi:database-remove" />
 						Reset Database
 					</CardTitle>
-					<CardDescription>Permanently delete all data and reset the database</CardDescription>
+					<CardDescription>
+						Permanently delete all data and reset the database
+					</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-3">
 					<div class="flex items-start gap-3">
 						<div class="flex-1 space-y-1">
 							<p class="text-sm font-medium">Reset Database</p>
 							<p class="text-sm text-muted-foreground">
-								This will permanently delete all workspaces, actions, tools, themes, and settings. This action cannot be
-								undone.
+								This will permanently delete all workspaces, actions, tools,
+								themes, and settings. This action cannot be undone.
 							</p>
 						</div>
-						<Button variant="destructive" onClick={() => setResetDialogOpen(true)}>
-							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:database-remove" />
+						<Button
+							variant="destructive"
+							onClick={() => setResetDialogOpen(true)}
+						>
+							<span
+								class="iconify w-4 h-4 mr-2"
+								data-icon="mdi:database-remove"
+							/>
 							Reset Database
 						</Button>
 					</div>
@@ -261,18 +299,24 @@ export const GeneralSettings: Component = () => {
 						<span class="iconify w-5 h-5" data-icon="mdi:database-backup" />
 						Backup & Reset Database
 					</CardTitle>
-					<CardDescription>Create a backup of all data, then reset the database</CardDescription>
+					<CardDescription>
+						Create a backup of all data, then reset the database
+					</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-3">
 					<div class="flex items-start gap-3">
 						<div class="flex-1 space-y-1">
 							<p class="text-sm font-medium">Backup & Reset Database</p>
 							<p class="text-sm text-muted-foreground">
-								This will export all data to a JSON file, then reset the database. Your data will be safely backed up.
+								This will export all data to a JSON file, then reset the
+								database. Your data will be safely backed up.
 							</p>
 						</div>
 						<Button variant="outline" onClick={() => setBackupDialogOpen(true)}>
-							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:database-backup" />
+							<span
+								class="iconify w-4 h-4 mr-2"
+								data-icon="mdi:database-backup"
+							/>
 							Backup & Reset
 						</Button>
 					</div>

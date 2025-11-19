@@ -50,11 +50,16 @@ export function isDuplicateName(
 	selectedIds: Set<number>,
 	renamedMap: Map<number, string>,
 ): boolean {
-	const getName = (item: { id: number; name: string }) => renamedMap.get(item.id) || item.name;
+	const getName = (item: { id: number; name: string }) =>
+		renamedMap.get(item.id) || item.name;
 
-	const targetName = getName(items.find((item) => item.id === targetId) || { id: targetId, name: "" });
+	const targetName = getName(
+		items.find((item) => item.id === targetId) || { id: targetId, name: "" },
+	);
 
-	const allNames = items.filter((item) => selectedIds.has(item.id)).map((item) => getName(item));
+	const allNames = items
+		.filter((item) => selectedIds.has(item.id))
+		.map((item) => getName(item));
 
 	return allNames.filter((name) => name === targetName).length > 1;
 }
@@ -72,7 +77,10 @@ export function getEffectiveName<T extends { id: number; name: string }>(
 /**
  * Toggles an ID in a Set
  */
-export function toggleIdInSet(id: number, currentSet: Set<number>): Set<number> {
+export function toggleIdInSet(
+	id: number,
+	currentSet: Set<number>,
+): Set<number> {
 	const newSet = new Set<number>(currentSet);
 	if (newSet.has(id)) {
 		newSet.delete(id);
@@ -85,7 +93,11 @@ export function toggleIdInSet(id: number, currentSet: Set<number>): Set<number> 
 /**
  * Updates a rename map
  */
-export function updateRenameMap(id: number, newName: string, currentMap: Map<number, string>): Map<number, string> {
+export function updateRenameMap(
+	id: number,
+	newName: string,
+	currentMap: Map<number, string>,
+): Map<number, string> {
 	const newMap = new Map(currentMap);
 	if (newName.trim()) {
 		newMap.set(id, newName);
@@ -93,4 +105,42 @@ export function updateRenameMap(id: number, newName: string, currentMap: Map<num
 		newMap.delete(id);
 	}
 	return newMap;
+}
+
+export function hasAnyWorkspaceNameConflict(
+	workspaces: Array<{ id: number; name: string }>,
+	selectedIds: Set<number>,
+	renameMap: Map<number, string>,
+	existingLowerNames: Set<string>,
+): boolean {
+	const lower = (s: string) => s.toLowerCase();
+	const selectedNames: string[] = [];
+	for (const ws of workspaces) {
+		if (!selectedIds.has(ws.id)) continue;
+		const name = (renameMap.get(ws.id) || ws.name || "").trim();
+		if (!name) continue;
+		const lowerName = lower(name);
+		if (existingLowerNames.has(lowerName)) return true;
+		selectedNames.push(lowerName);
+	}
+	const seen = new Set<string>();
+	for (const n of selectedNames) {
+		if (seen.has(n)) return true;
+		seen.add(n);
+	}
+	return false;
+}
+
+export function groupActionsByWorkspace<
+	T extends { id: number; workspace_id?: number | null },
+>(actions: T[]): Map<number, T[]> {
+	const map = new Map<number, T[]>();
+	for (const a of actions) {
+		const wsId = a.workspace_id;
+		if (typeof wsId !== "number") continue;
+		const arr = map.get(wsId) || [];
+		arr.push(a);
+		map.set(wsId, arr);
+	}
+	return map;
 }

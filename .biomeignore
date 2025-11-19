@@ -1,0 +1,2 @@
+# CSS files use Tailwind @apply directives that biome doesn't support
+**/*.css

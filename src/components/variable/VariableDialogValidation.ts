@@ -5,7 +5,10 @@ export const variableSchema = v.object({
 		v.string(),
 		v.minLength(1, "Variable key is required"),
 		v.maxLength(100),
-		v.regex(/^[A-Z_][A-Z0-9_]*$/, "Key must be uppercase letters, numbers, and underscores only"),
+		v.regex(
+			/^[A-Z_][A-Z0-9_]*$/,
+			"Key must be uppercase letters, numbers, and underscores only",
+		),
 	),
 	value: v.string(),
 	isSecure: v.boolean(),

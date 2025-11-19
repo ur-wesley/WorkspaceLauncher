@@ -103,9 +103,17 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
 							<Button variant="outline" type="button" {...triggerProps}>
 								<Show
 									when={currentIconName()}
-									fallback={<span class="iconify w-5 h-5" data-icon="mdi:emoticon-outline" />}
+									fallback={
+										<span
+											class="iconify w-5 h-5"
+											data-icon="mdi:emoticon-outline"
+										/>
+									}
 								>
-									<span class="iconify w-5 h-5" data-icon={`mdi:${currentIconName()}`} />
+									<span
+										class="iconify w-5 h-5"
+										data-icon={`mdi:${currentIconName()}`}
+									/>
 								</Show>
 							</Button>
 						}
@@ -127,7 +135,9 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
 							/>
 						</TextFieldRoot>
 						<div class="text-xs text-muted-foreground mt-1.5">
-							{allIcons().length > 0 ? `${allIcons().length.toLocaleString()} icons available` : "Loading..."}
+							{allIcons().length > 0
+								? `${allIcons().length.toLocaleString()} icons available`
+								: "Loading..."}
 						</div>
 					</div>{" "}
 					<div class="flex-1 overflow-y-auto">
@@ -139,7 +149,9 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
 						<Show when={!loading() && filteredIcons().length === 0}>
 							<div class="flex flex-col items-center justify-center p-8 text-center">
 								<div class="i-mdi-magnify-close w-10 h-10 text-muted-foreground mb-2" />
-								<p class="text-sm text-muted-foreground">No icons found matching "{searchQuery()}"</p>
+								<p class="text-sm text-muted-foreground">
+									No icons found matching "{searchQuery()}"
+								</p>
 							</div>
 						</Show>
 						<Show when={!loading() && filteredIcons().length > 0}>
@@ -152,7 +164,8 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
 												onClick={() => handleSelectIcon(iconName)}
 												class={cn(
 													"flex items-center justify-center p-2.5 rounded hover:bg-accent transition-colors group relative",
-													currentIconName() === iconName && "bg-primary/10 ring-2 ring-primary",
+													currentIconName() === iconName &&
+														"bg-primary/10 ring-2 ring-primary",
 												)}
 												title={iconName}
 											>
@@ -170,7 +183,8 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
 					<div class="border-t border-border p-2 bg-muted/30">
 						<Show when={!loading() && searchQuery()}>
 							<div class="text-xs text-muted-foreground text-center">
-								{filteredIcons().length} result{filteredIcons().length !== 1 ? "s" : ""}
+								{filteredIcons().length} result
+								{filteredIcons().length !== 1 ? "s" : ""}
 								{filteredIcons().length === 200 && " (limited to 200)"}
 							</div>
 						</Show>

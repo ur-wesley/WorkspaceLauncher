@@ -1,11 +1,24 @@
-import { type Component, createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import {
+	type Component,
+	createEffect,
+	createSignal,
+	For,
+	onCleanup,
+	Show,
+} from "solid-js";
 import { useRunStore } from "@/store";
 import { useWorkspaceStore } from "@/store/workspace";
 import type { RunningAction } from "@/types/database";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "./ui/dialog";
 
 interface ActiveActionsManagerDialogProps {
 	open: boolean;
@@ -36,7 +49,9 @@ function formatDuration(startedAt: string): string {
 	return `${seconds}s`;
 }
 
-export const ActiveActionsManagerDialog: Component<ActiveActionsManagerDialogProps> = (props) => {
+export const ActiveActionsManagerDialog: Component<
+	ActiveActionsManagerDialogProps
+> = (props) => {
 	const [state, actions] = useRunStore();
 	const workspaceStore = useWorkspaceStore();
 	const [, setTick] = createSignal(0);
@@ -65,7 +80,9 @@ export const ActiveActionsManagerDialog: Component<ActiveActionsManagerDialogPro
 
 		for (const action of state.runningActions) {
 			if (!groups.has(action.workspace_id)) {
-				const workspace = workspaceStore.actions.getWorkspace(action.workspace_id);
+				const workspace = workspaceStore.actions.getWorkspace(
+					action.workspace_id,
+				);
 				groups.set(action.workspace_id, {
 					workspaceId: action.workspace_id,
 					workspaceName: workspace?.name || `Workspace ${action.workspace_id}`,
@@ -75,7 +92,9 @@ export const ActiveActionsManagerDialog: Component<ActiveActionsManagerDialogPro
 			groups.get(action.workspace_id)?.actions.push(action);
 		}
 
-		return Array.from(groups.values()).sort((a, b) => a.workspaceName.localeCompare(b.workspaceName));
+		return Array.from(groups.values()).sort((a, b) =>
+			a.workspaceName.localeCompare(b.workspaceName),
+		);
 	};
 
 	const totalActionsCount = () => state.runningActions.length;
@@ -85,7 +104,9 @@ export const ActiveActionsManagerDialog: Component<ActiveActionsManagerDialogPro
 			<DialogContent class="max-w-3xl max-h-[80vh] flex flex-col">
 				<DialogHeader>
 					<DialogTitle>Active Actions Manager</DialogTitle>
-					<DialogDescription>View and manage all running actions across all workspaces</DialogDescription>
+					<DialogDescription>
+						View and manage all running actions across all workspaces
+					</DialogDescription>
 				</DialogHeader>
 
 				<div class="flex items-center justify-between mb-4">
@@ -115,12 +136,18 @@ export const ActiveActionsManagerDialog: Component<ActiveActionsManagerDialogPro
 									when={state.loading}
 									fallback={
 										<div class="text-center">
-											<p class="text-sm text-muted-foreground mb-2">No running actions</p>
-											<p class="text-xs text-muted-foreground">All actions have completed or been stopped</p>
+											<p class="text-sm text-muted-foreground mb-2">
+												No running actions
+											</p>
+											<p class="text-xs text-muted-foreground">
+												All actions have completed or been stopped
+											</p>
 										</div>
 									}
 								>
-									<p class="text-sm text-muted-foreground text-center">Loading...</p>
+									<p class="text-sm text-muted-foreground text-center">
+										Loading...
+									</p>
 								</Show>
 							</Card>
 						}
@@ -129,7 +156,9 @@ export const ActiveActionsManagerDialog: Component<ActiveActionsManagerDialogPro
 							{(group) => (
 								<div class="space-y-2">
 									<div class="flex items-center gap-2 px-2">
-										<h3 class="text-sm font-semibold text-foreground">{group.workspaceName}</h3>
+										<h3 class="text-sm font-semibold text-foreground">
+											{group.workspaceName}
+										</h3>
 										<Badge variant="secondary" class="text-xs">
 											{group.actions.length}
 										</Badge>
@@ -141,22 +170,36 @@ export const ActiveActionsManagerDialog: Component<ActiveActionsManagerDialogPro
 													<div class="flex items-center justify-between gap-3">
 														<div class="flex-1 min-w-0">
 															<div class="flex items-center gap-2">
-																<Badge variant="default" class="bg-green-500 text-xs">
+																<Badge
+																	variant="default"
+																	class="bg-green-500 text-xs"
+																>
 																	Running
 																</Badge>
-																<span class="text-sm font-medium truncate">{action.action_name}</span>
+																<span class="text-sm font-medium truncate">
+																	{action.action_name}
+																</span>
 															</div>
 															<div class="mt-1 flex items-center gap-4 flex-wrap">
-																<p class="text-xs text-muted-foreground">PID: {action.process_id}</p>
+																<p class="text-xs text-muted-foreground">
+																	PID: {action.process_id}
+																</p>
 																<p class="text-xs text-muted-foreground">
 																	Duration: {formatDuration(action.started_at)}
 																</p>
 																<p class="text-xs text-muted-foreground">
-																	Started: {new Date(action.started_at).toLocaleTimeString()}
+																	Started:{" "}
+																	{new Date(
+																		action.started_at,
+																	).toLocaleTimeString()}
 																</p>
 															</div>
 														</div>
-														<Button variant="destructive" size="sm" onClick={() => actions.stopAction(action)}>
+														<Button
+															variant="destructive"
+															size="sm"
+															onClick={() => actions.stopAction(action)}
+														>
 															Stop
 														</Button>
 													</div>

@@ -1,16 +1,14 @@
 import { openPath } from "@tauri-apps/plugin-opener";
 import { Command } from "@tauri-apps/plugin-shell";
+import type { Action } from "@/models/action.model";
+import type { Variable } from "@/models/variable.model";
 import { runningActionsService } from "@/services/runningActions";
 import type {
-	Action,
 	ActionConfig,
 	CommandActionConfig,
 	DelayActionConfig,
-	EclipseActionConfig,
 	ToolActionConfig,
 	URLActionConfig,
-	Variable,
-	VSCodeActionConfig,
 } from "@/types/database";
 
 export interface LaunchContext {
@@ -18,31 +16,101 @@ export interface LaunchContext {
 	variables: Record<string, string>;
 }
 
+function normalizeActionConfig(
+	actionType: string,
+	config: ActionConfig,
+	_context: LaunchContext,
+): { type: "tool" | "command" | "url" | "delay"; config: ActionConfig } {
+	const t = actionType.toLowerCase();
+	if (t === "tool" || t === "command" || t === "url" || t === "delay") {
+		return { type: t as "tool" | "command" | "url" | "delay", config };
+	}
+
+	// Attempt to infer type from config properties if actionType is not explicit
+	type ConfigWithUnknownKeys = ActionConfig & Record<string, unknown>;
+	const c = config as ConfigWithUnknownKeys;
+
+	if (typeof c.command === "string" && c.command.trim()) {
+		return {
+			type: "command",
+			config: {
+				type: "command",
+				command: c.command,
+				args: (c.args as string[] | undefined) ?? [],
+				detached: c.detached as boolean | undefined,
+				working_directory: c.working_directory as string | undefined,
+			},
+		};
+	}
+	if (typeof c.binary_path === "string" && c.binary_path.trim()) {
+		return {
+			type: "tool",
+			config: {
+				type: "tool",
+				source: "custom",
+				tool_name: (c.tool_name as string | undefined) ?? t,
+				tool_type: "binary",
+				binary_path: c.binary_path,
+				args: (c.args as string[] | undefined) ?? [],
+				detached: c.detached as boolean | undefined,
+				working_directory: c.working_directory as string | null | undefined,
+			},
+		};
+	}
+
+	const fallbackCommand = (c.tool_name as string | undefined) || t;
+	return {
+		type: "tool",
+		config: {
+			type: "tool",
+			source: "custom",
+			tool_name: (c.tool_name as string | undefined) ?? t,
+			tool_type: "cli",
+			command: fallbackCommand,
+			args: (c.args as string[] | undefined) ?? [],
+			detached: c.detached as boolean | undefined,
+			working_directory: c.working_directory as string | null | undefined,
+		},
+	};
+}
+
 export interface LaunchResult {
 	success: boolean;
 	message: string;
 	processId?: number;
+	runId?: number;
 }
 
-function trackRunningAction(action: Action, processId: number, context: LaunchContext): void {
+function trackRunningAction(
+	action: Action,
+	processId: number,
+	context: LaunchContext,
+	runId?: number,
+): void {
 	const runningAction = {
 		id: `${action.id}-${Date.now()}`,
 		workspace_id: context.workspaceId,
 		action_id: action.id,
 		action_name: action.name,
 		process_id: processId,
+		run_id: runId,
 		started_at: new Date().toISOString(),
 	};
 
 	runningActionsService.add(runningAction);
-	console.log(`Tracking running action: ${action.name} (PID: ${processId})`);
+	console.log(
+		`Tracking running action: ${action.name} (PID: ${processId}, RunID: ${runId})`,
+	);
 }
 
 function isWindows(): boolean {
 	return navigator.userAgent.includes("Windows");
 }
 
-function replaceVariables(input: string, variables: Record<string, string>): string {
+function replaceVariables(
+	input: string,
+	variables: Record<string, string>,
+): string {
 	let result = input;
 	for (const [key, value] of Object.entries(variables)) {
 		result = result.replace(new RegExp(`\\$\\{${key}\\}`, "g"), value);
@@ -50,7 +118,9 @@ function replaceVariables(input: string, variables: Record<string, string>): str
 	return result;
 }
 
-export function prepareVariables(variables: Variable[]): Record<string, string> {
+export function prepareVariables(
+	variables: Variable[],
+): Record<string, string> {
 	const variableMap: Record<string, string> = {};
 	for (const variable of variables) {
 		if (variable.enabled) {
@@ -60,7 +130,10 @@ export function prepareVariables(variables: Variable[]): Record<string, string> 
 	return variableMap;
 }
 
-export async function launchAction(action: Action, context: LaunchContext): Promise<LaunchResult> {
+export async function launchAction(
+	action: Action,
+	context: LaunchContext,
+): Promise<LaunchResult> {
 	console.log(`Launching action: ${action.name} (type: ${action.action_type})`);
 
 	try {
@@ -71,32 +144,50 @@ export async function launchAction(action: Action, context: LaunchContext): Prom
 			throw new Error(`Invalid action configuration: ${action.config}`);
 		}
 
+		const normalized = normalizeActionConfig(
+			action.action_type,
+			config,
+			context,
+		);
+		if (normalized.type === "tool" || normalized.type === "command") {
+			const cfg = normalized.config as CommandActionConfig | ToolActionConfig;
+			cfg.detached = action.detached ?? cfg.detached ?? false;
+			cfg.track_process = action.track_process;
+		}
 		let result: LaunchResult;
-		switch (action.action_type) {
+		switch (normalized.type) {
 			case "tool":
-				result = await launchToolAction(config as ToolActionConfig, context);
-				break;
-			case "vscode":
-				result = await launchVSCodeAction(config as VSCodeActionConfig, context);
-				break;
-			case "eclipse":
-				result = await launchEclipseAction(config as EclipseActionConfig, context);
+				result = await launchToolAction(
+					normalized.config as ToolActionConfig,
+					context,
+					action.id,
+				);
 				break;
 			case "command":
-				result = await launchCommandAction(config as CommandActionConfig, context);
+				result = await launchCommandAction(
+					normalized.config as CommandActionConfig,
+					context,
+					action.id,
+				);
 				break;
 			case "url":
-				result = await launchURLAction(config as URLActionConfig, context);
+				result = await launchURLAction(
+					normalized.config as URLActionConfig,
+					context,
+				);
 				break;
 			case "delay":
-				result = await launchDelayAction(config as DelayActionConfig, context);
+				result = await launchDelayAction(
+					normalized.config as DelayActionConfig,
+					context,
+				);
 				break;
 			default:
-				throw new Error(`Unknown action type: ${action.action_type}`);
+				throw new Error(`Unknown action type: ${normalized.type}`);
 		}
 
 		if (result.success && result.processId && action.track_process) {
-			trackRunningAction(action, result.processId, context);
+			trackRunningAction(action, result.processId, context, result.runId);
 		}
 
 		return result;
@@ -110,96 +201,87 @@ export async function launchAction(action: Action, context: LaunchContext): Prom
 	}
 }
 
-export async function launchWorkspace(actions: Action[], context: LaunchContext): Promise<LaunchResult[]> {
+export async function launchWorkspace(
+	actions: Action[],
+	context: LaunchContext,
+): Promise<LaunchResult[]> {
 	console.log(`Launching workspace with ${actions.length} actions`);
 
 	const results: LaunchResult[] = [];
 
-	const sortedActions = [...actions].sort((a, b) => a.order_index - b.order_index);
+	const sortedActions = [...actions].sort(
+		(a, b) => a.order_index - b.order_index,
+	);
 
 	for (const action of sortedActions) {
 		const result = await launchAction(action, context);
 		results.push(result);
 
 		if (!result.success) {
-			console.warn(`Action ${action.name} failed, continuing with remaining actions`);
+			console.warn(
+				`Action ${action.name} failed, continuing with remaining actions`,
+			);
 		}
 	}
 
 	return results;
 }
 
-async function launchVSCodeAction(config: VSCodeActionConfig, context: LaunchContext): Promise<LaunchResult> {
-	const workspacePath = replaceVariables(config.workspace_path, context.variables);
-
-	console.log(`Launching VS Code with workspace: ${workspacePath}`);
-
-	try {
-		const args = [workspacePath];
-		if (config.new_window) {
-			args.push("--new-window");
-		}
-
-		const quotedArgs = args.map((arg) => `"${arg}"`).join(" ");
-		const cmdArgs = ["/c", `code ${quotedArgs}`];
-
-		const workspaceDir = workspacePath.substring(0, workspacePath.lastIndexOf("\\"));
-		const spawnOptions = workspaceDir ? { cwd: workspaceDir } : { cwd: context.variables.TEMP || "C:\\Windows\\Temp" };
-
-		const command = Command.create("cmd", cmdArgs, spawnOptions);
-		const child = await command.spawn();
-
-		console.log(`VS Code launched successfully`);
-
-		return {
-			success: true,
-			message: `VS Code launched successfully for workspace: ${workspacePath}`,
-			processId: child.pid,
-		};
-	} catch (error) {
-		throw new Error(`Failed to launch VS Code: ${error}`);
-	}
-}
-
-async function launchEclipseAction(config: EclipseActionConfig, context: LaunchContext): Promise<LaunchResult> {
-	const workspacePath = replaceVariables(config.workspace_path, context.variables);
-	const binaryPath = config.binary_path ? replaceVariables(config.binary_path, context.variables) : "eclipse";
-
-	console.log(`Launching Eclipse with workspace: ${workspacePath}`);
-
-	try {
-		const cmdArgs = ["/c", `"${binaryPath}"`, "-data", `"${workspacePath}"`];
-
-		const workspaceParent = workspacePath.substring(0, workspacePath.lastIndexOf("\\"));
-		const spawnOptions = workspaceParent ? { cwd: workspaceParent } : undefined;
-
-		const command = Command.create("cmd", cmdArgs, spawnOptions);
-		const child = await command.spawn();
-
-		console.log(`Eclipse launched successfully`);
-
-		return {
-			success: true,
-			message: `Eclipse launched successfully for workspace: ${workspacePath}`,
-			processId: child.pid,
-		};
-	} catch (error) {
-		throw new Error(`Failed to launch Eclipse: ${error}`);
-	}
-}
-
-async function launchCommandAction(config: CommandActionConfig, context: LaunchContext): Promise<LaunchResult> {
+async function launchCommandAction(
+	config: CommandActionConfig,
+	context: LaunchContext,
+	actionId?: number,
+): Promise<LaunchResult> {
 	const commandStr = replaceVariables(config.command, context.variables);
-	const args = config.args?.map((arg) => replaceVariables(arg, context.variables)) || [];
+	const args =
+		config.args?.map((arg) => replaceVariables(arg, context.variables)) || [];
+	const detached = config.detached === true;
 
-	console.log(`Executing command: ${commandStr} ${args.join(" ")}`);
+	console.log(
+		`Executing command: ${commandStr} ${args.join(" ")} (detached: ${detached})`,
+	);
+
+	if (detached) {
+		const { invoke } = await import("@tauri-apps/api/core");
+		const workingDir =
+			context.variables.TEMP ||
+			context.variables.TMP ||
+			(isWindows() ? "C:\\Windows\\Temp" : "/tmp");
+		const result = (await invoke("launch_action", {
+			request: {
+				action_id: actionId ?? 0,
+				workspace_id: context.workspaceId,
+				action_type: "command",
+				config: {
+					command: commandStr,
+					args,
+					detached: true,
+					working_directory: workingDir,
+					track_process: config.track_process,
+				},
+				variables: context.variables,
+			},
+		})) as {
+			success?: boolean;
+			message?: string;
+			process_id?: number;
+			run_id?: number;
+		};
+		return {
+			success: Boolean(result?.success),
+			message: result?.message || `Command launched (detached): ${commandStr}`,
+			processId: result?.process_id,
+			runId: result?.run_id,
+		};
+	}
 
 	try {
 		const quotedArgs = args.map((arg) => `"${arg}"`).join(" ");
 		const fullCommand = quotedArgs ? `${commandStr} ${quotedArgs}` : commandStr;
 		const cmdArgs = ["/c", fullCommand];
 
-		const userTemp = context.variables.TEMP || context.variables.TMP || "C:\\Windows\\Temp";
+		const userTemp =
+			context.variables.TEMP || context.variables.TMP || "C:\\Windows\\Temp";
 		const command = Command.create("cmd", cmdArgs, { cwd: userTemp });
 		const child = await command.spawn();
 
@@ -215,7 +297,10 @@ async function launchCommandAction(config: CommandActionConfig, context: LaunchC
 	}
 }
 
-async function launchURLAction(config: URLActionConfig, context: LaunchContext): Promise<LaunchResult> {
+async function launchURLAction(
+	config: URLActionConfig,
+	context: LaunchContext,
+): Promise<LaunchResult> {
 	const url = replaceVariables(config.url, context.variables);
 
 	console.log(`Opening URL: ${url}`);
@@ -232,15 +317,21 @@ async function launchURLAction(config: URLActionConfig, context: LaunchContext):
 	}
 }
 
-async function launchToolAction(config: ToolActionConfig, context: LaunchContext): Promise<LaunchResult> {
-	console.log(`Launching tool action: ${config.tool_name} (source: ${config.source})`);
+async function launchToolAction(
+	config: ToolActionConfig,
+	context: LaunchContext,
+	actionId?: number,
+): Promise<LaunchResult> {
+	console.log(
+		`Launching tool action: ${config.tool_name} (source: ${config.source})`,
+	);
 
 	try {
 		if (config.source === "custom") {
-			return await launchCustomTool(config, context);
+			return await launchCustomTool(config, context, actionId);
 		}
 
-		return await launchSavedTool(config, context);
+		return await launchSavedTool(config, context, actionId);
 	} catch (error) {
 		throw new Error(`Failed to launch tool: ${error}`);
 	}
@@ -258,39 +349,50 @@ function createCliCommand(
 		const fullCommand = `${processedCommand} ${processedArgs.join(" ")}`;
 		return Command.create(
 			"powershell",
-			["-Command", `Start-Process powershell -ArgumentList '-NoExit','-Command','${fullCommand.replace(/'/g, "''")}'`],
+			[
+				"-Command",
+				`Start-Process powershell -ArgumentList '-NoExit','-Command','${fullCommand.replace(/'/g, "''")}'`,
+			],
 			{ cwd: workingDir },
 		);
 	}
 
-	if (!isDetached) {
+	if (!isDetached && !isWindows()) {
 		return Command.create(
 			"x-terminal-emulator",
-			["-e", "sh", "-c", `${processedCommand} ${processedArgs.join(" ")}; read -p 'Press enter to close'`],
+			[
+				"-e",
+				"sh",
+				"-c",
+				`${processedCommand} ${processedArgs.join(" ")}; read -p 'Press enter to close'`,
+			],
 			{ cwd: workingDir },
 		);
 	}
 
-	if (isWindows()) {
-		const fullCommand = [processedCommand, ...processedArgs].join(" ");
-
-		const cmdString = `cd /d ${workingDir} && ${fullCommand}`.replace(/'/g, "''");
-
+	if (isDetached && isWindows()) {
+		const escapedArgs = processedArgs
+			.map((a) => `'${a.replace(/'/g, "''")}'`)
+			.join(",");
 		const psScript = `
-      $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','${cmdString}' -WindowStyle Hidden -PassThru
-      Write-Output $proc.Id
-    `
+          $proc = Start-Process -FilePath '${processedCommand.replace(/'/g, "''")}' -ArgumentList ${escapedArgs} -WorkingDirectory '${workingDir.replace(/'/g, "''")}' -WindowStyle Hidden -PassThru
+          Write-Output $proc.Id
+        `
 			.trim()
 			.replace(/\n\s+/g, "; ");
 
-		return Command.create("powershell", ["-NoProfile", "-OutputFormat", "Text", "-Command", psScript], {
-			cwd: workingDir,
-		});
+		return Command.create(
+			"powershell",
+			["-NoProfile", "-OutputFormat", "Text", "-Command", psScript],
+			{
+				cwd: workingDir,
+			},
+		);
 	}
 
-	return Command.create("sh", ["-c", processedCommand, ...processedArgs], {
-		cwd: workingDir,
-	});
+	const argsJoined = processedArgs.join(" ");
+	const shellCommand = `nohup '${processedCommand}' ${argsJoined} > /dev/null 2>&1 & echo $!`;
+	return Command.create("sh", ["-c", shellCommand], { cwd: workingDir });
 }
 
 function createBinaryCommand(
@@ -301,10 +403,14 @@ function createBinaryCommand(
 	const workingDir = cwd || (isWindows() ? "C:\\Windows\\Temp" : "/tmp");
 
 	if (isWindows()) {
-		const escapedArgs = processedArgs.map((arg) => `'${arg.replace(/'/g, "''")}'`).join(",");
-		const argsStr = processedArgs.length > 0 ? `-ArgumentList ${escapedArgs}` : "";
+		const escapedArgs = processedArgs
+			.map((arg) => `'${arg.replace(/'/g, "''")}'`)
+			.join(",");
+		const argsStr =
+			processedArgs.length > 0 ? `-ArgumentList ${escapedArgs}` : "";
 
-		const binaryName = processedBinaryPath.split("\\").pop()?.replace(".exe", "") || "";
+		const binaryName =
+			processedBinaryPath.split("\\").pop()?.replace(".exe", "") || "";
 		const fullCommand = `
    $proc = Start-Process -FilePath '${processedBinaryPath}' ${argsStr} -WorkingDirectory '${workingDir}' -PassThru
    Start-Sleep -Milliseconds 500
@@ -326,6 +432,7 @@ function createBinaryCommand(
 async function launchCustomTool(
 	config: Extract<ToolActionConfig, { source: "custom" }>,
 	context: LaunchContext,
+	actionId?: number,
 ): Promise<LaunchResult> {
 	console.log(`Launching custom tool: ${config.tool_name}`);
 
@@ -333,17 +440,63 @@ async function launchCustomTool(
 	const hasBinaryPath = config.binary_path && config.binary_path.trim() !== "";
 
 	if (!hasCommand && !hasBinaryPath) {
-		throw new Error(`Custom tool ${config.tool_name} has neither command nor binary_path`);
+		throw new Error(
+			`Custom tool ${config.tool_name} has neither command nor binary_path`,
+		);
 	}
 
 	const args = config.args || [];
-	const processedArgs = args.map((arg: string) => replaceVariables(arg, context.variables));
+	const processedArgs = args.map((arg: string) =>
+		replaceVariables(arg, context.variables),
+	);
 
-	const isDetached = config.detached !== false;
+	const isDetached = config.detached === true;
 
 	const workingDir = config.working_directory
 		? replaceVariables(config.working_directory, context.variables)
-		: context.variables.TEMP || context.variables.TMP || (isWindows() ? "C:\\Windows\\Temp" : "/tmp");
+		: context.variables.TEMP ||
+			context.variables.TMP ||
+			(isWindows() ? "C:\\Windows\\Temp" : "/tmp");
+
+	if (isDetached) {
+		const { invoke } = await import("@tauri-apps/api/core");
+		const cfg: Record<string, unknown> = {
+			tool_type: hasCommand ? "cli" : "binary",
+			detached: true,
+			working_directory: workingDir,
+			track_process: config.track_process,
+		};
+		if (hasCommand) {
+			cfg.command = replaceVariables(config.command || "", context.variables);
+			cfg.args = processedArgs;
+		} else {
+			cfg.binary_path = replaceVariables(
+				config.binary_path || "",
+				context.variables,
+			);
+			cfg.args = processedArgs;
+		}
+		const result = (await invoke("launch_action", {
+			request: {
+				action_id: actionId ?? 0,
+				workspace_id: context.workspaceId,
+				action_type: "tool",
+				config: cfg,
+				variables: context.variables,
+			},
+		})) as {
+			success?: boolean;
+			message?: string;
+			process_id?: number;
+			run_id?: number;
+		};
+		return {
+			success: Boolean(result?.success),
+			message: result?.message || `${config.tool_name} launched (detached)`,
+			processId: result?.process_id,
+			runId: result?.run_id,
+		};
+	}
 
 	let cmd: Awaited<ReturnType<typeof Command.create>>;
 	if (hasCommand) {
@@ -356,11 +509,20 @@ async function launchCustomTool(
 			`detached: ${isDetached}`,
 		);
 
-		cmd = createCliCommand(processedCommand, processedArgs, isDetached, workingDir);
+		cmd = createCliCommand(
+			processedCommand,
+			processedArgs,
+			isDetached,
+			workingDir,
+		);
 	} else {
 		const binaryPath = config.binary_path || "";
 		const processedBinaryPath = replaceVariables(binaryPath, context.variables);
-		console.log(`Executing binary: ${processedBinaryPath} with args:`, processedArgs, `in directory: ${workingDir}`);
+		console.log(
+			`Executing binary: ${processedBinaryPath} with args:`,
+			processedArgs,
+			`in directory: ${workingDir}`,
+		);
 
 		cmd = createBinaryCommand(processedBinaryPath, processedArgs, workingDir);
 	}
@@ -371,7 +533,9 @@ async function launchCustomTool(
 			const actualPid = Number.parseInt(output.stdout.trim(), 10);
 			if (Number.isNaN(actualPid)) {
 				console.error("Failed to parse PID from output:", output.stdout);
-				throw new Error(`Could not determine process ID. Output: ${output.stdout}`);
+				throw new Error(
+					`Could not determine process ID. Output: ${output.stdout}`,
+				);
 			}
 			console.log(`Custom tool launched with actual PID: ${actualPid}`);
 
@@ -385,13 +549,77 @@ async function launchCustomTool(
 			throw error;
 		}
 	} else if (hasCommand) {
-		const child = await cmd.spawn();
-		console.log(`Custom tool launched with PID: ${child.pid}`);
+		let resolvedPid: number | undefined;
+		let parentPidForResolve: number | undefined;
+		if (isDetached && !isWindows()) {
+			const output = await cmd.execute();
+			const parsed = Number.parseInt(output.stdout.trim(), 10);
+			resolvedPid = Number.isNaN(parsed) ? undefined : parsed;
+			console.log(`Custom tool launched with PID: ${resolvedPid}`);
+		} else {
+			const child = await cmd.spawn();
+			// Child type from @tauri-apps/plugin-shell has pid property but it's not in type definitions
+			parentPidForResolve = (child as { pid: number }).pid;
+			resolvedPid = parentPidForResolve;
+			console.log(`Custom tool launched with PID: ${resolvedPid}`);
+		}
+
+		if (!isDetached && isWindows() && parentPidForResolve) {
+			try {
+				const { invoke } = await import("@tauri-apps/api/core");
+				let expectedName: string | undefined;
+				const firstArg = processedArgs[0];
+				if (
+					firstArg &&
+					(firstArg.endsWith(".exe") ||
+						firstArg.includes("\\") ||
+						firstArg.includes("/"))
+				) {
+					expectedName = firstArg.split(/[/\\]/).pop();
+				} else {
+					const cmdCandidate = (config.command || "").trim();
+					const localProcessed = cmdCandidate
+						? replaceVariables(cmdCandidate, context.variables)
+						: "";
+					const lowered = localProcessed.toLowerCase();
+					if (lowered && lowered !== "powershell" && lowered !== "cmd") {
+						expectedName = localProcessed.split(/[/\\]/).pop();
+					}
+				}
+				const exclude = [
+					"powershell",
+					"cmd",
+					"conhost",
+					"sh",
+					"bash",
+					"x-terminal-emulator",
+					"npm",
+					"npx",
+					"yarn",
+					"pnpm",
+					"bun",
+				];
+				const result = (await invoke("resolve_descendant_pid", {
+					req: {
+						parent_pid: parentPidForResolve,
+						expected_name: expectedName,
+						exclude_names: exclude,
+						max_wait_ms: 2000,
+					},
+				})) as number | null;
+				if (typeof result === "number" && result > 0) {
+					resolvedPid = result;
+					console.log(`Resolved descendant PID: ${resolvedPid}`);
+				}
+			} catch (e) {
+				console.warn("Failed to resolve descendant PID, using wrapper PID", e);
+			}
+		}
 
 		return {
 			success: true,
 			message: `${config.tool_name} launched successfully`,
-			processId: child.pid,
+			processId: resolvedPid,
 		};
 	} else if (isWindows()) {
 		const output = await cmd.execute();
@@ -419,26 +647,32 @@ async function launchCustomTool(
 async function launchSavedTool(
 	config: Extract<ToolActionConfig, { source: "saved" }>,
 	context: LaunchContext,
+	actionId?: number,
 ): Promise<LaunchResult> {
-	console.log(`Launching saved tool: ${config.tool_name} (ID: ${config.tool_id})`);
+	console.log(
+		`Launching saved tool: ${config.tool_name} (ID: ${config.tool_id})`,
+	);
 
 	const { invoke } = await import("@tauri-apps/api/core");
 
 	const result = await invoke("launch_action", {
 		request: {
-			action_id: 0,
+			action_id: actionId ?? 0,
 			workspace_id: context.workspaceId,
 			action_type: "tool",
 			config: {
 				tool_id: config.tool_id,
 				placeholder_values: config.placeholder_values,
+				...(config.detached === true ? { detached: true } : {}),
 			},
 			variables: context.variables,
 		},
 	});
 
 	const success =
-		result && typeof result === "object" && "success" in result ? (result as { success: boolean }).success : false;
+		result && typeof result === "object" && "success" in result
+			? (result as { success: boolean }).success
+			: false;
 	const message =
 		result && typeof result === "object" && "message" in result
 			? (result as { message: string }).message
@@ -447,15 +681,23 @@ async function launchSavedTool(
 		result && typeof result === "object" && "process_id" in result
 			? (result as { process_id?: number }).process_id
 			: undefined;
+	const runId =
+		result && typeof result === "object" && "run_id" in result
+			? (result as { run_id?: number }).run_id
+			: undefined;
 
 	return {
 		success,
 		message,
 		processId,
+		runId,
 	};
 }
 
-async function launchDelayAction(config: DelayActionConfig, _context: LaunchContext): Promise<LaunchResult> {
+async function launchDelayAction(
+	config: DelayActionConfig,
+	_context: LaunchContext,
+): Promise<LaunchResult> {
 	console.log(`Starting delay for ${config.duration_ms} ms`);
 
 	return new Promise((resolve) => {

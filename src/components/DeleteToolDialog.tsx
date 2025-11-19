@@ -10,8 +10,8 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import type { Tool } from "@/models/tool.model";
 import { useToolStore } from "@/store/tool";
-import type { Tool } from "@/types/database";
 
 interface DeleteToolDialogProps {
 	tool: Tool;
@@ -42,8 +42,9 @@ export const DeleteToolDialog: Component<DeleteToolDialogProps> = (props) => {
 				<AlertDialogHeader>
 					<AlertDialogTitle>Delete Tool</AlertDialogTitle>
 					<AlertDialogDescription>
-						Are you sure you want to delete "{props.tool.name}"? This action cannot be undone and any actions using this
-						tool will need to be reconfigured.
+						Are you sure you want to delete "{props.tool.name}"? This action
+						cannot be undone and any actions using this tool will need to be
+						reconfigured.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

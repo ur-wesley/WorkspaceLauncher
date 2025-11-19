@@ -88,7 +88,10 @@ export async function initializeDatabase(): Promise<Result<void, ApiError>> {
 			await db.execute("SELECT workspace_id FROM variables LIMIT 1");
 			console.log("Database schema is up to date");
 		} catch (schemaError) {
-			console.warn("Database schema appears outdated, this might cause issues:", schemaError);
+			console.warn(
+				"Database schema appears outdated, this might cause issues:",
+				schemaError,
+			);
 		}
 
 		return ok(undefined);
@@ -103,7 +106,9 @@ export async function initializeDatabase(): Promise<Result<void, ApiError>> {
 
 export function getDatabase(): Database {
 	if (!db) {
-		throw new Error("Database not initialized. Call initializeDatabase() first.");
+		throw new Error(
+			"Database not initialized. Call initializeDatabase() first.",
+		);
 	}
 	return db;
 }
@@ -112,7 +117,9 @@ export async function checkDatabaseSchema(): Promise<Result<void, ApiError>> {
 	try {
 		const db = getDatabase();
 
-		const tableInfo = await db.select<Array<{ name: string }>>("PRAGMA table_info(variables)");
+		const tableInfo = await db.select<Array<{ name: string }>>(
+			"PRAGMA table_info(variables)",
+		);
 		console.log("Variables table schema:", tableInfo);
 
 		const hasWorkspaceId = tableInfo.some((col) => col.name === "workspace_id");
@@ -127,7 +134,9 @@ export async function checkDatabaseSchema(): Promise<Result<void, ApiError>> {
 		}
 
 		if (!hasEnabled) {
-			console.warn("Variables table missing 'enabled' column, but this is not critical");
+			console.warn(
+				"Variables table missing 'enabled' column, but this is not critical",
+			);
 		}
 
 		return ok(undefined);
@@ -139,14 +148,15 @@ export async function checkDatabaseSchema(): Promise<Result<void, ApiError>> {
 	}
 }
 
-export async function createWorkspace(workspace: NewWorkspace): Promise<Result<Workspace, ApiError>> {
+export async function createWorkspace(
+	workspace: NewWorkspace,
+): Promise<Result<Workspace, ApiError>> {
 	try {
 		const db = getDatabase();
-		const result = await db.execute("INSERT INTO workspaces (name, description, icon) VALUES ($1, $2, $3)", [
-			workspace.name,
-			workspace.description || "",
-			workspace.icon || null,
-		]);
+		const result = await db.execute(
+			"INSERT INTO workspaces (name, description, icon) VALUES ($1, $2, $3)",
+			[workspace.name, workspace.description || "", workspace.icon || null],
+		);
 		const rows = await db.select<Workspace[]>(
 			"SELECT id, name, description, icon, created_at, updated_at FROM workspaces WHERE id = $1",
 			[result.lastInsertId],
@@ -160,7 +170,9 @@ export async function createWorkspace(workspace: NewWorkspace): Promise<Result<W
 	}
 }
 
-export async function getWorkspace(id: number): Promise<Result<Workspace, ApiError>> {
+export async function getWorkspace(
+	id: number,
+): Promise<Result<Workspace, ApiError>> {
 	try {
 		const db = getDatabase();
 		const rows = await db.select<Workspace[]>(
@@ -189,7 +201,10 @@ export async function listWorkspaces(): Promise<Result<Workspace[], ApiError>> {
 	}
 }
 
-export async function updateWorkspace(id: number, workspace: NewWorkspace): Promise<Result<Workspace, ApiError>> {
+export async function updateWorkspace(
+	id: number,
+	workspace: NewWorkspace,
+): Promise<Result<Workspace, ApiError>> {
 	try {
 		const db = getDatabase();
 		await db.execute(
@@ -209,7 +224,9 @@ export async function updateWorkspace(id: number, workspace: NewWorkspace): Prom
 	}
 }
 
-export async function deleteWorkspace(id: number): Promise<Result<void, ApiError>> {
+export async function deleteWorkspace(
+	id: number,
+): Promise<Result<void, ApiError>> {
 	try {
 		const db = getDatabase();
 		await db.execute("DELETE FROM workspaces WHERE id = $1", [id]);
@@ -219,12 +236,14 @@ export async function deleteWorkspace(id: number): Promise<Result<void, ApiError
 	}
 }
 
-export async function createAction(newAction: NewAction): Promise<Result<Action, ApiError>> {
+export async function createAction(
+	newAction: NewAction,
+): Promise<Result<Action, ApiError>> {
 	try {
 		const db = getDatabase();
 
 		const result = await db.execute(
-			"INSERT INTO actions (workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+			"INSERT INTO actions (workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, auto_launch, os_overrides, order_index) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
 			[
 				newAction.workspace_id,
 				newAction.name,
@@ -234,13 +253,14 @@ export async function createAction(newAction: NewAction): Promise<Result<Action,
 				newAction.timeout_seconds || null,
 				newAction.detached ? 1 : 0,
 				newAction.track_process ? 1 : 0,
+				newAction.auto_launch ? 1 : 0,
 				newAction.os_overrides || null,
 				newAction.order_index,
 			],
 		);
 
 		const rows = await db.select<RawActionRow[]>(
-			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
+			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, auto_launch, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
 			[result.lastInsertId],
 		);
 		if (rows.length === 0) {
@@ -258,7 +278,7 @@ export async function getAction(id: number): Promise<Result<Action, ApiError>> {
 	try {
 		const db = getDatabase();
 		const rows = await db.select<RawActionRow[]>(
-			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
+			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, auto_launch, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
 			[id],
 		);
 		if (rows.length === 0) {
@@ -272,26 +292,51 @@ export async function getAction(id: number): Promise<Result<Action, ApiError>> {
 	}
 }
 
-export async function listActionsByWorkspace(workspaceId: number): Promise<Result<Action[], ApiError>> {
+export async function listActionsByWorkspace(
+	workspaceId: number,
+): Promise<Result<Action[], ApiError>> {
 	try {
 		const db = getDatabase();
 		const rows = await db.select<RawActionRow[]>(
-			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE workspace_id = $1 ORDER BY order_index ASC",
+			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, auto_launch, os_overrides, order_index, created_at, updated_at FROM actions WHERE workspace_id = $1 ORDER BY order_index ASC",
 			[workspaceId],
 		);
 
-		const actions: Action[] = rows.map((row) => convertDatabaseRowToAction(row));
+		const actions: Action[] = rows.map((row) =>
+			convertDatabaseRowToAction(row),
+		);
 		return ok(actions);
 	} catch (error) {
 		return err({ message: `Failed to list actions: ${error}` });
 	}
 }
 
-export async function updateAction(id: number, action: NewAction): Promise<Result<Action, ApiError>> {
+export async function listAutoLaunchActions(): Promise<
+	Result<Action[], ApiError>
+> {
+	try {
+		const db = getDatabase();
+		const rows = await db.select<RawActionRow[]>(
+			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, auto_launch, os_overrides, order_index, created_at, updated_at FROM actions WHERE auto_launch = 1 ORDER BY workspace_id, order_index ASC",
+		);
+
+		const actions: Action[] = rows.map((row) =>
+			convertDatabaseRowToAction(row),
+		);
+		return ok(actions);
+	} catch (error) {
+		return err({ message: `Failed to list auto-launch actions: ${error}` });
+	}
+}
+
+export async function updateAction(
+	id: number,
+	action: NewAction,
+): Promise<Result<Action, ApiError>> {
 	try {
 		const db = getDatabase();
 		await db.execute(
-			"UPDATE actions SET workspace_id = $1, name = $2, action_type = $3, config = $4, dependencies = $5, timeout_seconds = $6, detached = $7, track_process = $8, os_overrides = $9, order_index = $10, updated_at = CURRENT_TIMESTAMP WHERE id = $11",
+			"UPDATE actions SET workspace_id = $1, name = $2, action_type = $3, config = $4, dependencies = $5, timeout_seconds = $6, detached = $7, track_process = $8, auto_launch = $9, os_overrides = $10, order_index = $11, updated_at = CURRENT_TIMESTAMP WHERE id = $12",
 			[
 				action.workspace_id,
 				action.name,
@@ -301,13 +346,14 @@ export async function updateAction(id: number, action: NewAction): Promise<Resul
 				action.timeout_seconds || null,
 				action.detached ? 1 : 0,
 				action.track_process ? 1 : 0,
+				action.auto_launch ? 1 : 0,
 				action.os_overrides || null,
 				action.order_index,
 				id,
 			],
 		);
 		const rows = await db.select<RawActionRow[]>(
-			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
+			"SELECT id, workspace_id, name, action_type, config, dependencies, timeout_seconds, detached, track_process, auto_launch, os_overrides, order_index, created_at, updated_at FROM actions WHERE id = $1",
 			[id],
 		);
 		if (rows.length === 0) {
@@ -321,7 +367,9 @@ export async function updateAction(id: number, action: NewAction): Promise<Resul
 	}
 }
 
-export async function deleteAction(id: number): Promise<Result<void, ApiError>> {
+export async function deleteAction(
+	id: number,
+): Promise<Result<void, ApiError>> {
 	try {
 		const db = getDatabase();
 		await db.execute("DELETE FROM actions WHERE id = $1", [id]);
@@ -352,6 +400,7 @@ interface RawActionRow {
 	timeout_seconds: number | null;
 	detached: number | boolean;
 	track_process: number | boolean;
+	auto_launch: number | boolean;
 	os_overrides: string | null;
 	order_index: number;
 	created_at: string;
@@ -363,6 +412,7 @@ function convertDatabaseRowToAction(row: RawActionRow): Action {
 		...row,
 		detached: sqliteBoolean(row.detached),
 		track_process: sqliteBoolean(row.track_process),
+		auto_launch: sqliteBoolean(row.auto_launch),
 	};
 }
 
@@ -387,14 +437,22 @@ function convertDatabaseRowToVariable(row: RawVariableRow): Variable {
 	return converted;
 }
 
-export async function createVariable(variable: NewVariable): Promise<Result<Variable, ApiError>> {
+export async function createVariable(
+	variable: NewVariable,
+): Promise<Result<Variable, ApiError>> {
 	try {
 		console.log("createVariable called with:", variable);
 		const db = getDatabase();
 
 		const result = await db.execute(
 			"INSERT INTO variables (workspace_id, key, value, is_secure, enabled) VALUES ($1, $2, $3, $4, $5)",
-			[variable.workspace_id, variable.key, variable.value, variable.is_secure, variable.enabled ?? true],
+			[
+				variable.workspace_id,
+				variable.key,
+				variable.value,
+				variable.is_secure,
+				variable.enabled ?? true,
+			],
 		);
 		console.log("Variable inserted, ID:", result.lastInsertId);
 
@@ -414,7 +472,9 @@ export async function createVariable(variable: NewVariable): Promise<Result<Vari
 	}
 }
 
-export async function listVariablesByWorkspace(workspaceId: number): Promise<Result<Variable[], ApiError>> {
+export async function listVariablesByWorkspace(
+	workspaceId: number,
+): Promise<Result<Variable[], ApiError>> {
 	try {
 		const db = getDatabase();
 		const rows = await db.select<RawVariableRow[]>(
@@ -428,12 +488,22 @@ export async function listVariablesByWorkspace(workspaceId: number): Promise<Res
 	}
 }
 
-export async function updateVariable(id: number, variable: NewVariable): Promise<Result<Variable, ApiError>> {
+export async function updateVariable(
+	id: number,
+	variable: NewVariable,
+): Promise<Result<Variable, ApiError>> {
 	try {
 		const db = getDatabase();
 		await db.execute(
 			"UPDATE variables SET workspace_id = $1, key = $2, value = $3, is_secure = $4, enabled = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6",
-			[variable.workspace_id, variable.key, variable.value, variable.is_secure, variable.enabled ?? true, id],
+			[
+				variable.workspace_id,
+				variable.key,
+				variable.value,
+				variable.is_secure,
+				variable.enabled ?? true,
+				id,
+			],
 		);
 		const rows = await db.select<RawVariableRow[]>(
 			"SELECT id, workspace_id, key, value, is_secure, enabled, created_at, updated_at FROM variables WHERE id = $1",
@@ -449,7 +519,9 @@ export async function updateVariable(id: number, variable: NewVariable): Promise
 	}
 }
 
-export async function deleteVariable(id: number): Promise<Result<void, ApiError>> {
+export async function deleteVariable(
+	id: number,
+): Promise<Result<void, ApiError>> {
 	try {
 		const db = getDatabase();
 		await db.execute("DELETE FROM variables WHERE id = $1", [id]);
@@ -459,10 +531,16 @@ export async function deleteVariable(id: number): Promise<Result<void, ApiError>
 	}
 }
 
-export async function toggleVariableEnabled(id: number, enabled: boolean): Promise<Result<Variable, ApiError>> {
+export async function toggleVariableEnabled(
+	id: number,
+	enabled: boolean,
+): Promise<Result<Variable, ApiError>> {
 	try {
 		const db = getDatabase();
-		await db.execute("UPDATE variables SET enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [enabled, id]);
+		await db.execute(
+			"UPDATE variables SET enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+			[enabled, id],
+		);
 		const rows = await db.select<RawVariableRow[]>(
 			"SELECT id, workspace_id, key, value, is_secure, enabled, created_at, updated_at FROM variables WHERE id = $1",
 			[id],
@@ -477,7 +555,9 @@ export async function toggleVariableEnabled(id: number, enabled: boolean): Promi
 	}
 }
 
-export async function getSetting(key: string): Promise<Result<Setting | null, ApiError>> {
+export async function getSetting(
+	key: string,
+): Promise<Result<Setting | null, ApiError>> {
 	try {
 		const db = getDatabase();
 		const rows = await db.select<Setting[]>(
@@ -490,13 +570,16 @@ export async function getSetting(key: string): Promise<Result<Setting | null, Ap
 	}
 }
 
-export async function setSetting(key: string, value: string): Promise<Result<Setting, ApiError>> {
+export async function setSetting(
+	key: string,
+	value: string,
+): Promise<Result<Setting, ApiError>> {
 	try {
 		const db = getDatabase();
-		await db.execute("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP)", [
-			key,
-			value,
-		]);
+		await db.execute(
+			"INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP)",
+			[key, value],
+		);
 		const rows = await db.select<Setting[]>(
 			"SELECT id, key, value, created_at, updated_at FROM settings WHERE key = $1",
 			[key],
@@ -513,13 +596,19 @@ export async function setSetting(key: string, value: string): Promise<Result<Set
 export async function listSettings(): Promise<Result<Setting[], ApiError>> {
 	try {
 		const db = getDatabase();
-		return ok(await db.select<Setting[]>("SELECT id, key, value, created_at, updated_at FROM settings ORDER BY key"));
+		return ok(
+			await db.select<Setting[]>(
+				"SELECT id, key, value, created_at, updated_at FROM settings ORDER BY key",
+			),
+		);
 	} catch (error) {
 		return err({ message: `Failed to list settings: ${error}` });
 	}
 }
 
-export async function launchAction(request: LaunchActionRequest): Promise<Result<LaunchResult, ApiError>> {
+export async function launchAction(
+	request: LaunchActionRequest,
+): Promise<Result<LaunchResult, ApiError>> {
 	try {
 		console.log("Launching action:", request);
 		const result = await invoke<LaunchResult>("launch_action", { request });
@@ -530,10 +619,14 @@ export async function launchAction(request: LaunchActionRequest): Promise<Result
 	}
 }
 
-export async function launchWorkspace(request: LaunchWorkspaceRequest): Promise<Result<LaunchResult[], ApiError>> {
+export async function launchWorkspace(
+	request: LaunchWorkspaceRequest,
+): Promise<Result<LaunchResult[], ApiError>> {
 	try {
 		console.log("Launching workspace:", request);
-		const results = await invoke<LaunchResult[]>("launch_workspace", { request });
+		const results = await invoke<LaunchResult[]>("launch_workspace", {
+			request,
+		});
 		return ok(results);
 	} catch (error) {
 		console.error("Failed to launch workspace:", error);
@@ -544,17 +637,23 @@ export async function launchWorkspace(request: LaunchWorkspaceRequest): Promise<
 export function listenToActionEvents() {
 	listen<ActionStartedEvent>("action-started", (event) => {
 		console.log("Action started:", event.payload);
-		window.dispatchEvent(new CustomEvent("action-started", { detail: event.payload }));
+		window.dispatchEvent(
+			new CustomEvent("action-started", { detail: event.payload }),
+		);
 	});
 
 	listen<ActionCompletedEvent>("action-completed", (event) => {
 		console.log("Action completed:", event.payload);
-		window.dispatchEvent(new CustomEvent("action-completed", { detail: event.payload }));
+		window.dispatchEvent(
+			new CustomEvent("action-completed", { detail: event.payload }),
+		);
 	});
 
 	listen<ActionLogEvent>("action-log", (event) => {
 		console.log("Action log:", event.payload);
-		window.dispatchEvent(new CustomEvent("action-log", { detail: event.payload }));
+		window.dispatchEvent(
+			new CustomEvent("action-log", { detail: event.payload }),
+		);
 	});
 }
 
@@ -594,10 +693,16 @@ export async function prepareWorkspaceLaunchRequest(
 ): Promise<LaunchWorkspaceRequest> {
 	const actionRequests: LaunchActionRequest[] = [];
 
-	const sortedActions = [...actions].sort((a, b) => a.order_index - b.order_index);
+	const sortedActions = [...actions].sort(
+		(a, b) => a.order_index - b.order_index,
+	);
 
 	for (const action of sortedActions) {
-		const actionRequest = await prepareActionLaunchRequest(workspaceId, action, variables);
+		const actionRequest = await prepareActionLaunchRequest(
+			workspaceId,
+			action,
+			variables,
+		);
 		actionRequests.push(actionRequest);
 	}
 
@@ -614,7 +719,9 @@ export async function prepareWorkspaceLaunchRequest(
 export async function listTools(): Promise<Result<Tool[], string>> {
 	try {
 		const db = getDatabase();
-		const tools = await db.select<Tool[]>("SELECT * FROM tools ORDER BY category, name");
+		const tools = await db.select<Tool[]>(
+			"SELECT * FROM tools ORDER BY category, name",
+		);
 		return ok(tools);
 	} catch (error) {
 		console.error("Failed to list tools:", error);
@@ -622,10 +729,14 @@ export async function listTools(): Promise<Result<Tool[], string>> {
 	}
 }
 
-export async function getToolById(id: number): Promise<Result<Tool | null, string>> {
+export async function getToolById(
+	id: number,
+): Promise<Result<Tool | null, string>> {
 	try {
 		const db = getDatabase();
-		const tools = await db.select<Tool[]>("SELECT * FROM tools WHERE id = ?", [id]);
+		const tools = await db.select<Tool[]>("SELECT * FROM tools WHERE id = ?", [
+			id,
+		]);
 		return ok(tools[0] || null);
 	} catch (error) {
 		console.error("Failed to get tool:", error);
@@ -633,7 +744,9 @@ export async function getToolById(id: number): Promise<Result<Tool | null, strin
 	}
 }
 
-export async function createTool(tool: NewTool): Promise<Result<number, string>> {
+export async function createTool(
+	tool: NewTool,
+): Promise<Result<number, string>> {
 	try {
 		const db = getDatabase();
 		const result = await db.execute(
@@ -657,7 +770,10 @@ export async function createTool(tool: NewTool): Promise<Result<number, string>>
 	}
 }
 
-export async function updateTool(id: number, tool: Partial<NewTool>): Promise<Result<void, string>> {
+export async function updateTool(
+	id: number,
+	tool: Partial<NewTool>,
+): Promise<Result<void, string>> {
 	try {
 		const db = getDatabase();
 
@@ -700,7 +816,10 @@ export async function updateTool(id: number, tool: Partial<NewTool>): Promise<Re
 		setParts.push("updated_at = CURRENT_TIMESTAMP");
 		values.push(id);
 
-		await db.execute(`UPDATE tools SET ${setParts.join(", ")} WHERE id = ?`, values);
+		await db.execute(
+			`UPDATE tools SET ${setParts.join(", ")} WHERE id = ?`,
+			values,
+		);
 
 		return ok(undefined);
 	} catch (error) {
@@ -720,13 +839,16 @@ export async function deleteTool(id: number): Promise<Result<void, string>> {
 	}
 }
 
-export async function toggleToolEnabled(id: number, enabled: boolean): Promise<Result<void, string>> {
+export async function toggleToolEnabled(
+	id: number,
+	enabled: boolean,
+): Promise<Result<void, string>> {
 	try {
 		const db = getDatabase();
-		await db.execute("UPDATE tools SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
-			enabled ? 1 : 0,
-			id,
-		]);
+		await db.execute(
+			"UPDATE tools SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+			[enabled ? 1 : 0, id],
+		);
 		return ok(undefined);
 	} catch (error) {
 		console.error("Failed to toggle tool:", error);
@@ -753,7 +875,9 @@ export async function createRun(run: NewRun): Promise<Result<Run, string>> {
 				run.error_message ?? null,
 			],
 		);
-		const created = await db.select<Run[]>("SELECT * FROM runs WHERE id = ?", [result.lastInsertId]);
+		const created = await db.select<Run[]>("SELECT * FROM runs WHERE id = ?", [
+			result.lastInsertId,
+		]);
 		return ok(created[0]);
 	} catch (error) {
 		console.error("Failed to create run:", error);
@@ -770,13 +894,10 @@ export async function updateRunStatus(
 	try {
 		const db = getDatabase();
 		const completedAt = new Date().toISOString();
-		await db.execute("UPDATE runs SET status = ?, completed_at = ?, exit_code = ?, error_message = ? WHERE id = ?", [
-			status,
-			completedAt,
-			exitCode ?? null,
-			errorMessage ?? null,
-			id,
-		]);
+		await db.execute(
+			"UPDATE runs SET status = ?, completed_at = ?, exit_code = ?, error_message = ? WHERE id = ?",
+			[status, completedAt, exitCode ?? null, errorMessage ?? null, id],
+		);
 		return ok(undefined);
 	} catch (error) {
 		console.error("Failed to update run status:", error);
@@ -787,7 +908,10 @@ export async function updateRunStatus(
 /**
  * Clean up old runs for a specific action, keeping only the latest N entries
  */
-export async function cleanupOldRuns(actionId: number, keepCount = 20): Promise<Result<number, string>> {
+export async function cleanupOldRuns(
+	actionId: number,
+	keepCount = 20,
+): Promise<Result<number, string>> {
 	try {
 		const db = getDatabase();
 		const result = await db.execute(
@@ -829,13 +953,16 @@ export async function listRunsByAction(
 	}
 }
 
-export async function listRunsByWorkspace(workspaceId: number, limit = 50): Promise<Result<Run[], string>> {
+export async function listRunsByWorkspace(
+	workspaceId: number,
+	limit = 50,
+): Promise<Result<Run[], string>> {
 	try {
 		const db = getDatabase();
-		const runs = await db.select<Run[]>("SELECT * FROM runs WHERE workspace_id = ? ORDER BY created_at DESC LIMIT ?", [
-			workspaceId,
-			limit,
-		]);
+		const runs = await db.select<Run[]>(
+			"SELECT * FROM runs WHERE workspace_id = ? ORDER BY created_at DESC LIMIT ?",
+			[workspaceId, limit],
+		);
 		return ok(runs);
 	} catch (error) {
 		console.error("Failed to list runs:", error);
@@ -843,7 +970,9 @@ export async function listRunsByWorkspace(workspaceId: number, limit = 50): Prom
 	}
 }
 
-export async function listRunningActions(workspaceId?: number): Promise<Result<Run[], string>> {
+export async function listRunningActions(
+	workspaceId?: number,
+): Promise<Result<Run[], string>> {
 	try {
 		const db = getDatabase();
 		const query = workspaceId
@@ -865,7 +994,9 @@ export async function listRunningActions(workspaceId?: number): Promise<Result<R
 export async function listThemes(): Promise<Result<Theme[], string>> {
 	try {
 		const db = getDatabase();
-		const themes = await db.select<Theme[]>("SELECT * FROM themes ORDER BY is_predefined DESC, updated_at DESC");
+		const themes = await db.select<Theme[]>(
+			"SELECT * FROM themes ORDER BY is_predefined DESC, updated_at DESC",
+		);
 		return ok(themes);
 	} catch (error) {
 		console.error("Failed to list themes:", error);
@@ -873,13 +1004,21 @@ export async function listThemes(): Promise<Result<Theme[], string>> {
 	}
 }
 
-export async function createTheme(theme: NewTheme): Promise<Result<number, string>> {
+export async function createTheme(
+	theme: NewTheme,
+): Promise<Result<number, string>> {
 	try {
 		const db = getDatabase();
 		const result = await db.execute(
 			`INSERT INTO themes (name, description, is_predefined, is_active, light_colors, dark_colors)
         VALUES (?, ?, ?, 0, ?, ?)`,
-			[theme.name, theme.description ?? null, theme.is_predefined ? 1 : 0, theme.light_colors, theme.dark_colors],
+			[
+				theme.name,
+				theme.description ?? null,
+				theme.is_predefined ? 1 : 0,
+				theme.light_colors,
+				theme.dark_colors,
+			],
 		);
 		return ok(result.lastInsertId as number);
 	} catch (error) {
@@ -888,7 +1027,10 @@ export async function createTheme(theme: NewTheme): Promise<Result<number, strin
 	}
 }
 
-export async function updateTheme(id: number, theme: Partial<NewTheme>): Promise<Result<void, string>> {
+export async function updateTheme(
+	id: number,
+	theme: Partial<NewTheme>,
+): Promise<Result<void, string>> {
 	try {
 		const db = getDatabase();
 
@@ -923,7 +1065,10 @@ export async function updateTheme(id: number, theme: Partial<NewTheme>): Promise
 		setParts.push("updated_at = CURRENT_TIMESTAMP");
 		values.push(id);
 
-		await db.execute(`UPDATE themes SET ${setParts.join(", ")} WHERE id = ?`, values);
+		await db.execute(
+			`UPDATE themes SET ${setParts.join(", ")} WHERE id = ?`,
+			values,
+		);
 
 		return ok(undefined);
 	} catch (error) {
@@ -947,7 +1092,10 @@ export async function activateTheme(id: number): Promise<Result<void, string>> {
 	try {
 		const db = getDatabase();
 		await db.execute("UPDATE themes SET is_active = 0", []);
-		await db.execute("UPDATE themes SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
+		await db.execute(
+			"UPDATE themes SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+			[id],
+		);
 		return ok(undefined);
 	} catch (error) {
 		console.error("Failed to activate theme:", error);
@@ -955,7 +1103,9 @@ export async function activateTheme(id: number): Promise<Result<void, string>> {
 	}
 }
 
-export async function stopProcess(processId: number): Promise<Result<void, string>> {
+export async function stopProcess(
+	processId: number,
+): Promise<Result<void, string>> {
 	try {
 		await invoke("kill_process", { pid: processId });
 		return ok(undefined);
@@ -1091,7 +1241,15 @@ export async function resetDatabase(): Promise<Result<void, ApiError>> {
 			return ok(undefined);
 		}
 
-		const tables = ["runs", "variables", "actions", "workspaces", "tools", "themes", "settings"];
+		const tables = [
+			"runs",
+			"variables",
+			"actions",
+			"workspaces",
+			"tools",
+			"themes",
+			"settings",
+		];
 
 		for (const table of tables) {
 			await db.execute(`DELETE FROM ${table}`);
@@ -1107,7 +1265,9 @@ export async function resetDatabase(): Promise<Result<void, ApiError>> {
 	}
 }
 
-export async function backupAndResetDatabase(): Promise<Result<string, ApiError>> {
+export async function backupAndResetDatabase(): Promise<
+	Result<string, ApiError>
+> {
 	try {
 		const db = getDatabase();
 
@@ -1141,7 +1301,11 @@ export async function backupAndResetDatabase(): Promise<Result<string, ApiError>
 		const timestamp =
 			new Date().toISOString().replace(/[:.]/g, "-").split("T")[0] +
 			"_" +
-			new Date().toISOString().replace(/[:.]/g, "-").split("T")[1].split(".")[0];
+			new Date()
+				.toISOString()
+				.replace(/[:.]/g, "-")
+				.split("T")[1]
+				.split(".")[0];
 		const backupFilename = `workspace-launcher-backup-${timestamp}.json`;
 
 		const { writeTextFile } = await import("@tauri-apps/plugin-fs");
@@ -1155,7 +1319,15 @@ export async function backupAndResetDatabase(): Promise<Result<string, ApiError>
 
 		try {
 			await db.select("SELECT 1 FROM themes LIMIT 1");
-			const tables = ["runs", "variables", "actions", "workspaces", "tools", "themes", "settings"];
+			const tables = [
+				"runs",
+				"variables",
+				"actions",
+				"workspaces",
+				"tools",
+				"themes",
+				"settings",
+			];
 			for (const table of tables) {
 				await db.execute(`DELETE FROM ${table}`);
 			}
@@ -1303,13 +1475,14 @@ export async function backupAndResetDatabase(): Promise<Result<string, ApiError>
 
 			for (const tool of tools) {
 				await db.execute(
-					`INSERT INTO tools (id, name, description, tool_type, command, enabled, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					`INSERT INTO tools (id, name, description, tool_type, template, placeholders, enabled, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 					[
 						tool.id,
 						tool.name,
 						tool.description,
 						tool.tool_type,
-						tool.command,
+						tool.template,
+						tool.placeholders,
 						tool.enabled,
 						tool.category,
 						tool.created_at,
@@ -1335,13 +1508,16 @@ export async function backupAndResetDatabase(): Promise<Result<string, ApiError>
 			}
 
 			for (const setting of settings) {
-				await db.execute(`INSERT INTO settings (id, key, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, [
-					setting.id,
-					setting.key,
-					setting.value,
-					setting.created_at,
-					setting.updated_at,
-				]);
+				await db.execute(
+					`INSERT INTO settings (id, key, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+					[
+						setting.id,
+						setting.key,
+						setting.value,
+						setting.created_at,
+						setting.updated_at,
+					],
+				);
 			}
 
 			for (const action of actions) {

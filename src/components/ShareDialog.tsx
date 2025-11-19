@@ -1,16 +1,22 @@
 import { type Component, createMemo, createSignal, For, Show } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { TextField, TextFieldRoot } from "@/components/ui/textfield";
 import * as api from "@/libs/api";
 import { type ExportData, shareHandler } from "@/libs/share";
 import { showToast } from "@/libs/toast";
+import type { Action } from "@/models/action.model";
 import { useThemeStore } from "@/store/theme";
 import { useToolStore } from "@/store/tool";
 import { useWorkspaceStore } from "@/store/workspace";
-import type { Action } from "@/types/database";
 
 interface ShareDialogProps {
 	trigger: Component<{ onClick?: () => void }>;
@@ -23,15 +29,23 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 	const [themeStore] = useThemeStore();
 	const [searchQuery, setSearchQuery] = createSignal("");
 
-	const [selectedWorkspaces, setSelectedWorkspaces] = createSignal<Set<number>>(new Set<number>());
-	const [selectedTools, setSelectedTools] = createSignal<Set<number>>(new Set<number>());
-	const [selectedThemes, setSelectedThemes] = createSignal<Set<number>>(new Set<number>());
+	const [selectedWorkspaces, setSelectedWorkspaces] = createSignal<Set<number>>(
+		new Set<number>(),
+	);
+	const [selectedTools, setSelectedTools] = createSignal<Set<number>>(
+		new Set<number>(),
+	);
+	const [selectedThemes, setSelectedThemes] = createSignal<Set<number>>(
+		new Set<number>(),
+	);
 
 	const filteredWorkspaces = () => {
 		const query = searchQuery().toLowerCase();
 		if (!query) return workspaceStore.store.workspaces;
 		return workspaceStore.store.workspaces.filter(
-			(w) => w.name.toLowerCase().includes(query) || w.description?.toLowerCase().includes(query),
+			(w) =>
+				w.name.toLowerCase().includes(query) ||
+				w.description?.toLowerCase().includes(query),
 		);
 	};
 
@@ -39,7 +53,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 		const query = searchQuery().toLowerCase();
 		if (!query) return toolStore.tools;
 		return toolStore.tools.filter(
-			(t) => t.name.toLowerCase().includes(query) || t.description?.toLowerCase().includes(query),
+			(t) =>
+				t.name.toLowerCase().includes(query) ||
+				t.description?.toLowerCase().includes(query),
 		);
 	};
 
@@ -48,7 +64,8 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 		if (!query) return themeStore.themes;
 		return themeStore.themes.filter(
 			(theme) =>
-				theme.name.toLowerCase().includes(query) || (theme.description?.toLowerCase().includes(query) ?? false),
+				theme.name.toLowerCase().includes(query) ||
+				(theme.description?.toLowerCase().includes(query) ?? false),
 		);
 	});
 
@@ -83,7 +100,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 	};
 
 	const selectAllWorkspaces = () => {
-		setSelectedWorkspaces(new Set<number>(filteredWorkspaces().map((w) => w.id)));
+		setSelectedWorkspaces(
+			new Set<number>(filteredWorkspaces().map((w) => w.id)),
+		);
 	};
 
 	const deselectAllWorkspaces = () => {
@@ -99,7 +118,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 	};
 
 	const selectAllThemes = () => {
-		setSelectedThemes(new Set<number>(filteredThemes().map((theme) => theme.id)));
+		setSelectedThemes(
+			new Set<number>(filteredThemes().map((theme) => theme.id)),
+		);
 	};
 
 	const deselectAllThemes = () => {
@@ -114,10 +135,12 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 			};
 
 			if (selectedWorkspaces().size > 0) {
-				exportData.workspaces = workspaceStore.store.workspaces.filter((w) => selectedWorkspaces().has(w.id));
+				exportData.workspaces = workspaceStore.store.workspaces.filter((w) =>
+					selectedWorkspaces().has(w.id),
+				);
 
 				const actions: Action[] = [];
-				for (const workspace of exportData.workspaces) {
+				for (const workspace of exportData.workspaces || []) {
 					const result = await api.listActionsByWorkspace(workspace.id);
 					if (result.isOk()) {
 						actions.push(...result.value);
@@ -129,14 +152,22 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 			}
 
 			if (selectedTools().size > 0) {
-				exportData.tools = toolStore.tools.filter((t) => selectedTools().has(t.id));
+				exportData.tools = toolStore.tools.filter((t) =>
+					selectedTools().has(t.id),
+				);
 			}
 
 			if (selectedThemes().size > 0) {
-				exportData.themes = themeStore.themes.filter((theme) => selectedThemes().has(theme.id));
+				exportData.themes = themeStore.themes.filter((theme) =>
+					selectedThemes().has(theme.id),
+				);
 			}
 
-			if (!exportData.workspaces?.length && !exportData.tools?.length && !exportData.themes?.length) {
+			if (
+				!exportData.workspaces?.length &&
+				!exportData.tools?.length &&
+				!exportData.themes?.length
+			) {
 				showToast({
 					title: "Nothing to export",
 					description: "Please select at least one item to export",
@@ -150,7 +181,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 				showToast({
 					title: "Exported to clipboard",
 					description: `Copied ${
-						(exportData.workspaces?.length || 0) + (exportData.tools?.length || 0) + (exportData.themes?.length || 0)
+						(exportData.workspaces?.length || 0) +
+						(exportData.tools?.length || 0) +
+						(exportData.themes?.length || 0)
 					} items`,
 					variant: "success",
 				});
@@ -167,7 +200,8 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 		} catch (error) {
 			showToast({
 				title: "Export failed",
-				description: error instanceof Error ? error.message : "Unknown error occurred",
+				description:
+					error instanceof Error ? error.message : "Unknown error occurred",
 				variant: "destructive",
 			});
 		}
@@ -180,7 +214,8 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 				<DialogHeader>
 					<DialogTitle>Export Data</DialogTitle>
 					<DialogDescription>
-						Select workspaces and tools to export. You can save to a file or copy to clipboard.
+						Select workspaces and tools to export. You can save to a file or
+						copy to clipboard.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -190,14 +225,18 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 							type="text"
 							placeholder="Search workspaces and tools..."
 							value={searchQuery()}
-							onInput={(e: InputEvent) => setSearchQuery((e.target as HTMLInputElement).value)}
+							onInput={(e: InputEvent) =>
+								setSearchQuery((e.target as HTMLInputElement).value)
+							}
 							class="w-full"
 						/>
 					</TextFieldRoot>
 
 					<div class="space-y-2">
 						<div class="flex items-center justify-between">
-							<h3 class="text-sm font-medium">Workspaces ({filteredWorkspaces().length})</h3>
+							<h3 class="text-sm font-medium">
+								Workspaces ({filteredWorkspaces().length})
+							</h3>
 							<div class="flex gap-2">
 								<Button
 									variant="ghost"
@@ -220,16 +259,23 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 						<div class="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
 							<Show
 								when={filteredWorkspaces().length > 0}
-								fallback={<p class="text-sm text-muted-foreground text-center py-4">No workspaces found</p>}
+								fallback={
+									<p class="text-sm text-muted-foreground text-center py-4">
+										No workspaces found
+									</p>
+								}
 							>
 								<For each={filteredWorkspaces()}>
 									{(workspace) => {
-										const isSelected = () => selectedWorkspaces().has(workspace.id);
+										const isSelected = () =>
+											selectedWorkspaces().has(workspace.id);
 										return (
 											<button
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
-													isSelected() ? "bg-accent/50 border border-accent" : ""
+													isSelected()
+														? "bg-accent/50 border border-accent"
+														: ""
 												}`}
 												onClick={() => toggleWorkspace(workspace.id)}
 											>
@@ -237,7 +283,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 												<div class="flex-1">
 													<p class="text-sm font-medium">{workspace.name}</p>
 													<Show when={workspace.description}>
-														<p class="text-xs text-muted-foreground">{workspace.description}</p>
+														<p class="text-xs text-muted-foreground">
+															{workspace.description}
+														</p>
 													</Show>
 												</div>
 											</button>
@@ -252,12 +300,24 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 
 					<div class="space-y-2">
 						<div class="flex items-center justify-between">
-							<h3 class="text-sm font-medium">Tools ({filteredTools().length})</h3>
+							<h3 class="text-sm font-medium">
+								Tools ({filteredTools().length})
+							</h3>
 							<div class="flex gap-2">
-								<Button variant="ghost" size="sm" onClick={selectAllTools} disabled={filteredTools().length === 0}>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={selectAllTools}
+									disabled={filteredTools().length === 0}
+								>
 									Select All
 								</Button>
-								<Button variant="ghost" size="sm" onClick={deselectAllTools} disabled={selectedTools().size === 0}>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={deselectAllTools}
+									disabled={selectedTools().size === 0}
+								>
 									Deselect All
 								</Button>
 							</div>
@@ -265,7 +325,11 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 						<div class="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
 							<Show
 								when={filteredTools().length > 0}
-								fallback={<p class="text-sm text-muted-foreground text-center py-4">No tools found</p>}
+								fallback={
+									<p class="text-sm text-muted-foreground text-center py-4">
+										No tools found
+									</p>
+								}
 							>
 								<For each={filteredTools()}>
 									{(tool) => {
@@ -274,7 +338,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 											<button
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
-													isSelected() ? "bg-accent/50 border border-accent" : ""
+													isSelected()
+														? "bg-accent/50 border border-accent"
+														: ""
 												}`}
 												onClick={() => toggleTool(tool.id)}
 											>
@@ -282,7 +348,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 												<div class="flex-1">
 													<p class="text-sm font-medium">{tool.name}</p>
 													<Show when={tool.description}>
-														<p class="text-xs text-muted-foreground">{tool.description}</p>
+														<p class="text-xs text-muted-foreground">
+															{tool.description}
+														</p>
 													</Show>
 												</div>
 											</button>
@@ -297,12 +365,24 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 
 					<div class="space-y-2">
 						<div class="flex items-center justify-between">
-							<h3 class="text-sm font-medium">Themes ({filteredThemes().length})</h3>
+							<h3 class="text-sm font-medium">
+								Themes ({filteredThemes().length})
+							</h3>
 							<div class="flex gap-2">
-								<Button variant="ghost" size="sm" onClick={selectAllThemes} disabled={filteredThemes().length === 0}>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={selectAllThemes}
+									disabled={filteredThemes().length === 0}
+								>
 									Select All
 								</Button>
-								<Button variant="ghost" size="sm" onClick={deselectAllThemes} disabled={selectedThemes().size === 0}>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={deselectAllThemes}
+									disabled={selectedThemes().size === 0}
+								>
 									Deselect All
 								</Button>
 							</div>
@@ -310,7 +390,11 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 						<div class="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
 							<Show
 								when={filteredThemes().length > 0}
-								fallback={<p class="text-sm text-muted-foreground text-center py-4">No themes found</p>}
+								fallback={
+									<p class="text-sm text-muted-foreground text-center py-4">
+										No themes found
+									</p>
+								}
 							>
 								<For each={filteredThemes()}>
 									{(theme) => {
@@ -319,7 +403,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 											<button
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
-													isSelected() ? "bg-accent/50 border border-accent" : ""
+													isSelected()
+														? "bg-accent/50 border border-accent"
+														: ""
 												}`}
 												onClick={() => toggleTheme(theme.id)}
 											>
@@ -327,7 +413,9 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 												<div class="flex-1">
 													<p class="text-sm font-medium">{theme.name}</p>
 													<Show when={theme.description}>
-														<p class="text-xs text-muted-foreground">{theme.description}</p>
+														<p class="text-xs text-muted-foreground">
+															{theme.description}
+														</p>
 													</Show>
 												</div>
 												<Show when={theme.is_predefined}>
@@ -346,15 +434,17 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 
 				<div class="flex justify-between pt-4 border-t">
 					<div class="text-sm text-muted-foreground">
-						Selected: {selectedWorkspaces().size} workspaces, {selectedTools().size} tools, {selectedThemes().size}{" "}
-						themes
+						Selected: {selectedWorkspaces().size} workspaces,{" "}
+						{selectedTools().size} tools, {selectedThemes().size} themes
 					</div>
 					<div class="flex gap-2">
 						<Button variant="outline" onClick={() => handleExport(true)}>
-							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:content-copy" /> Copy to Clipboard
+							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:content-copy" />{" "}
+							Copy to Clipboard
 						</Button>
 						<Button onClick={() => handleExport(false)}>
-							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:download" /> Export to File
+							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:download" />{" "}
+							Export to File
 						</Button>
 					</div>
 				</div>

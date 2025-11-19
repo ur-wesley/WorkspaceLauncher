@@ -11,10 +11,14 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
-import { TextField, TextFieldLabel, TextFieldRoot } from "@/components/ui/textfield";
+import {
+	TextField,
+	TextFieldLabel,
+	TextFieldRoot,
+} from "@/components/ui/textfield";
 import { showToast } from "@/libs/toast";
+import type { Variable } from "@/models/variable.model";
 import { useVariableStore } from "@/store/variable";
-import type { Variable } from "@/types/database";
 import { variableSchema } from "./VariableDialogValidation";
 
 type VariableDialogProps = {
@@ -28,11 +32,14 @@ type VariableDialogProps = {
 export const VariableDialog: Component<VariableDialogProps> = (props) => {
 	const [, variableStoreActions] = useVariableStore() ?? [null, null];
 	const [open, setOpen] = createSignal(false);
-	const isOpen = () => (props.forceOpen !== undefined ? props.forceOpen : open());
+	const isOpen = () =>
+		props.forceOpen !== undefined ? props.forceOpen : open();
 
 	const [key, setKey] = createSignal(props.variable?.key || "");
 	const [value, setValue] = createSignal(props.variable?.value || "");
-	const [isSecure, setIsSecure] = createSignal(props.variable?.is_secure || false);
+	const [isSecure, setIsSecure] = createSignal(
+		props.variable?.is_secure || false,
+	);
 	const [enabled, setEnabled] = createSignal(props.variable?.enabled ?? true);
 	const [keyError, setKeyError] = createSignal<string | null>(null);
 
@@ -49,7 +56,7 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 			setKey(props.variable.key);
 			setValue(props.variable.value);
 			setIsSecure(props.variable.is_secure);
-			setEnabled(props.variable.enabled);
+			setEnabled(props.variable.enabled ?? true);
 			setKeyError(null);
 		}
 	});
@@ -150,7 +157,9 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 			<Dialog open={isOpen()} onOpenChange={handleOpenChange}>
 				<DialogContent class="max-w-md">
 					<DialogHeader>
-						<DialogTitle>{props.variable ? "Edit Variable" : "Create New Variable"}</DialogTitle>
+						<DialogTitle>
+							{props.variable ? "Edit Variable" : "Create New Variable"}
+						</DialogTitle>
 						<DialogDescription>
 							{props.variable
 								? "Modify the environment variable."
@@ -178,7 +187,9 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 								<p class="text-xs text-destructive mt-1">{keyError()}</p>
 							</Show>
 							<Show when={!keyError()}>
-								<p class="text-xs text-muted-foreground mt-1">Use UPPERCASE_WITH_UNDERSCORES format</p>
+								<p class="text-xs text-muted-foreground mt-1">
+									Use UPPERCASE_WITH_UNDERSCORES format
+								</p>
 							</Show>
 						</TextFieldRoot>
 
@@ -188,7 +199,9 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 								id="variable-value"
 								type={isSecure() ? "password" : "text"}
 								value={value()}
-								onInput={(e: InputEvent) => setValue((e.target as HTMLInputElement).value)}
+								onInput={(e: InputEvent) =>
+									setValue((e.target as HTMLInputElement).value)
+								}
 								placeholder="Variable value"
 							/>
 						</TextFieldRoot>
@@ -197,7 +210,9 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 							<div class="flex items-center justify-between space-x-2">
 								<div class="space-y-0.5">
 									<div class="text-sm font-medium">Secure variable</div>
-									<p class="text-xs text-muted-foreground">Hide value and store securely</p>
+									<p class="text-xs text-muted-foreground">
+										Hide value and store securely
+									</p>
 								</div>
 								<Switch checked={isSecure()} onChange={setIsSecure}>
 									<SwitchControl>
@@ -209,7 +224,9 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 							<div class="flex items-center justify-between space-x-2">
 								<div class="space-y-0.5">
 									<div class="text-sm font-medium">Enabled</div>
-									<p class="text-xs text-muted-foreground">Include in environment when running actions</p>
+									<p class="text-xs text-muted-foreground">
+										Include in environment when running actions
+									</p>
 								</div>
 								<Switch checked={enabled()} onChange={setEnabled}>
 									<SwitchControl>
@@ -221,7 +238,11 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 					</div>
 
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setOpen(false)} disabled={loading()}>
+						<Button
+							variant="outline"
+							onClick={() => setOpen(false)}
+							disabled={loading()}
+						>
 							Cancel
 						</Button>
 						<Button onClick={handleSubmit} disabled={loading() || !canSubmit()}>

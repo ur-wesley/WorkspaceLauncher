@@ -1,9 +1,15 @@
 mod database;
+mod generic_launcher;
 mod launcher;
+mod launcher_core;
+mod launcher_utils;
+mod monitor;
 mod process;
 
+use generic_launcher::{auto_launch_actions, spawn_process};
 use launcher::{launch_action, launch_workspace};
-use process::{is_process_running, kill_process};
+use monitor::get_system_metrics;
+use process::{is_process_running, kill_process, resolve_descendant_pid};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -26,8 +32,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             launch_action,
             launch_workspace,
+            spawn_process,
+            auto_launch_actions,
             kill_process,
-            is_process_running
+            is_process_running,
+            resolve_descendant_pid,
+            get_system_metrics
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

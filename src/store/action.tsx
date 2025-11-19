@@ -1,7 +1,14 @@
 import { createContext, type JSX, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
-import { createAction, deleteAction, listActionsByWorkspace, updateAction } from "@/libs/api";
-import type { Action, NewAction } from "@/types/database";
+import {
+	createAction,
+	deleteAction,
+	listActionsByWorkspace,
+	updateAction,
+} from "@/libs/api";
+import type { Action } from "@/models/action.model";
+import { ActionAdapter } from "@/models/action.model";
+import type { NewAction } from "@/types/database";
 
 interface ActionStoreState {
 	actions: Action[];
@@ -34,7 +41,10 @@ export function ActionStoreProvider(props: { readonly children: JSX.Element }) {
 			try {
 				const result = await listActionsByWorkspace(workspaceId);
 				if (result.isOk()) {
-					setStore({ actions: result.value, loading: false });
+					setStore({
+						actions: result.value.map((a) => ActionAdapter.fromDb(a)),
+						loading: false,
+					});
 				} else {
 					setStore({ error: result.error.message, loading: false });
 				}
@@ -48,13 +58,17 @@ export function ActionStoreProvider(props: { readonly children: JSX.Element }) {
 			try {
 				const result = await createAction(action);
 				if (result.isOk()) {
-					setStore("actions", (prev) => [...prev, result.value]);
+					const model = ActionAdapter.fromDb(result.value);
+					setStore("actions", (prev) => [...prev, model]);
 					setStore({ loading: false });
 				} else {
 					setStore({ error: result.error.message, loading: false });
 				}
 			} catch (error) {
-				setStore({ error: `Failed to create action: ${error}`, loading: false });
+				setStore({
+					error: `Failed to create action: ${error}`,
+					loading: false,
+				});
 			}
 		},
 
@@ -63,13 +77,19 @@ export function ActionStoreProvider(props: { readonly children: JSX.Element }) {
 			try {
 				const result = await updateAction(id, action);
 				if (result.isOk()) {
-					setStore("actions", (prev) => prev.map((a) => (a.id === id ? result.value : a)));
+					const model = ActionAdapter.fromDb(result.value);
+					setStore("actions", (prev) =>
+						prev.map((a) => (a.id === id ? model : a)),
+					);
 					setStore({ loading: false });
 				} else {
 					setStore({ error: result.error.message, loading: false });
 				}
 			} catch (error) {
-				setStore({ error: `Failed to update action: ${error}`, loading: false });
+				setStore({
+					error: `Failed to update action: ${error}`,
+					loading: false,
+				});
 			}
 		},
 
@@ -84,7 +104,10 @@ export function ActionStoreProvider(props: { readonly children: JSX.Element }) {
 					setStore({ error: result.error.message, loading: false });
 				}
 			} catch (error) {
-				setStore({ error: `Failed to delete action: ${error}`, loading: false });
+				setStore({
+					error: `Failed to delete action: ${error}`,
+					loading: false,
+				});
 			}
 		},
 
@@ -93,13 +116,19 @@ export function ActionStoreProvider(props: { readonly children: JSX.Element }) {
 		},
 	};
 
-	return <ActionStoreContext.Provider value={[store, actions]}>{props.children}</ActionStoreContext.Provider>;
+	return (
+		<ActionStoreContext.Provider value={[store, actions]}>
+			{props.children}
+		</ActionStoreContext.Provider>
+	);
 }
 
 export function useActionStore(): ActionStore {
 	const context = useContext(ActionStoreContext);
 	if (!context) {
-		throw new Error("useActionStore must be used within an ActionStoreProvider");
+		throw new Error(
+			"useActionStore must be used within an ActionStoreProvider",
+		);
 	}
 	return context;
 }

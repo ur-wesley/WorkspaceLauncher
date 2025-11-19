@@ -1,4 +1,9 @@
-import { createContext, onMount, type ParentComponent, useContext } from "solid-js";
+import {
+	createContext,
+	onMount,
+	type ParentComponent,
+	useContext,
+} from "solid-js";
 import { createStore } from "solid-js/store";
 import {
 	activateTheme as activateThemeApi,
@@ -9,7 +14,9 @@ import {
 } from "@/libs/api";
 import { applyThemeColors } from "@/libs/themeApplier";
 import { showToast } from "@/libs/toast";
-import type { NewTheme, Theme, ThemeColors } from "@/types/database";
+import type { Theme } from "@/models/theme.model";
+import { ThemeAdapter } from "@/models/theme.model";
+import type { NewTheme, ThemeColors } from "@/types/database";
 
 interface ThemeStoreState {
 	themes: Theme[];
@@ -69,7 +76,7 @@ export const ThemeProvider: ParentComponent = (props) => {
 			try {
 				const result = await listThemesApi();
 				if (result.isOk()) {
-					const themes = result.value;
+					const themes = result.value.map((t) => ThemeAdapter.fromDb(t));
 					const active = themes.find((theme) => theme.is_active) ?? null;
 					setStore({ themes, activeTheme: active, isLoading: false });
 					if (active) {
@@ -79,7 +86,8 @@ export const ThemeProvider: ParentComponent = (props) => {
 					setStore({ error: result.error, isLoading: false });
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : `${error}`;
+				const errorMessage =
+					error instanceof Error ? error.message : `${error}`;
 				setStore({ error: errorMessage, isLoading: false });
 			}
 		},
@@ -211,7 +219,11 @@ export const ThemeProvider: ParentComponent = (props) => {
 		void actions.loadThemes();
 	});
 
-	return <ThemeStoreContext.Provider value={[store, actions]}>{props.children}</ThemeStoreContext.Provider>;
+	return (
+		<ThemeStoreContext.Provider value={[store, actions]}>
+			{props.children}
+		</ThemeStoreContext.Provider>
+	);
 };
 
 export function useThemeStore(): ThemeStore {

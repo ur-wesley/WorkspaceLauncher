@@ -7,7 +7,9 @@ import type {
 
 const VARIABLE_PATTERN = /\$\{([^}]+)\}/g;
 
-export function parsePlaceholderDefinitions(value: string): PlaceholderDefinition[] {
+export function parsePlaceholderDefinitions(
+	value: string,
+): PlaceholderDefinition[] {
 	if (!value) {
 		return [];
 	}
@@ -27,14 +29,18 @@ export function parsePlaceholderDefinitions(value: string): PlaceholderDefinitio
 				})
 				.map((item) => ({
 					name: item.name,
-					description: typeof item.description === "string" ? item.description : "",
+					description:
+						typeof item.description === "string" ? item.description : "",
 					required: item.required,
 					type: item.type,
 					default: typeof item.default === "string" ? item.default : undefined,
 				}));
 		}
 	} catch (error) {
-		console.warn("ActionDialogStepper: failed to parse placeholder metadata", error);
+		console.warn(
+			"ActionDialogStepper: failed to parse placeholder metadata",
+			error,
+		);
 	}
 
 	return [];
@@ -47,7 +53,11 @@ export function parseToolActionConfig(config: string): ToolActionConfig | null {
 
 	try {
 		const parsed = JSON.parse(config) as unknown;
-		if (parsed && typeof parsed === "object" && (parsed as { type?: unknown }).type === "tool") {
+		if (
+			parsed &&
+			typeof parsed === "object" &&
+			(parsed as { type?: unknown }).type === "tool"
+		) {
 			if ((parsed as { source?: unknown }).source === "saved") {
 				return parsed as SavedToolActionConfig;
 			}
@@ -63,13 +73,17 @@ export function parseToolActionConfig(config: string): ToolActionConfig | null {
 	return null;
 }
 
-export function extractVariablesFromText(value: string | undefined | null): string[] {
+export function extractVariablesFromText(
+	value: string | undefined | null,
+): string[] {
 	if (!value) {
 		return [];
 	}
 
 	const matches = value.match(VARIABLE_PATTERN) ?? [];
-	return matches.map((match) => match.slice(2, -1)).filter((variable) => variable.length > 0);
+	return matches
+		.map((match) => match.slice(2, -1))
+		.filter((variable) => variable.length > 0);
 }
 
 export function normalizePlaceholderValues(
@@ -102,7 +116,10 @@ export function parseArgsText(value: string): string[] {
 		.filter((arg) => arg.length > 0);
 }
 
-export function gatherMissingVariables(sources: string[], available: Set<string>): Set<string> {
+export function gatherMissingVariables(
+	sources: string[],
+	available: Set<string>,
+): Set<string> {
 	const missing = new Set<string>();
 	for (const source of sources) {
 		for (const variable of extractVariablesFromText(source)) {

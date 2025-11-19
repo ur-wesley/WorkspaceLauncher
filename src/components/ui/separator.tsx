@@ -9,7 +9,9 @@ type separatorProps<T extends ValidComponent = "hr"> = SeparatorRootProps<T> & {
 	class?: string;
 };
 
-export const Separator = <T extends ValidComponent = "hr">(props: PolymorphicProps<T, separatorProps<T>>) => {
+export const Separator = <T extends ValidComponent = "hr">(
+	props: PolymorphicProps<T, separatorProps<T>>,
+) => {
 	const [local, rest] = splitProps(props as separatorProps, ["class"]);
 
 	return (

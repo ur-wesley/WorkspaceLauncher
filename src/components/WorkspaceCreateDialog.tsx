@@ -11,7 +11,11 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { TextArea } from "@/components/ui/textarea";
-import { TextField, TextFieldLabel, TextFieldRoot } from "@/components/ui/textfield";
+import {
+	TextField,
+	TextFieldLabel,
+	TextFieldRoot,
+} from "@/components/ui/textfield";
 import type { NewWorkspace } from "@/types/database";
 
 interface WorkspaceCreateDialogProps {
@@ -20,7 +24,9 @@ interface WorkspaceCreateDialogProps {
 	onSubmit: (workspace: NewWorkspace) => Promise<void>;
 }
 
-export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (props) => {
+export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (
+	props,
+) => {
 	const [name, setName] = createSignal("");
 	const [description, setDescription] = createSignal("");
 	const [icon, setIcon] = createSignal<string | undefined>(undefined);
@@ -68,7 +74,9 @@ export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (pro
 				<form onSubmit={handleSubmit}>
 					<DialogHeader>
 						<DialogTitle>Create New Workspace</DialogTitle>
-						<DialogDescription>Create a new workspace to organize your development environments.</DialogDescription>
+						<DialogDescription>
+							Create a new workspace to organize your development environments.
+						</DialogDescription>
 					</DialogHeader>
 
 					<div class="grid gap-4 py-4">
@@ -79,7 +87,9 @@ export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (pro
 							<TextField
 								id="name"
 								value={name()}
-								onInput={(e: InputEvent) => setName((e.target as HTMLInputElement).value)}
+								onInput={(e: InputEvent) =>
+									setName((e.target as HTMLInputElement).value)
+								}
 								placeholder="My Workspace"
 								class="col-span-3"
 								required
@@ -92,7 +102,9 @@ export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (pro
 							<div class="col-span-3 flex items-center gap-2">
 								<IconPicker value={icon()} onChange={setIcon} />
 								<Show when={icon()}>
-									<span class="text-sm text-muted-foreground">Selected icon</span>
+									<span class="text-sm text-muted-foreground">
+										Selected icon
+									</span>
 								</Show>
 							</div>
 						</div>
@@ -104,7 +116,9 @@ export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (pro
 							<TextArea
 								id="description"
 								value={description()}
-								onInput={(e: InputEvent) => setDescription((e.target as HTMLTextAreaElement).value)}
+								onInput={(e: InputEvent) =>
+									setDescription((e.target as HTMLTextAreaElement).value)
+								}
 								placeholder="Optional description..."
 								class="col-span-3 min-h-20"
 								disabled={isSubmitting()}
@@ -113,7 +127,12 @@ export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (pro
 					</div>
 
 					<DialogFooter>
-						<Button type="button" variant="outline" onclick={handleClose} disabled={isSubmitting()}>
+						<Button
+							type="button"
+							variant="outline"
+							onclick={handleClose}
+							disabled={isSubmitting()}
+						>
 							Cancel
 						</Button>
 						<Button type="submit" disabled={isSubmitting() || !name().trim()}>

@@ -20,13 +20,18 @@ const VARIABLE_PATTERN = /\$\{([^}]+)\}/g;
 function extractVariablesFromText(value: string | undefined | null): string[] {
 	if (!value) return [];
 	const matches = value.match(VARIABLE_PATTERN) ?? [];
-	return matches.map((match) => match.slice(2, -1)).filter((variable) => variable.length > 0);
+	return matches
+		.map((match) => match.slice(2, -1))
+		.filter((variable) => variable.length > 0);
 }
 
 function extractVariablesFromAction(action: Partial<NewAction>): Set<string> {
 	const variables = new Set<string>();
 
-	const configStr = typeof action.config === "string" ? action.config : JSON.stringify(action.config);
+	const configStr =
+		typeof action.config === "string"
+			? action.config
+			: JSON.stringify(action.config);
 
 	for (const varName of extractVariablesFromText(configStr)) {
 		variables.add(varName);
@@ -191,7 +196,9 @@ interface ActionAIPromptDialogProps {
 	onImportSuccess?: () => void;
 }
 
-export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props) => {
+export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
+	props,
+) => {
 	const [variableStore, variableActions] = useVariableStore();
 	const [open, setOpen] = createSignal(false);
 	const [userDescription, setUserDescription] = createSignal("");
@@ -281,9 +288,13 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 		try {
 			const parsed = JSON.parse(jsonInput());
 
-			const actionsToImport: Partial<NewAction>[] = Array.isArray(parsed) ? parsed : [parsed];
+			const actionsToImport: Partial<NewAction>[] = Array.isArray(parsed)
+				? parsed
+				: [parsed];
 
-			const availableVariables = new Set(variableStore.variables.map((v) => v.key));
+			const availableVariables = new Set(
+				variableStore.variables.map((v) => v.key),
+			);
 			const allMissingVariables = new Set<string>();
 
 			const validatedActions: NewAction[] = [];
@@ -319,13 +330,17 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 					workspace_id: props.workspaceId,
 					name: action.name,
 					action_type: action.action_type,
-					config: typeof action.config === "string" ? action.config : JSON.stringify(action.config),
+					config:
+						typeof action.config === "string"
+							? action.config
+							: JSON.stringify(action.config),
 					dependencies: action.dependencies || null,
 					timeout_seconds: action.timeout_seconds || null,
 					detached,
 					track_process,
 					os_overrides: action.os_overrides || null,
 					order_index: action.order_index ?? 0,
+					auto_launch: false,
 				});
 			}
 
@@ -351,7 +366,10 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 					successCount++;
 				} else {
 					failedCount++;
-					console.error(`Failed to import action "${newAction.name}":`, result.error.message);
+					console.error(
+						`Failed to import action "${newAction.name}":`,
+						result.error.message,
+					);
 				}
 			}
 
@@ -384,7 +402,8 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 		} catch (error) {
 			showToast({
 				title: "Invalid JSON",
-				description: error instanceof Error ? error.message : "Failed to parse JSON",
+				description:
+					error instanceof Error ? error.message : "Failed to parse JSON",
 				variant: "destructive",
 			});
 		}
@@ -408,14 +427,17 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 					</DialogTitle>
 					<DialogDescription>
 						Step 1: Describe what you want, copy the prompt. <br />
-						Step 2: Paste the AI's JSON response (single object or array) to import.
+						Step 2: Paste the AI's JSON response (single object or array) to
+						import.
 					</DialogDescription>
 				</DialogHeader>
 
 				<div class="flex-1 overflow-auto space-y-4 p-1">
 					<div class="space-y-2">
 						<div class="flex items-center justify-between">
-							<div class="text-sm font-medium">Step 1: Describe Your Action</div>
+							<div class="text-sm font-medium">
+								Step 1: Describe Your Action
+							</div>
 							<Button size="sm" onClick={copyPrompt}>
 								<div class="i-mdi-content-copy w-4 h-4 mr-2" />
 								Copy Prompt
@@ -428,8 +450,8 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 							placeholder="Example: I want to launch FiveM and connect to a specific server..."
 						/>
 						<div class="text-xs text-muted-foreground">
-							Describe what you want your action to do. Click "Copy Prompt" to get the full prompt with your
-							description.
+							Describe what you want your action to do. Click "Copy Prompt" to
+							get the full prompt with your description.
 						</div>
 					</div>
 
@@ -438,13 +460,17 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 							<span class="w-full border-t" />
 						</div>
 						<div class="relative flex justify-center text-xs uppercase">
-							<span class="bg-background px-2 text-muted-foreground">Then paste AI response below</span>
+							<span class="bg-background px-2 text-muted-foreground">
+								Then paste AI response below
+							</span>
 						</div>
 					</div>
 
 					<div class="space-y-2">
 						<div class="flex items-center justify-between">
-							<div class="text-sm font-medium">Step 2: Import JSON Response</div>
+							<div class="text-sm font-medium">
+								Step 2: Import JSON Response
+							</div>
 							<Button size="sm" variant="outline" onClick={readFromClipboard}>
 								<div class="i-mdi-clipboard-text w-4 h-4 mr-2" />
 								Read from Clipboard
@@ -458,8 +484,8 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 							placeholder='Paste JSON here (single object or array): { "name": "..." } or [{ "name": "..." }, ...]'
 						/>
 						<div class="text-xs text-muted-foreground">
-							Paste the JSON response from ChatGPT/Claude here (single action object or array of actions), or click
-							"Read from Clipboard".
+							Paste the JSON response from ChatGPT/Claude here (single action
+							object or array of actions), or click "Read from Clipboard".
 						</div>
 					</div>
 				</div>
@@ -468,7 +494,11 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (props
 					<Button variant="outline" onClick={() => setOpen(false)}>
 						Close
 					</Button>
-					<Button onClick={handleImport} disabled={!isValidJSON()} variant="default">
+					<Button
+						onClick={handleImport}
+						disabled={!isValidJSON()}
+						variant="default"
+					>
 						<div class="i-mdi-import w-4 h-4 mr-2" />
 						Import Action
 					</Button>

@@ -18,7 +18,9 @@ interface StepperProps {
 }
 
 export const StepperIndicator: Component<StepperProps> = (props) => {
-	const currentIndex = createMemo(() => props.steps.findIndex((s) => s.id === props.currentStepId));
+	const currentIndex = createMemo(() =>
+		props.steps.findIndex((s) => s.id === props.currentStepId),
+	);
 
 	return (
 		<div class={cn("w-full", props.class)}>
@@ -39,11 +41,18 @@ export const StepperIndicator: Component<StepperProps> = (props) => {
 											"flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all",
 											isActive() &&
 												"border-primary bg-primary text-primary-foreground font-semibold shadow-lg scale-110",
-											isCompleted() && !isActive() && "border-primary bg-primary/20 text-primary",
-											!isActive() && !isCompleted() && "border-muted bg-muted text-muted-foreground",
+											isCompleted() &&
+												!isActive() &&
+												"border-primary bg-primary/20 text-primary",
+											!isActive() &&
+												!isCompleted() &&
+												"border-muted bg-muted text-muted-foreground",
 										)}
 									>
-										<Show when={isCompleted() && !isActive()} fallback={<span>{index() + 1}</span>}>
+										<Show
+											when={isCompleted() && !isActive()}
+											fallback={<span>{index() + 1}</span>}
+										>
 											<div class="i-mdi-check w-5 h-5" />
 										</Show>
 									</button>
@@ -58,15 +67,24 @@ export const StepperIndicator: Component<StepperProps> = (props) => {
 											{step.title}
 										</span>
 										<Show when={step.description}>
-											<span class="text-xs text-muted-foreground mt-0.5">{step.description}</span>
+											<span class="text-xs text-muted-foreground mt-0.5">
+												{step.description}
+											</span>
 										</Show>
 										<Show when={step.optional}>
-											<span class="text-xs text-muted-foreground italic mt-0.5">Optional</span>
+											<span class="text-xs text-muted-foreground italic mt-0.5">
+												Optional
+											</span>
 										</Show>
 									</div>
 								</div>
 								<Show when={!isLast()}>
-									<div class={cn("h-0.5 flex-1 mx-2 transition-colors", isCompleted() ? "bg-primary" : "bg-muted")} />
+									<div
+										class={cn(
+											"h-0.5 flex-1 mx-2 transition-colors",
+											isCompleted() ? "bg-primary" : "bg-muted",
+										)}
+									/>
 								</Show>
 							</li>
 						);
@@ -108,14 +126,22 @@ export const StepperNavigation: Component<StepperNavigationProps> = (props) => {
 
 			<div class="flex gap-2">
 				<Show when={!props.isLast}>
-					<Button type="button" onClick={props.onNext} disabled={!props.canGoNext || props.isLoading}>
+					<Button
+						type="button"
+						onClick={props.onNext}
+						disabled={!props.canGoNext || props.isLoading}
+					>
 						{props.nextLabel || "Next"}
 						<div class="i-mdi-chevron-right w-4 h-4 ml-2" />
 					</Button>
 				</Show>
 
 				<Show when={props.isLast}>
-					<Button type="button" onClick={props.onSubmit} disabled={!props.canSubmit || props.isLoading}>
+					<Button
+						type="button"
+						onClick={props.onSubmit}
+						disabled={!props.canSubmit || props.isLoading}
+					>
 						<Show when={props.isLoading}>
 							<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
 						</Show>
@@ -152,6 +178,8 @@ export const StepperContent: Component<StepperContentProps> = (props) => {
 	);
 };
 
-export function createFormStepper<T extends readonly StepConfig[]>(...steps: T) {
+export function createFormStepper<T extends readonly StepConfig[]>(
+	...steps: T
+) {
 	return defineStepper(...steps);
 }

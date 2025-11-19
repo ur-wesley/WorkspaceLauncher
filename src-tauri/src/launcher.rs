@@ -1,15 +1,12 @@
+use crate::launcher_utils::replace_variables;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::process::Command as StdCommand;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_shell::ShellExt;
 use tokio::time::{sleep, Duration};
-
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LaunchActionRequest {
@@ -26,7 +23,7 @@ pub struct LaunchWorkspaceRequest {
     pub actions: Vec<LaunchActionRequest>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct LaunchResult {
     pub success: bool,
     pub message: String,
@@ -60,71 +57,11 @@ pub struct ActionLogEvent {
     pub message: String,
 }
 
-fn replace_variables(input: &str, variables: &HashMap<String, String>) -> String {
-    let mut result = input.to_string();
-    for (key, value) in variables {
-        let placeholder = format!("${{{}}}", key);
-        result = result.replace(&placeholder, value);
-    }
-    result
-}
+use crate::launcher_core::{
+    spawn_attached_with_logs, spawn_detached, AttachedSpawnRequest, DetachedSpawnRequest,
+};
 
-fn vscode_candidates() -> Vec<String> {
-    let mut candidates = vec![
-        "code".to_string(),
-        "code.cmd".to_string(),
-        "code.exe".to_string(),
-    ];
-    if let Ok(userprofile) = std::env::var("USERPROFILE") {
-        candidates.push(format!(
-            "{}\\AppData\\Local\\Programs\\Microsoft VS Code\\bin\\code.cmd",
-            userprofile
-        ));
-    }
-    candidates.push("C:\\Program Files\\Microsoft VS Code\\bin\\code.cmd".to_string());
-    candidates.push("C:\\Program Files (x86)\\Microsoft VS Code\\bin\\code.cmd".to_string());
-    candidates
-}
-
-fn cursor_candidates() -> Vec<String> {
-    let mut candidates = vec!["cursor".to_string(), "cursor.exe".to_string()];
-    if let Ok(userprofile) = std::env::var("USERPROFILE") {
-        candidates.push(format!(
-            "{}\\AppData\\Local\\Programs\\Cursor\\Cursor.exe",
-            userprofile
-        ));
-    }
-    candidates
-}
-
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-fn spawn_hidden_process(
-    command: &str,
-    args: &[String],
-    working_dir: Option<&str>,
-) -> Result<u32, String> {
-    let mut cmd = StdCommand::new(command);
-    
-    if !args.is_empty() {
-        cmd.args(args);
-    }
-    
-    if let Some(dir) = working_dir {
-        cmd.current_dir(dir);
-    }
-    
-    #[cfg(windows)]
-    cmd.creation_flags(CREATE_NO_WINDOW);
-    
-    match cmd.spawn() {
-        Ok(child) => Ok(child.id()),
-        Err(e) => Err(format!("Failed to spawn process: {}", e)),
-    }
-}
-
-fn spawn_with_candidates(
+async fn spawn_with_candidates(
     app: &AppHandle,
     request: &LaunchActionRequest,
     run_id: i64,
@@ -137,26 +74,83 @@ fn spawn_with_candidates(
     }
 
     let mut last_error: Option<String> = None;
+    let detached = request
+        .config
+        .get("detached")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let track_process = request
+        .config
+        .get("track_process")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    let working_directory = request
+        .config
+        .get("working_directory")
+        .and_then(|v| v.as_str())
+        .map(|s| replace_variables(s, &request.variables));
 
     for program in candidates {
-        let mut command = app.shell().command(program);
-        if !args.is_empty() {
-            command = command.args(args.to_vec());
-        }
-
-        match command.spawn() {
-            Ok((_rx, child)) => return Ok((program.clone(), child.pid())),
-            Err(error) => {
-                let message = format!("Failed to launch {} via {}: {}", tool_name, program, error);
-                emit_log(
-                    app,
-                    request.action_id,
-                    request.workspace_id,
+        if detached {
+            match spawn_detached(
+                app,
+                DetachedSpawnRequest {
+                    action_id: Some(request.action_id),
+                    workspace_id: Some(request.workspace_id),
                     run_id,
-                    "warn",
-                    &message,
-                );
-                last_error = Some(message);
+                    command: program.clone(),
+                    args: args.to_vec(),
+                    working_directory: working_directory.clone(),
+                    track_process,
+                },
+            )
+            .await
+            {
+                Ok(pid) => return Ok((program.clone(), pid)),
+                Err(error) => {
+                    let message =
+                        format!("Failed to launch {} via {}: {}", tool_name, program, error);
+                    emit_log(
+                        app,
+                        request.action_id,
+                        request.workspace_id,
+                        run_id,
+                        "warn",
+                        &message,
+                    );
+                    last_error = Some(message);
+                }
+            }
+        } else {
+            match spawn_attached_with_logs(
+                app,
+                AttachedSpawnRequest {
+                    action_id: Some(request.action_id),
+                    workspace_id: Some(request.workspace_id),
+                    run_id,
+                    command: program.clone(),
+                    args: args.to_vec(),
+                    working_directory: working_directory.clone(),
+                    track_process,
+                },
+            )
+            .await
+            {
+                Ok(pid) => return Ok((program.clone(), pid)),
+                Err(error) => {
+                    let message =
+                        format!("Failed to launch {} via {}: {}", tool_name, program, error);
+                    emit_log(
+                        app,
+                        request.action_id,
+                        request.workspace_id,
+                        run_id,
+                        "warn",
+                        &message,
+                    );
+                    last_error = Some(message);
+                }
             }
         }
     }
@@ -188,8 +182,6 @@ pub async fn launch_action(
     .map_err(|error| format!("Failed to emit action-started event: {}", error))?;
 
     match request.action_type.as_str() {
-        "vscode" => launch_vscode_action(app.clone(), &request, run_id).await,
-        "eclipse" => launch_eclipse_action(app.clone(), &request, run_id).await,
         "command" => launch_command_action(app.clone(), &request, run_id).await,
         "url" => launch_url_action(app.clone(), &request, run_id).await,
         "delay" => launch_delay_action(app.clone(), &request, run_id).await,
@@ -220,175 +212,6 @@ pub async fn launch_workspace(
     }
 
     Ok(results)
-}
-
-async fn launch_vscode_action(
-    app: AppHandle,
-    request: &LaunchActionRequest,
-    run_id: i64,
-) -> Result<LaunchResult, String> {
-    let config = &request.config;
-    let workspace_path = config
-        .get("workspace_path")
-        .and_then(|value| value.as_str())
-        .ok_or("Missing workspace_path in VS Code action config")?;
-    let workspace_path = replace_variables(workspace_path, &request.variables);
-
-    let new_window = config
-        .get("new_window")
-        .and_then(|value| value.as_bool())
-        .unwrap_or(false);
-
-    let mut args = Vec::new();
-    if new_window {
-        args.push("--new-window".to_string());
-    }
-    args.push(workspace_path.clone());
-
-    let candidates = vscode_candidates();
-
-    emit_log(
-        &app,
-        request.action_id,
-        request.workspace_id,
-        run_id,
-        "info",
-        &format!("Launching VS Code with workspace: {}", workspace_path),
-    );
-
-    let (program_used, process_id) =
-        match spawn_with_candidates(&app, request, run_id, "VS Code", &candidates, &args) {
-            Ok(result) => result,
-            Err(error_message) => {
-                emit_log(
-                    &app,
-                    request.action_id,
-                    request.workspace_id,
-                    run_id,
-                    "error",
-                    &error_message,
-                );
-                emit_completed(
-                    &app,
-                    request.action_id,
-                    request.workspace_id,
-                    run_id,
-                    None,
-                    false,
-                );
-                return Err(error_message);
-            }
-        };
-
-    emit_log(
-        &app,
-        request.action_id,
-        request.workspace_id,
-        run_id,
-        "info",
-        &format!(
-            "VS Code launched via {} (workspace: {})",
-            program_used, workspace_path
-        ),
-    );
-    emit_completed(
-        &app,
-        request.action_id,
-        request.workspace_id,
-        run_id,
-        Some(0),
-        true,
-    );
-
-    Ok(LaunchResult {
-        success: true,
-        message: format!(
-            "VS Code launched successfully for workspace: {}",
-            workspace_path
-        ),
-        process_id: Some(process_id),
-        run_id: Some(run_id),
-    })
-}
-
-async fn launch_eclipse_action(
-    app: AppHandle,
-    request: &LaunchActionRequest,
-    run_id: i64,
-) -> Result<LaunchResult, String> {
-    let config = &request.config;
-    let workspace_path = config
-        .get("workspace_path")
-        .and_then(|value| value.as_str())
-        .ok_or("Missing workspace_path in Eclipse action config")?;
-    let binary_path = config
-        .get("binary_path")
-        .and_then(|value| value.as_str())
-        .unwrap_or("eclipse");
-
-    let workspace_path = replace_variables(workspace_path, &request.variables);
-    let binary_path = replace_variables(binary_path, &request.variables);
-
-    let mut args = Vec::new();
-    args.push("-data".to_string());
-    args.push(workspace_path.clone());
-
-    let candidates = vec![binary_path.clone()];
-
-    emit_log(
-        &app,
-        request.action_id,
-        request.workspace_id,
-        run_id,
-        "info",
-        &format!(
-            "Launching Eclipse with workspace: {} using {}",
-            workspace_path, binary_path
-        ),
-    );
-
-    let (_, process_id) =
-        match spawn_with_candidates(&app, request, run_id, "Eclipse", &candidates, &args) {
-            Ok(result) => result,
-            Err(error_message) => {
-                emit_log(
-                    &app,
-                    request.action_id,
-                    request.workspace_id,
-                    run_id,
-                    "error",
-                    &error_message,
-                );
-                emit_completed(
-                    &app,
-                    request.action_id,
-                    request.workspace_id,
-                    run_id,
-                    None,
-                    false,
-                );
-                return Err(error_message);
-            }
-        };
-
-    emit_completed(
-        &app,
-        request.action_id,
-        request.workspace_id,
-        run_id,
-        Some(0),
-        true,
-    );
-
-    Ok(LaunchResult {
-        success: true,
-        message: format!(
-            "Eclipse launched successfully for workspace: {}",
-            workspace_path
-        ),
-        process_id: Some(process_id),
-        run_id: Some(run_id),
-    })
 }
 
 async fn launch_command_action(
@@ -428,7 +251,8 @@ async fn launch_command_action(
         .map(|arg| replace_variables(arg, &request.variables))
         .collect();
 
-    let working_directory_resolved = working_directory.map(|dir| replace_variables(dir, &request.variables));
+    let working_directory_resolved =
+        working_directory.map(|dir| replace_variables(dir, &request.variables));
 
     emit_log(
         &app,
@@ -439,6 +263,11 @@ async fn launch_command_action(
         &format!("Executing command: {} {:?}", command_str, args),
     );
 
+    let detached_cfg = config
+        .get("detached")
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false);
+
     let process_id = if keep_terminal_open {
         let mut full_command = command_str.clone();
         if !args.is_empty() {
@@ -448,7 +277,7 @@ async fn launch_command_action(
 
         let mut cmd = app.shell().command("cmd");
         cmd = cmd.args(["/k", &full_command]);
-        
+
         if let Some(dir) = &working_directory_resolved {
             cmd = cmd.current_dir(dir);
         }
@@ -476,8 +305,21 @@ async fn launch_command_action(
             }
         }
     } else {
-        match spawn_hidden_process(&command_str, &args, working_directory_resolved.as_deref()) {
-            Ok(pid) => pid,
+        match crate::generic_launcher::spawn_process(
+            app.clone(),
+            crate::generic_launcher::SpawnRequest {
+                command: command_str.clone(),
+                args: Some(args.clone()),
+                working_directory: working_directory_resolved.clone(),
+                keep_terminal_open: Some(false),
+                detached: Some(detached_cfg),
+                action_id: Some(request.action_id),
+                workspace_id: Some(request.workspace_id),
+            },
+        )
+        .await
+        {
+            Ok(res) => res.process_id.unwrap_or(0),
             Err(error) => {
                 emit_log(
                     &app,
@@ -500,10 +342,7 @@ async fn launch_command_action(
         }
     };
 
-    let detached = config
-        .get("detached")
-        .and_then(|value| value.as_bool())
-        .unwrap_or(false);
+    let detached = detached_cfg;
 
     if detached {
         emit_completed(
@@ -521,15 +360,6 @@ async fn launch_command_action(
             run_id: Some(run_id),
         });
     }
-
-    emit_completed(
-        &app,
-        request.action_id,
-        request.workspace_id,
-        run_id,
-        Some(0),
-        true,
-    );
 
     Ok(LaunchResult {
         success: true,
@@ -654,33 +484,8 @@ async fn launch_tool_action(
     run_id: i64,
 ) -> Result<LaunchResult, String> {
     let config = &request.config;
-    let tool_id = config
-        .get("tool_id")
-        .and_then(|value| value.as_i64())
-        .ok_or("Missing tool_id in tool action config")?;
 
-    let placeholder_values = config
-        .get("placeholder_values")
-        .and_then(|value| value.as_object())
-        .ok_or("Missing placeholder_values in tool action config")?;
-
-    let mut resolved = HashMap::new();
-    for (name, value) in placeholder_values {
-        let value_str = value
-            .as_str()
-            .ok_or_else(|| format!("Placeholder {} must be a string", name))?;
-        let resolved_value = replace_variables(value_str, &request.variables);
-        resolved.insert(name.clone(), resolved_value);
-    }
-
-    let default_tool_name = match tool_id {
-        1 => "VS Code",
-        4 => "Explorer",
-        8 => "Eclipse",
-        9 => "Cursor",
-        _ => "Tool",
-    };
-
+    let default_tool_name = "Tool";
     let tool_name = config
         .get("tool_name")
         .and_then(|value| value.as_str())
@@ -695,78 +500,94 @@ async fn launch_tool_action(
         args: Vec<String>,
     }
 
-    let plan = match tool_id {
-        1 => {
-            let workspace_path = resolved
-                .get("workspace_path")
-                .ok_or("Missing workspace_path placeholder for VS Code tool")?
-                .clone();
-            ToolCommandPlan {
-                tool_name: tool_name.clone(),
-                description: format!("Launching VS Code with workspace: {}", workspace_path),
-                success_message: format!(
-                    "VS Code launched successfully for workspace: {}",
-                    workspace_path
-                ),
-                candidates: vscode_candidates(),
-                args: vec![workspace_path],
-            }
+    let plan = if config.get("tool_id").is_some() {
+        let placeholder_values = config
+            .get("placeholder_values")
+            .and_then(|value| value.as_object())
+            .ok_or("Missing placeholder_values in tool action config")?;
+
+        let mut resolved = HashMap::new();
+        for (name, value) in placeholder_values {
+            let value_str = value
+                .as_str()
+                .ok_or_else(|| format!("Placeholder {} must be a string", name))?;
+            let resolved_value = replace_variables(value_str, &request.variables);
+            resolved.insert(name.clone(), resolved_value);
         }
-        4 => {
-            let path = resolved
-                .get("path")
-                .cloned()
-                .filter(|value| !value.is_empty())
-                .unwrap_or_else(|| ".".to_string());
-            ToolCommandPlan {
-                tool_name: tool_name.clone(),
-                description: format!("Opening Explorer at: {}", path),
-                success_message: format!("File Explorer opened successfully at {}", path),
-                candidates: vec!["explorer".to_string()],
-                args: vec![path],
-            }
+
+        let binary_path = resolved
+            .get("binary_path")
+            .cloned()
+            .ok_or("Missing binary_path placeholder for tool")?;
+        let args: Vec<String> = resolved
+            .get("args")
+            .map(|v| v.to_string())
+            .map(|s| {
+                if s.is_empty() {
+                    vec![]
+                } else {
+                    s.split_whitespace().map(|x| x.to_string()).collect()
+                }
+            })
+            .unwrap_or_default();
+
+        ToolCommandPlan {
+            tool_name: tool_name.clone(),
+            description: format!("Launching {}", tool_name),
+            success_message: format!("{} launched", tool_name),
+            candidates: vec![binary_path],
+            args,
         }
-        8 => {
-            let eclipse_path = resolved
-                .get("eclipse_path")
-                .ok_or("Missing eclipse_path placeholder for Eclipse tool")?
-                .clone();
-            let workspace_path = resolved
-                .get("workspace_path")
-                .ok_or("Missing workspace_path placeholder for Eclipse tool")?
-                .clone();
-            ToolCommandPlan {
-                tool_name: tool_name.clone(),
-                description: format!("Launching Eclipse with workspace: {}", workspace_path),
-                success_message: format!(
-                    "Eclipse launched successfully for workspace: {}",
-                    workspace_path
-                ),
-                candidates: vec![eclipse_path],
-                args: vec!["-data".to_string(), workspace_path],
-            }
-        }
-        9 => {
-            let project_path = resolved
-                .get("project_path")
-                .ok_or("Missing project_path placeholder for Cursor tool")?
-                .clone();
-            ToolCommandPlan {
-                tool_name: tool_name.clone(),
-                description: format!("Launching Cursor for project: {}", project_path),
-                success_message: format!(
-                    "Cursor launched successfully for project: {}",
-                    project_path
-                ),
-                candidates: cursor_candidates(),
-                args: vec![project_path],
-            }
-        }
-        _ => {
-            return Err(format!(
-                "Tool with ID {} is not supported by the launcher",
-                tool_id
-            ));
+    } else {
+        let tool_type = config
+            .get("tool_type")
+            .and_then(|value| value.as_str())
+            .unwrap_or("binary");
+
+        let (binary_path, args) = if tool_type == "cli" {
+            let command = config
+                .get("command")
+                .and_then(|value| value.as_str())
+                .ok_or("Missing command in custom CLI tool action config")?;
+
+            let args: Vec<String> = config
+                .get("args")
+                .and_then(|value| value.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .map(|s| replace_variables(s, &request.variables))
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            (command.to_string(), args)
+        } else {
+            let binary_path = config
+                .get("binary_path")
+                .and_then(|value| value.as_str())
+                .ok_or("Missing binary_path in custom binary tool action config")?;
+
+            let args: Vec<String> = config
+                .get("args")
+                .and_then(|value| value.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .map(|s| replace_variables(s, &request.variables))
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            (binary_path.to_string(), args)
+        };
+
+        ToolCommandPlan {
+            tool_name: tool_name.clone(),
+            description: format!("Launching {}", tool_name),
+            success_message: format!("{} launched", tool_name),
+            candidates: vec![binary_path],
+            args,
         }
     };
 
@@ -786,7 +607,9 @@ async fn launch_tool_action(
         &plan.tool_name,
         &plan.candidates,
         &plan.args,
-    ) {
+    )
+    .await
+    {
         Ok(result) => result,
         Err(error_message) => {
             emit_log(
@@ -809,6 +632,16 @@ async fn launch_tool_action(
         }
     };
 
+    let _ = app.emit(
+        "action-started",
+        ActionStartedEvent {
+            action_id: request.action_id,
+            workspace_id: request.workspace_id,
+            run_id,
+            process_id: Some(process_id),
+        },
+    );
+
     emit_log(
         &app,
         request.action_id,
@@ -819,14 +652,6 @@ async fn launch_tool_action(
             "{} launched via {} with args {:?}",
             plan.tool_name, program_used, plan.args
         ),
-    );
-    emit_completed(
-        &app,
-        request.action_id,
-        request.workspace_id,
-        run_id,
-        Some(0),
-        true,
     );
 
     Ok(LaunchResult {
@@ -875,4 +700,44 @@ fn emit_completed(
             success,
         },
     );
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn test_spawn_hidden_process_echo() {
+        #[cfg(target_os = "windows")]
+        {
+            let args = vec!["/C".to_string(), "echo".to_string(), "hello".to_string()];
+            let pid = crate::launcher_utils::spawn_hidden_process("cmd", &args, None)
+                .await
+                .expect("failed to spawn hidden process");
+            assert!(pid > 0);
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            let args = vec!["-c".to_string(), "echo hello".to_string()];
+            let pid = crate::launcher_utils::spawn_hidden_process("sh", &args, None)
+                .await
+                .expect("failed to spawn hidden process");
+            assert!(pid > 0);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_spawn_hidden_process_working_dir() {
+        let (cmd, args): (&str, Vec<String>) = if cfg!(target_os = "windows") {
+            (
+                "cmd",
+                vec!["/C".to_string(), "echo".to_string(), "ok".to_string()],
+            )
+        } else {
+            ("sh", vec!["-c".to_string(), "echo ok".to_string()])
+        };
+        let pid = crate::launcher_utils::spawn_hidden_process(cmd, &args, Some("."))
+            .await
+            .expect("failed to spawn with working dir");
+        assert!(pid > 0);
+    }
 }

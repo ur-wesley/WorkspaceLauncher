@@ -1,4 +1,11 @@
-import { type Component, createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import {
+	type Component,
+	createEffect,
+	createSignal,
+	For,
+	onCleanup,
+	Show,
+} from "solid-js";
 import { useRunStore } from "@/store";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -26,7 +33,9 @@ function formatDuration(startedAt: string): string {
 	return `${seconds}s`;
 }
 
-export const RunningActionsPanel: Component<RunningActionsPanelProps> = (props) => {
+export const RunningActionsPanel: Component<RunningActionsPanelProps> = (
+	props,
+) => {
 	const [state, actions] = useRunStore();
 	const [, setTick] = createSignal(0);
 
@@ -59,7 +68,11 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (props) 
 		<div class="space-y-3">
 			<div class="flex items-center justify-between">
 				<h3 class="text-lg font-semibold">Running Actions</h3>
-				<Button variant="ghost" size="sm" onClick={() => actions.loadRunningActions(props.workspaceId)}>
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={() => actions.loadRunningActions(props.workspaceId)}
+				>
 					Refresh
 				</Button>
 			</div>
@@ -70,9 +83,15 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (props) 
 					<Card class="p-4 bg-muted/30 shadow-sm">
 						<Show
 							when={state.loading}
-							fallback={<p class="text-sm text-muted-foreground text-center">No running actions</p>}
+							fallback={
+								<p class="text-sm text-muted-foreground text-center">
+									No running actions
+								</p>
+							}
 						>
-							<p class="text-sm text-muted-foreground text-center">Loading...</p>
+							<p class="text-sm text-muted-foreground text-center">
+								Loading...
+							</p>
 						</Show>
 					</Card>
 				}
@@ -87,17 +106,28 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (props) 
 											<Badge variant="default" class="bg-blue-500">
 												Running
 											</Badge>
-											<span class="text-sm font-medium truncate">{action.action_name}</span>
+											<span class="text-sm font-medium truncate">
+												{action.action_name}
+											</span>
 										</div>
 										<div class="mt-1 space-y-0.5">
-											<p class="text-xs text-muted-foreground">PID: {action.process_id}</p>
-											<p class="text-xs text-muted-foreground">Duration: {formatDuration(action.started_at)}</p>
 											<p class="text-xs text-muted-foreground">
-												Started: {new Date(action.started_at).toLocaleTimeString()}
+												PID: {action.process_id}
+											</p>
+											<p class="text-xs text-muted-foreground">
+												Duration: {formatDuration(action.started_at)}
+											</p>
+											<p class="text-xs text-muted-foreground">
+												Started:{" "}
+												{new Date(action.started_at).toLocaleTimeString()}
 											</p>
 										</div>
 									</div>
-									<Button variant="destructive" size="sm" onClick={() => actions.stopAction(action)}>
+									<Button
+										variant="destructive"
+										size="sm"
+										onClick={() => actions.stopAction(action)}
+									>
 										Stop
 									</Button>
 								</div>

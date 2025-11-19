@@ -1,5 +1,12 @@
-import type { Action, NewTheme, Theme, Tool, Workspace } from "@/types/database";
-import type { ExportData } from "./share";
+import { ActionAdapter, type ActionExport } from "@/models/action.model";
+import type { ExportData } from "@/models/export.model";
+import { ThemeAdapter, type ThemeExport } from "@/models/theme.model";
+import { ToolAdapter, type ToolExport } from "@/models/tool.model";
+import {
+	WorkspaceAdapter,
+	type WorkspaceExport,
+} from "@/models/workspace.model";
+import type { NewTheme } from "@/types/database";
 
 export interface ImportOptions {
 	selectedWorkspaces: Set<number>;
@@ -11,7 +18,11 @@ export interface ImportOptions {
 }
 
 export interface ImportCallbacks {
-	createWorkspace: (data: { name: string; description?: string; icon?: string }) => Promise<{ id: number } | null>;
+	createWorkspace: (data: {
+		name: string;
+		description?: string;
+		icon?: string;
+	}) => Promise<{ id: number } | null>;
 	createTool: (data: {
 		name: string;
 		description?: string;
@@ -34,7 +45,7 @@ export interface ImportCallbacks {
 		os_overrides: string | null;
 		order_index: number;
 	}) => Promise<void>;
-	createTheme: (data: NewTheme) => Promise<void>;
+	createTheme: (data: NewTheme) => Promise<boolean>;
 }
 
 export interface ImportResult {
@@ -48,7 +59,7 @@ export interface ImportResult {
  * Imports workspaces and returns a mapping of old IDs to new IDs
  */
 async function importWorkspaces(
-	workspaces: Workspace[],
+	workspaces: WorkspaceExport[],
 	selectedIds: Set<number>,
 	renamedMap: Map<number, string>,
 	createWorkspace: ImportCallbacks["createWorkspace"],
@@ -59,11 +70,12 @@ async function importWorkspaces(
 	for (const workspace of workspaces) {
 		if (!selectedIds.has(workspace.id)) continue;
 
-		const workspaceName = renamedMap.get(workspace.id) || workspace.name;
+		const parsed = WorkspaceAdapter.fromExport(workspace);
+		const workspaceName = renamedMap.get(workspace.id) || parsed.name;
 		const newWorkspace = await createWorkspace({
 			name: workspaceName,
-			description: workspace.description || undefined,
-			icon: workspace.icon || undefined,
+			description: parsed.description ?? undefined,
+			icon: parsed.icon ?? undefined,
 		});
 
 		if (newWorkspace) {
@@ -79,7 +91,7 @@ async function importWorkspaces(
  * Imports tools
  */
 async function importTools(
-	tools: Tool[],
+	tools: ToolExport[],
 	selectedIds: Set<number>,
 	createTool: ImportCallbacks["createTool"],
 ): Promise<number> {
@@ -88,15 +100,16 @@ async function importTools(
 	for (const tool of tools) {
 		if (!selectedIds.has(tool.id)) continue;
 
+		const parsed = ToolAdapter.fromExport(tool);
 		const newTool = await createTool({
-			name: tool.name,
-			description: tool.description || undefined,
-			icon: tool.icon || undefined,
-			enabled: tool.enabled,
-			tool_type: tool.tool_type,
-			template: tool.template,
-			placeholders: tool.placeholders || "[]",
-			category: tool.category || undefined,
+			name: parsed.name,
+			description: parsed.description ?? undefined,
+			icon: parsed.icon ?? undefined,
+			enabled: parsed.enabled,
+			tool_type: parsed.tool_type,
+			template: parsed.template,
+			placeholders: parsed.placeholders || "[]",
+			category: parsed.category ?? undefined,
 		});
 
 		if (newTool) {
@@ -108,7 +121,7 @@ async function importTools(
 }
 
 async function importThemes(
-	themes: Theme[],
+	themes: ThemeExport[],
 	selectedIds: Set<number>,
 	createTheme: ImportCallbacks["createTheme"],
 ): Promise<number> {
@@ -117,12 +130,13 @@ async function importThemes(
 	for (const theme of themes) {
 		if (!selectedIds.has(theme.id)) continue;
 
+		const parsed = ThemeAdapter.fromExport(theme);
 		await createTheme({
-			name: theme.name,
-			description: theme.description || undefined,
-			light_colors: theme.light_colors,
-			dark_colors: theme.dark_colors,
-			is_predefined: theme.is_predefined,
+			name: parsed.name,
+			description: parsed.description ?? undefined,
+			light_colors: parsed.light_colors,
+			dark_colors: parsed.dark_colors,
+			is_predefined: parsed.is_predefined ?? false,
 		});
 
 		count++;
@@ -135,7 +149,7 @@ async function importThemes(
  * Imports actions
  */
 async function importActions(
-	actions: Action[],
+	actions: ActionExport[],
 	selectedIds: Set<number>,
 	renamedMap: Map<number, string>,
 	workspaceIdMap: Map<number, number>,
@@ -147,7 +161,9 @@ async function importActions(
 	for (const action of actions) {
 		if (!selectedIds.has(action.id)) continue;
 
-		const mappedWorkspaceId = action.workspace_id ? workspaceIdMap.get(action.workspace_id) : undefined;
+		const mappedWorkspaceId = action.workspace_id
+			? workspaceIdMap.get(action.workspace_id)
+			: undefined;
 
 		if (!mappedWorkspaceId) {
 			console.warn(
@@ -157,29 +173,18 @@ async function importActions(
 			continue;
 		}
 
-		const actionName = renamedMap.get(action.id) || action.name;
-
-		const detached =
-			typeof action.detached === "string"
-				? action.detached === "true" || action.detached === "1"
-				: Boolean(action.detached);
-
-		const track_process =
-			typeof action.track_process === "string"
-				? action.track_process === "true" || action.track_process === "1"
-				: Boolean(action.track_process);
-
+		const parsed = ActionAdapter.fromExport(action);
 		await createAction({
-			name: actionName,
+			name: renamedMap.get(action.id) || parsed.name,
 			workspace_id: mappedWorkspaceId,
-			action_type: action.action_type,
-			config: action.config,
-			dependencies: action.dependencies,
-			timeout_seconds: action.timeout_seconds,
-			detached,
-			track_process,
-			os_overrides: action.os_overrides,
-			order_index: action.order_index,
+			action_type: parsed.action_type,
+			config: parsed.config,
+			dependencies: parsed.dependencies ?? null,
+			timeout_seconds: parsed.timeout_seconds ?? null,
+			detached: parsed.detached,
+			track_process: parsed.track_process,
+			os_overrides: parsed.os_overrides ?? null,
+			order_index: parsed.order_index,
 		});
 
 		count++;
@@ -199,18 +204,27 @@ export async function performImport(
 	try {
 		let totalImported = 0;
 
-		const { idMap: workspaceIdMap, count: workspaceCount } = await importWorkspaces(
-			data.workspaces || [],
-			options.selectedWorkspaces,
-			options.renamedWorkspaces,
-			callbacks.createWorkspace,
-		);
+		const { idMap: workspaceIdMap, count: workspaceCount } =
+			await importWorkspaces(
+				data.workspaces || [],
+				options.selectedWorkspaces,
+				options.renamedWorkspaces,
+				callbacks.createWorkspace,
+			);
 		totalImported += workspaceCount;
 
-		const toolCount = await importTools(data.tools || [], options.selectedTools, callbacks.createTool);
+		const toolCount = await importTools(
+			data.tools || [],
+			options.selectedTools,
+			callbacks.createTool,
+		);
 		totalImported += toolCount;
 
-		const themeCount = await importThemes(data.themes || [], options.selectedThemes, callbacks.createTheme);
+		const themeCount = await importThemes(
+			data.themes || [],
+			options.selectedThemes,
+			callbacks.createTheme,
+		);
 		totalImported += themeCount;
 
 		const actionCount = await importActions(

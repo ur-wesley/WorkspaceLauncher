@@ -3,7 +3,10 @@ import type { ThemeColors } from "@/types/database";
 const LIGHT_STYLE_ID = "theme-light-vars";
 const DARK_STYLE_ID = "theme-dark-vars";
 
-export function applyThemeColors(lightColors: ThemeColors, darkColors: ThemeColors): void {
+export function applyThemeColors(
+	lightColors: ThemeColors,
+	darkColors: ThemeColors,
+): void {
 	const lightStyle = ensureStyleElement(LIGHT_STYLE_ID);
 	lightStyle.textContent = buildStyleBlock(":root", lightColors);
 
@@ -11,7 +14,10 @@ export function applyThemeColors(lightColors: ThemeColors, darkColors: ThemeColo
 	darkStyle.textContent = buildStyleBlock('[data-kb-theme="dark"]', darkColors);
 }
 
-export function getCurrentThemeColors(): { light: ThemeColors; dark: ThemeColors } {
+export function getCurrentThemeColors(): {
+	light: ThemeColors;
+	dark: ThemeColors;
+} {
 	const root = document.documentElement;
 	const computedStyle = getComputedStyle(root);
 
@@ -31,14 +37,19 @@ export function getCurrentThemeColors(): { light: ThemeColors; dark: ThemeColors
 		accent: getVarValue(computedStyle, "--accent"),
 		accentForeground: getVarValue(computedStyle, "--accent-foreground"),
 		destructive: getVarValue(computedStyle, "--destructive"),
-		destructiveForeground: getVarValue(computedStyle, "--destructive-foreground"),
+		destructiveForeground: getVarValue(
+			computedStyle,
+			"--destructive-foreground",
+		),
 		border: getVarValue(computedStyle, "--border"),
 		input: getVarValue(computedStyle, "--input"),
 		ring: getVarValue(computedStyle, "--ring"),
 	};
 
 	const darkThemeElement = document.querySelector('[data-kb-theme="dark"]');
-	const darkComputedStyle = darkThemeElement ? getComputedStyle(darkThemeElement as Element) : computedStyle;
+	const darkComputedStyle = darkThemeElement
+		? getComputedStyle(darkThemeElement as Element)
+		: computedStyle;
 
 	const darkColors: ThemeColors = {
 		background: getVarValue(darkComputedStyle, "--background"),
@@ -50,13 +61,19 @@ export function getCurrentThemeColors(): { light: ThemeColors; dark: ThemeColors
 		primary: getVarValue(darkComputedStyle, "--primary"),
 		primaryForeground: getVarValue(darkComputedStyle, "--primary-foreground"),
 		secondary: getVarValue(darkComputedStyle, "--secondary"),
-		secondaryForeground: getVarValue(darkComputedStyle, "--secondary-foreground"),
+		secondaryForeground: getVarValue(
+			darkComputedStyle,
+			"--secondary-foreground",
+		),
 		muted: getVarValue(darkComputedStyle, "--muted"),
 		mutedForeground: getVarValue(darkComputedStyle, "--muted-foreground"),
 		accent: getVarValue(darkComputedStyle, "--accent"),
 		accentForeground: getVarValue(darkComputedStyle, "--accent-foreground"),
 		destructive: getVarValue(darkComputedStyle, "--destructive"),
-		destructiveForeground: getVarValue(darkComputedStyle, "--destructive-foreground"),
+		destructiveForeground: getVarValue(
+			darkComputedStyle,
+			"--destructive-foreground",
+		),
 		border: getVarValue(darkComputedStyle, "--border"),
 		input: getVarValue(darkComputedStyle, "--input"),
 		ring: getVarValue(darkComputedStyle, "--ring"),

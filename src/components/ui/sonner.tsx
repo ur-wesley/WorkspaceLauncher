@@ -24,7 +24,8 @@ export const Toaster = (props: Parameters<typeof Sonner>[0]) => {
 					background: "hsl(var(--background))",
 					color: "hsl(var(--foreground))",
 					border: "1px solid hsl(var(--border))",
-					"box-shadow": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+					"box-shadow":
+						"0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
 				},
 				className: "sonner-toast",
 			}}

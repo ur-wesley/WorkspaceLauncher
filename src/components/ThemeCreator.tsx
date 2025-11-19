@@ -5,8 +5,20 @@ import type { ThemeColors } from "@/types/database";
 import { ColorPicker } from "./ColorPicker";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Select, SelectContent, SelectDescription, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Switch, SwitchControl, SwitchDescription, SwitchThumb } from "./ui/switch";
+import {
+	Select,
+	SelectContent,
+	SelectDescription,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./ui/select";
+import {
+	Switch,
+	SwitchControl,
+	SwitchDescription,
+	SwitchThumb,
+} from "./ui/switch";
 import { TextField, TextFieldLabel, TextFieldRoot } from "./ui/textfield";
 
 interface ThemeCreatorProps {
@@ -16,7 +28,12 @@ interface ThemeCreatorProps {
 		lightColors: ThemeColors;
 		darkColors: ThemeColors;
 	};
-	onSave: (theme: { name: string; description?: string; lightColors: ThemeColors; darkColors: ThemeColors }) => void;
+	onSave: (theme: {
+		name: string;
+		description?: string;
+		lightColors: ThemeColors;
+		darkColors: ThemeColors;
+	}) => void;
 	onCancel: () => void;
 	presets?: Array<{
 		id: string;
@@ -29,7 +46,9 @@ interface ThemeCreatorProps {
 
 export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 	const [name, setName] = createSignal<string>(props.initialTheme?.name ?? "");
-	const [description, setDescription] = createSignal<string>(props.initialTheme?.description ?? "");
+	const [description, setDescription] = createSignal<string>(
+		props.initialTheme?.description ?? "",
+	);
 	const [lightColors, setLightColors] = createSignal<ThemeColors>(
 		props.initialTheme?.lightColors || { ...defaultTheme.light },
 	);
@@ -66,7 +85,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 	};
 
 	const availablePresets = createMemo(() => props.presets ?? []);
-	const presetOptions = createMemo<string[]>(() => availablePresets().map((preset) => preset.id));
+	const presetOptions = createMemo<string[]>(() =>
+		availablePresets().map((preset) => preset.id),
+	);
 
 	createEffect(() => {
 		const initial = props.initialTheme;
@@ -95,11 +116,23 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 	}> = [
 		{
 			title: "Background & Surfaces",
-			keys: ["background", "foreground", "card", "cardForeground", "popover", "popoverForeground"],
+			keys: [
+				"background",
+				"foreground",
+				"card",
+				"cardForeground",
+				"popover",
+				"popoverForeground",
+			],
 		},
 		{
 			title: "Primary & Secondary",
-			keys: ["primary", "primaryForeground", "secondary", "secondaryForeground"],
+			keys: [
+				"primary",
+				"primaryForeground",
+				"secondary",
+				"secondaryForeground",
+			],
 		},
 		{
 			title: "Muted & Accent",
@@ -115,19 +148,24 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 		},
 	];
 
-	const previewColors = createMemo(() => (previewMode() === "light" ? lightColors() : darkColors()));
+	const previewColors = createMemo(() =>
+		previewMode() === "light" ? lightColors() : darkColors(),
+	);
 
 	const previewStyle = createMemo(() => {
 		const colors = previewColors();
-		const toCssVarName = (key: keyof ThemeColors) => `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
+		const toCssVarName = (key: keyof ThemeColors) =>
+			`--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
 
 		const vars: Record<string, string> = {};
 
-		(Object.entries(colors) as Array<[keyof ThemeColors, string]>).forEach(([key, value]) => {
-			const cssVar = toCssVarName(key);
-			vars[cssVar] = value;
-			vars[`${cssVar}-hsl`] = `hsl(${value})`;
-		});
+		(Object.entries(colors) as Array<[keyof ThemeColors, string]>).forEach(
+			([key, value]) => {
+				const cssVar = toCssVarName(key);
+				vars[cssVar] = value;
+				vars[`${cssVar}-hsl`] = `hsl(${value})`;
+			},
+		);
 
 		return vars;
 	});
@@ -158,14 +196,20 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 							placeholder="Choose a preset"
 							itemComponent={(itemProps) => (
 								<SelectItem item={itemProps.item}>
-									{availablePresets().find((preset) => preset.id === itemProps.item.rawValue)?.name}
+									{
+										availablePresets().find(
+											(preset) => preset.id === itemProps.item.rawValue,
+										)?.name
+									}
 								</SelectItem>
 							)}
 						>
 							<SelectTrigger>
 								<SelectValue<string>>
 									{(state) => {
-										const preset = availablePresets().find((item) => item.id === state.selectedOption());
+										const preset = availablePresets().find(
+											(item) => item.id === state.selectedOption(),
+										);
 										return preset ? preset.name : "Choose a preset";
 									}}
 								</SelectValue>
@@ -177,7 +221,11 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 
 				<TextFieldRoot>
 					<TextFieldLabel>Theme Name</TextFieldLabel>
-					<TextField value={name()} onInput={(e) => setName(e.currentTarget.value)} placeholder="My Custom Theme" />
+					<TextField
+						value={name()}
+						onInput={(e) => setName(e.currentTarget.value)}
+						placeholder="My Custom Theme"
+					/>
 				</TextFieldRoot>
 
 				<div class="flex flex-col gap-1.5">
@@ -208,7 +256,10 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 									<For each={group.keys}>
 										{(key) => (
 											<div class="space-y-2">
-												<label class="text-sm font-medium text-foreground" for={`${key}-light`}>
+												<label
+													class="text-sm font-medium text-foreground"
+													for={`${key}-light`}
+												>
 													{formatLabel(key)}
 												</label>
 												<div class="flex items-center gap-3">
@@ -220,7 +271,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 																setPreviewMode("light");
 															}}
 														/>
-														<span class="text-xs text-muted-foreground mt-1 block">Light</span>
+														<span class="text-xs text-muted-foreground mt-1 block">
+															Light
+														</span>
 													</div>
 													<div class="w-1/2">
 														<ColorPicker
@@ -230,7 +283,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 																setPreviewMode("dark");
 															}}
 														/>
-														<span class="text-xs text-muted-foreground mt-1 block">Dark</span>
+														<span class="text-xs text-muted-foreground mt-1 block">
+															Dark
+														</span>
 													</div>
 												</div>
 											</div>
@@ -271,7 +326,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 						style={{
 							...Object.fromEntries(
 								Object.entries(previewStyle()).map(([key, value]) =>
-									key.endsWith("-hsl") ? [key.replace("-hsl", ""), value] : [key, `hsl(${value})`],
+									key.endsWith("-hsl")
+										? [key.replace("-hsl", ""), value]
+										: [key, `hsl(${value})`],
 								),
 							),
 						}}
@@ -279,20 +336,30 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 						<div class="p-6 flex flex-col gap-6">
 							{/* Typography Section */}
 							<div class="flex flex-col gap-3">
-								<h4 class="text-lg font-semibold" style={{ color: "var(--foreground)" }}>
+								<h4
+									class="text-lg font-semibold"
+									style={{ color: "var(--foreground)" }}
+								>
 									Typography
 								</h4>
 								<p class="text-sm" style={{ color: "var(--muted-foreground)" }}>
-									This preview reflects your current theme configuration across common UI elements.
+									This preview reflects your current theme configuration across
+									common UI elements.
 								</p>
 								<div class="flex flex-col gap-2">
-									<h5 class="text-base font-medium" style={{ color: "var(--foreground)" }}>
+									<h5
+										class="text-base font-medium"
+										style={{ color: "var(--foreground)" }}
+									>
 										Heading
 									</h5>
 									<p class="text-sm" style={{ color: "var(--foreground)" }}>
 										Regular text content
 									</p>
-									<p class="text-xs" style={{ color: "var(--muted-foreground)" }}>
+									<p
+										class="text-xs"
+										style={{ color: "var(--muted-foreground)" }}
+									>
 										Small muted text
 									</p>
 								</div>
@@ -300,18 +367,32 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 
 							{/* Buttons Section */}
 							<div class="flex flex-col gap-3">
-								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
+								<div
+									class="font-semibold"
+									style={{ color: "var(--foreground)" }}
+								>
 									Buttons
 								</div>
 								<div class="flex flex-wrap gap-3">
-									<Button onClick={() => console.log("Primary button clicked")}>Primary</Button>
-									<Button variant="secondary" onClick={() => console.log("Secondary button clicked")}>
+									<Button onClick={() => console.log("Primary button clicked")}>
+										Primary
+									</Button>
+									<Button
+										variant="secondary"
+										onClick={() => console.log("Secondary button clicked")}
+									>
 										Secondary
 									</Button>
-									<Button variant="outline" onClick={() => console.log("Outline button clicked")}>
+									<Button
+										variant="outline"
+										onClick={() => console.log("Outline button clicked")}
+									>
 										Outline
 									</Button>
-									<Button variant="destructive" onClick={() => console.log("Destructive button clicked")}>
+									<Button
+										variant="destructive"
+										onClick={() => console.log("Destructive button clicked")}
+									>
 										Destructive
 									</Button>
 								</div>
@@ -319,7 +400,10 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 
 							{/* Badges Section */}
 							<div class="flex flex-col gap-3">
-								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
+								<div
+									class="font-semibold"
+									style={{ color: "var(--foreground)" }}
+								>
 									Badges
 								</div>
 								<div class="flex flex-wrap gap-3">
@@ -365,7 +449,10 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 
 							{/* Form Controls Section */}
 							<div class="flex flex-col gap-3">
-								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
+								<div
+									class="font-semibold"
+									style={{ color: "var(--foreground)" }}
+								>
 									Form Controls
 								</div>
 								<div class="flex flex-col gap-3">
@@ -374,7 +461,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 										<TextField
 											value="Sample input text"
 											placeholder="Type something..."
-											onInput={(e) => console.log("Input changed:", e.currentTarget.value)}
+											onInput={(e) =>
+												console.log("Input changed:", e.currentTarget.value)
+											}
 										/>
 									</TextFieldRoot>
 									<Select
@@ -407,24 +496,43 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 											</SelectValue>
 										</SelectTrigger>
 										<SelectContent />
-										<SelectDescription class="text-sm" style={{ color: "var(--foreground)" }}>
+										<SelectDescription
+											class="text-sm"
+											style={{ color: "var(--foreground)" }}
+										>
 											Select Option
 										</SelectDescription>
 									</Select>
 									<div class="flex items-center gap-4">
-										<Switch checked={true} onChange={(checked) => console.log("Toggle 1 changed:", checked)}>
+										<Switch
+											checked={true}
+											onChange={(checked) =>
+												console.log("Toggle 1 changed:", checked)
+											}
+										>
 											<SwitchControl>
 												<SwitchThumb />
 											</SwitchControl>
-											<SwitchDescription class="text-sm" style={{ color: "var(--foreground)" }}>
+											<SwitchDescription
+												class="text-sm"
+												style={{ color: "var(--foreground)" }}
+											>
 												Toggle Switch
 											</SwitchDescription>
 										</Switch>
-										<Switch checked={false} onChange={(checked) => console.log("Toggle 2 changed:", checked)}>
+										<Switch
+											checked={false}
+											onChange={(checked) =>
+												console.log("Toggle 2 changed:", checked)
+											}
+										>
 											<SwitchControl>
 												<SwitchThumb />
 											</SwitchControl>
-											<SwitchDescription class="text-sm" style={{ color: "var(--foreground)" }}>
+											<SwitchDescription
+												class="text-sm"
+												style={{ color: "var(--foreground)" }}
+											>
 												Toggle Off
 											</SwitchDescription>
 										</Switch>
@@ -434,7 +542,10 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 
 							{/* Surface Colors Section */}
 							<div class="flex flex-col gap-3">
-								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
+								<div
+									class="font-semibold"
+									style={{ color: "var(--foreground)" }}
+								>
 									Surface Colors
 								</div>
 								<div class="flex flex-col gap-3">
@@ -447,7 +558,10 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 										}}
 									>
 										<div class="font-medium mb-1">Card Surface</div>
-										<div class="text-sm" style={{ color: "var(--muted-foreground)" }}>
+										<div
+											class="text-sm"
+											style={{ color: "var(--muted-foreground)" }}
+										>
 											Card content with card foreground text
 										</div>
 									</div>
@@ -478,7 +592,10 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 										}}
 									>
 										<div class="font-medium mb-1">Popover Surface</div>
-										<div class="text-sm" style={{ color: "var(--muted-foreground)" }}>
+										<div
+											class="text-sm"
+											style={{ color: "var(--muted-foreground)" }}
+										>
 											Popover content with popover foreground text
 										</div>
 									</div>
@@ -487,7 +604,10 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 
 							{/* Borders and Ring Section */}
 							<div class="flex flex-col gap-3">
-								<div class="font-semibold" style={{ color: "var(--foreground)" }}>
+								<div
+									class="font-semibold"
+									style={{ color: "var(--foreground)" }}
+								>
 									Borders & Focus
 								</div>
 								<div class="flex flex-col gap-3">
@@ -520,7 +640,11 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 						<Button variant="outline" onClick={props.onCancel}>
 							Cancel
 						</Button>
-						<Button onClick={handleSave} disabled={!name().trim()} data-theme-save-button>
+						<Button
+							onClick={handleSave}
+							disabled={!name().trim()}
+							data-theme-save-button
+						>
 							<div class="i-mdi-content-save w-4 h-4 mr-2" />
 							Save Theme
 						</Button>

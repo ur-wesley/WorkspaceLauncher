@@ -1,6 +1,14 @@
 import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import {
+	createEffect,
+	createMemo,
+	createSignal,
+	For,
+	onCleanup,
+	onMount,
+	Show,
+} from "solid-js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +23,10 @@ import {
 	isDescriptionExpandable,
 	setWorkspaceDescriptionExpanded,
 } from "@/libs/workspaceDescriptionToggle";
+import type { Workspace } from "@/models/workspace.model";
 import { useUI } from "@/store/ui";
 import { useWorkspaceStore } from "@/store/workspace";
-import type { NewWorkspace, Workspace } from "@/types/database";
+import type { NewWorkspace } from "@/types/database";
 
 interface WorkspaceStats {
 	actions: number;
@@ -31,7 +40,9 @@ export const WorkspacesListPage: Component = () => {
 	const [searchQuery, setSearchQuery] = createSignal("");
 	let searchInputRef: HTMLInputElement | undefined;
 	const [viewMode, setViewMode] = createSignal<"grid" | "list">("grid");
-	const [workspaceStats, setWorkspaceStats] = createSignal<Map<number, WorkspaceStats>>(new Map());
+	const [workspaceStats, setWorkspaceStats] = createSignal<
+		Map<number, WorkspaceStats>
+	>(new Map());
 
 	const loadWorkspaceStats = async (workspaceId: number) => {
 		const [actionsResult, variablesResult] = await Promise.all([
@@ -79,7 +90,11 @@ export const WorkspacesListPage: Component = () => {
 		const lowerQuery = query.toLowerCase();
 		let queryIndex = 0;
 
-		for (let i = 0; i < lowerText.length && queryIndex < lowerQuery.length; i++) {
+		for (
+			let i = 0;
+			i < lowerText.length && queryIndex < lowerQuery.length;
+			i++
+		) {
 			if (lowerText[i] === lowerQuery[queryIndex]) {
 				queryIndex++;
 			}
@@ -96,16 +111,26 @@ export const WorkspacesListPage: Component = () => {
 
 		return store.workspaces.filter(
 			(workspace) =>
-				fuzzyMatch(workspace.name, query) || (workspace.description && fuzzyMatch(workspace.description, query)),
+				fuzzyMatch(workspace.name, query) ||
+				(workspace.description && fuzzyMatch(workspace.description, query)),
 		);
 	});
 
-	const pinnedWorkspaces = createMemo(() => filteredWorkspaces().filter((w) => store.pinnedWorkspaceIds.has(w.id)));
-	const unpinnedWorkspaces = createMemo(() => filteredWorkspaces().filter((w) => !store.pinnedWorkspaceIds.has(w.id)));
+	const pinnedWorkspaces = createMemo(() =>
+		filteredWorkspaces().filter((w) => store.pinnedWorkspaceIds.has(w.id)),
+	);
+	const unpinnedWorkspaces = createMemo(() =>
+		filteredWorkspaces().filter((w) => !store.pinnedWorkspaceIds.has(w.id)),
+	);
 
-	const WorkspaceCard: Component<{ workspace: Workspace; isPinned: boolean }> = (props) => {
+	const WorkspaceCard: Component<{
+		workspace: Workspace;
+		isPinned: boolean;
+	}> = (props) => {
 		const stats = createMemo(() => {
-			return workspaceStats().get(props.workspace.id) || { actions: 0, variables: 0 };
+			return (
+				workspaceStats().get(props.workspace.id) || { actions: 0, variables: 0 }
+			);
 		});
 		const [showFullDescription, setShowFullDescription] = createSignal(
 			getWorkspaceDescriptionExpanded(props.workspace.id),
@@ -127,7 +152,9 @@ export const WorkspacesListPage: Component = () => {
 			>
 				<CardHeader class="flex flex-row items-start justify-between space-y-0 pb-3">
 					<A href={`/w/${props.workspace.id}`} class="flex-1 min-w-0 pr-2">
-						<CardTitle class="truncate text-base sm:text-lg">{props.workspace.name}</CardTitle>
+						<CardTitle class="truncate text-base sm:text-lg">
+							{props.workspace.name}
+						</CardTitle>
 						<Show when={props.workspace.description}>
 							<p
 								class={cn(
@@ -151,7 +178,14 @@ export const WorkspacesListPage: Component = () => {
 							}}
 							title={props.isPinned ? "Unpin workspace" : "Pin workspace"}
 						>
-							<div class={cn("w-4 h-4", props.isPinned ? "i-mdi-pin text-primary" : "i-mdi-pin-outline")} />
+							<div
+								class={cn(
+									"w-4 h-4",
+									props.isPinned
+										? "i-mdi-pin text-primary"
+										: "i-mdi-pin-outline",
+								)}
+							/>
 						</Button>
 					</div>
 				</CardHeader>
@@ -198,12 +232,17 @@ export const WorkspacesListPage: Component = () => {
 			<div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 space-y-6">
 				<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
 					<div class="flex-1 min-w-0">
-						<h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold">Workspaces</h1>
+						<h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold">
+							Workspaces
+						</h1>
 						<p class="text-muted-foreground text-sm sm:text-base mt-1">
 							Manage and launch your development environments
 						</p>
 					</div>
-					<Button onclick={() => setCreateDialogOpen(true)} class="whitespace-nowrap">
+					<Button
+						onclick={() => setCreateDialogOpen(true)}
+						class="whitespace-nowrap"
+					>
 						<div class="i-mdi-plus w-4 h-4 mr-2" />
 						<span class="hidden sm:inline">New Workspace</span>
 						<span class="sm:hidden">New</span>
@@ -287,7 +326,9 @@ export const WorkspacesListPage: Component = () => {
 				<Show when={!store.loading && filteredWorkspaces().length === 0}>
 					<div class="text-center py-12">
 						<div class="i-mdi-folder-outline w-16 h-16 mx-auto text-muted-foreground mb-4" />
-						<h3 class="text-lg font-medium mb-2">{searchQuery() ? "No workspaces found" : "No workspaces yet"}</h3>
+						<h3 class="text-lg font-medium mb-2">
+							{searchQuery() ? "No workspaces found" : "No workspaces yet"}
+						</h3>
 						<p class="text-muted-foreground mb-4">
 							{searchQuery()
 								? "Try adjusting your search terms or create a new workspace"
@@ -306,7 +347,9 @@ export const WorkspacesListPage: Component = () => {
 					<div class="space-y-4">
 						<div class="flex items-center gap-2">
 							<div class="i-mdi-pin w-5 h-5 text-primary" />
-							<h2 class="text-lg sm:text-xl font-semibold">Pinned Workspaces</h2>
+							<h2 class="text-lg sm:text-xl font-semibold">
+								Pinned Workspaces
+							</h2>
 							<Badge variant="secondary">{pinnedWorkspaces().length}</Badge>
 						</div>
 						<div
@@ -317,7 +360,9 @@ export const WorkspacesListPage: Component = () => {
 							}
 						>
 							<For each={pinnedWorkspaces()}>
-								{(workspace) => <WorkspaceCard workspace={workspace} isPinned={true} />}
+								{(workspace) => (
+									<WorkspaceCard workspace={workspace} isPinned={true} />
+								)}
 							</For>
 						</div>
 					</div>
@@ -347,7 +392,9 @@ export const WorkspacesListPage: Component = () => {
 							}
 						>
 							<For each={unpinnedWorkspaces()}>
-								{(workspace) => <WorkspaceCard workspace={workspace} isPinned={false} />}
+								{(workspace) => (
+									<WorkspaceCard workspace={workspace} isPinned={false} />
+								)}
 							</For>
 						</div>
 					</div>

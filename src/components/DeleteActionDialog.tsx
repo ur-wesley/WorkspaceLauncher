@@ -9,15 +9,17 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { Action } from "@/models/action.model";
 import { useActionStore } from "@/store/action";
-import type { Action } from "@/types/database";
 
 interface DeleteActionDialogProps {
 	action: Action;
 	trigger: Component<{ onClick?: () => void }>;
 }
 
-export const DeleteActionDialog: Component<DeleteActionDialogProps> = (props) => {
+export const DeleteActionDialog: Component<DeleteActionDialogProps> = (
+	props,
+) => {
 	const [, actionActions] = useActionStore();
 	const [open, setOpen] = createSignal(false);
 	const [deleting, setDeleting] = createSignal(false);
@@ -42,8 +44,9 @@ export const DeleteActionDialog: Component<DeleteActionDialogProps> = (props) =>
 					<AlertDialogHeader>
 						<AlertDialogTitle>Delete Action</AlertDialogTitle>
 						<AlertDialogDescription>
-							Are you sure you want to delete the action "{props.action.name}"? This action cannot be undone and may
-							affect the launch sequence of this workspace.
+							Are you sure you want to delete the action "{props.action.name}"?
+							This action cannot be undone and may affect the launch sequence of
+							this workspace.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

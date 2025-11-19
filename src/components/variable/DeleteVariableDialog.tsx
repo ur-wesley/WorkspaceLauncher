@@ -9,15 +9,17 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { Variable } from "@/models/variable.model";
 import { useVariableStore } from "@/store/variable";
-import type { Variable } from "@/types/database";
 
 interface DeleteVariableDialogProps {
 	variable: Variable;
 	trigger: Component<{ onClick?: () => void }>;
 }
 
-export const DeleteVariableDialog: Component<DeleteVariableDialogProps> = (props) => {
+export const DeleteVariableDialog: Component<DeleteVariableDialogProps> = (
+	props,
+) => {
 	const [, variableActions] = useVariableStore();
 	const [open, setOpen] = createSignal(false);
 	const [deleting, setDeleting] = createSignal(false);
@@ -42,8 +44,9 @@ export const DeleteVariableDialog: Component<DeleteVariableDialogProps> = (props
 					<AlertDialogHeader>
 						<AlertDialogTitle>Delete Variable</AlertDialogTitle>
 						<AlertDialogDescription>
-							Are you sure you want to delete the variable "{props.variable.key}"? This action cannot be undone and any
-							actions using this variable will need to be reconfigured.
+							Are you sure you want to delete the variable "{props.variable.key}
+							"? This action cannot be undone and any actions using this
+							variable will need to be reconfigured.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

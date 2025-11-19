@@ -36,7 +36,6 @@ pub async fn spawn_hidden_process(
 
     #[cfg(windows)]
     {
-
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
 
@@ -67,7 +66,6 @@ pub async fn spawn_with_output_forwarding(
     }
     #[cfg(windows)]
     {
-
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
     cmd.stdout(std::process::Stdio::piped());
@@ -139,7 +137,6 @@ pub async fn spawn_with_action_log_forwarding(
     }
     #[cfg(windows)]
     {
-
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
     cmd.stdout(std::process::Stdio::piped());

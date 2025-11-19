@@ -65,7 +65,13 @@ async function checkRunningActions(): Promise<void> {
 		const isRunning = await isProcessRunning(action.process_id);
 
 		if (!isRunning) {
-			await createCompletedRun(action.workspace_id, action.action_id, action.started_at, null, null);
+			await createCompletedRun(
+				action.workspace_id,
+				action.action_id,
+				action.started_at,
+				null,
+				null,
+			);
 
 			runningActionsService.remove(action.id);
 		}

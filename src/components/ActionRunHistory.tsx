@@ -4,7 +4,14 @@ import { listRunsByAction } from "@/libs/api";
 import type { Run } from "@/types/database";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "./ui/dialog";
 
 interface ActionRunHistoryProps {
 	workspaceId: number;
@@ -43,7 +50,11 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 		setLoading(true);
 		setError(null);
 		try {
-			const result = await listRunsByAction(props.workspaceId, props.actionId, 20);
+			const result = await listRunsByAction(
+				props.workspaceId,
+				props.actionId,
+				20,
+			);
 			if (result.isOk()) {
 				setRuns(result.value);
 			} else {
@@ -106,19 +117,28 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 					/>
 				}
 			>
-				<DialogTrigger onClick={() => loadRuns()}>{props.trigger}</DialogTrigger>
+				<DialogTrigger onClick={() => loadRuns()}>
+					{props.trigger}
+				</DialogTrigger>
 			</Show>
 			<DialogContent class="max-w-3xl max-h-[80vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>Run History: {props.actionName}</DialogTitle>
-					<DialogDescription>Last 20 executions of this action</DialogDescription>
+					<DialogDescription>
+						Last 20 executions of this action
+					</DialogDescription>
 				</DialogHeader>
 
 				<Show
 					when={!loading() && runs().length > 0}
 					fallback={
 						<div class="p-4 text-center">
-							<Show when={loading()} fallback={<p class="text-sm text-muted-foreground">No run history</p>}>
+							<Show
+								when={loading()}
+								fallback={
+									<p class="text-sm text-muted-foreground">No run history</p>
+								}
+							>
 								<p class="text-sm text-muted-foreground">Loading...</p>
 							</Show>
 						</div>
@@ -127,14 +147,19 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 					<div class="space-y-2">
 						<For each={runs()}>
 							{(run) => {
-								const duration = formatDuration(run.started_at, run.completed_at);
+								const duration = formatDuration(
+									run.started_at,
+									run.completed_at,
+								);
 
 								return (
 									<Card class="p-3 bg-muted/20">
 										<div class="space-y-2">
 											<div class="flex items-center gap-2">
 												{getStatusBadge(run.status)}
-												<span class="text-xs text-muted-foreground">{formatDateTime(run.started_at)}</span>
+												<span class="text-xs text-muted-foreground">
+													{formatDateTime(run.started_at)}
+												</span>
 											</div>
 
 											<div class="grid grid-cols-3 gap-2 text-xs">
@@ -144,13 +169,20 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 												</div>
 												<Show when={run.completed_at}>
 													<div>
-														<span class="text-muted-foreground">Completed:</span>
-														<div class="font-medium">{run.completed_at && formatDateTime(run.completed_at)}</div>
+														<span class="text-muted-foreground">
+															Completed:
+														</span>
+														<div class="font-medium">
+															{run.completed_at &&
+																formatDateTime(run.completed_at)}
+														</div>
 													</div>
 												</Show>
 												<Show when={run.exit_code !== null}>
 													<div>
-														<span class="text-muted-foreground">Exit Code:</span>
+														<span class="text-muted-foreground">
+															Exit Code:
+														</span>
 														<div class="font-medium">{run.exit_code}</div>
 													</div>
 												</Show>
@@ -158,13 +190,19 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 
 											<Show when={run.error_message}>
 												<div class="p-2 bg-destructive/10 rounded border border-destructive/20">
-													<div class="text-xs font-medium text-destructive mb-1">Error:</div>
-													<div class="text-xs text-destructive/90 break-words">{run.error_message}</div>
+													<div class="text-xs font-medium text-destructive mb-1">
+														Error:
+													</div>
+													<div class="text-xs text-destructive/90 break-words">
+														{run.error_message}
+													</div>
 												</div>
 											</Show>
 
 											<Show when={run.status === "cancelled"}>
-												<div class="text-xs text-muted-foreground italic">Manually stopped by user</div>
+												<div class="text-xs text-muted-foreground italic">
+													Manually stopped by user
+												</div>
 											</Show>
 										</div>
 									</Card>

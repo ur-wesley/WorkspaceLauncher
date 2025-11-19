@@ -86,7 +86,11 @@ export const SettingsProvider: ParentComponent = (props) => {
 		actions,
 	};
 
-	return <SettingsContext.Provider value={contextValue}>{props.children}</SettingsContext.Provider>;
+	return (
+		<SettingsContext.Provider value={contextValue}>
+			{props.children}
+		</SettingsContext.Provider>
+	);
 };
 
 export function useSettingsStore() {

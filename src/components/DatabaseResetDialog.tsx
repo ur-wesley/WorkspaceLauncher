@@ -1,6 +1,12 @@
 import type { Component } from "solid-js";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 interface DatabaseResetDialogProps {
 	open: boolean;
@@ -12,7 +18,9 @@ interface DatabaseResetDialogProps {
 	variant?: "destructive" | "default";
 }
 
-export const DatabaseResetDialog: Component<DatabaseResetDialogProps> = (props) => {
+export const DatabaseResetDialog: Component<DatabaseResetDialogProps> = (
+	props,
+) => {
 	return (
 		<Dialog open={props.open} onOpenChange={props.onClose}>
 			<DialogContent class="sm:max-w-md">
@@ -24,7 +32,12 @@ export const DatabaseResetDialog: Component<DatabaseResetDialogProps> = (props) 
 					<Button variant="outline" onClick={props.onClose}>
 						Cancel
 					</Button>
-					<Button variant={props.variant === "destructive" ? "destructive" : "default"} onClick={props.onConfirm}>
+					<Button
+						variant={
+							props.variant === "destructive" ? "destructive" : "default"
+						}
+						onClick={props.onConfirm}
+					>
 						{props.confirmText}
 					</Button>
 				</div>

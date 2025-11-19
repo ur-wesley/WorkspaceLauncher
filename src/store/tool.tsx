@@ -2,7 +2,9 @@ import { createContext, type ParentComponent, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import * as api from "@/libs/api";
 import { showToast } from "@/libs/toast";
-import type { NewTool, Tool } from "@/types/database";
+import type { Tool } from "@/models/tool.model";
+import { ToolAdapter } from "@/models/tool.model";
+import type { NewTool } from "@/types/database";
 
 interface ToolStoreState {
 	tools: Tool[];
@@ -35,7 +37,10 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 			try {
 				const result = await api.listTools();
 				if (result.isOk()) {
-					setStore("tools", result.value);
+					setStore(
+						"tools",
+						result.value.map((t) => ToolAdapter.fromDb(t)),
+					);
 				} else {
 					setStore("error", result.error);
 					showToast({
@@ -45,7 +50,8 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 					});
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "Unknown error";
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
 				setStore("error", errorMessage);
 				showToast({
 					title: "Error",
@@ -77,7 +83,8 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 					return null;
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "Unknown error";
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
 				showToast({
 					title: "Error",
 					description: `Failed to create tool: ${errorMessage}`,
@@ -105,7 +112,8 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 					});
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "Unknown error";
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
 				showToast({
 					title: "Error",
 					description: `Failed to update tool: ${errorMessage}`,
@@ -132,7 +140,8 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 					});
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "Unknown error";
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
 				showToast({
 					title: "Error",
 					description: `Failed to delete tool: ${errorMessage}`,
@@ -145,7 +154,9 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 			try {
 				const result = await api.toggleToolEnabled(id, enabled);
 				if (result.isOk()) {
-					setStore("tools", (tools) => tools.map((tool) => (tool.id === id ? { ...tool, enabled } : tool)));
+					setStore("tools", (tools) =>
+						tools.map((tool) => (tool.id === id ? { ...tool, enabled } : tool)),
+					);
 					showToast({
 						title: "Success",
 						description: `Tool ${enabled ? "enabled" : "disabled"} successfully`,
@@ -159,7 +170,8 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 					});
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "Unknown error";
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
 				showToast({
 					title: "Error",
 					description: `Failed to toggle tool: ${errorMessage}`,
@@ -169,7 +181,11 @@ export const ToolStoreProvider: ParentComponent = (props) => {
 		},
 	};
 
-	return <ToolStoreContext.Provider value={[store, actions]}>{props.children}</ToolStoreContext.Provider>;
+	return (
+		<ToolStoreContext.Provider value={[store, actions]}>
+			{props.children}
+		</ToolStoreContext.Provider>
+	);
 };
 
 export const useToolStore = () => {

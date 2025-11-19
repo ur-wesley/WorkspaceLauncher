@@ -11,7 +11,9 @@ type textAreaProps<T extends ValidComponent = "textarea"> = VoidProps<
 	}
 >;
 
-export const TextArea = <T extends ValidComponent = "textarea">(props: PolymorphicProps<T, textAreaProps<T>>) => {
+export const TextArea = <T extends ValidComponent = "textarea">(
+	props: PolymorphicProps<T, textAreaProps<T>>,
+) => {
 	const [local, rest] = splitProps(props as textAreaProps, ["class"]);
 
 	return (

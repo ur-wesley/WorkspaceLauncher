@@ -1,8 +1,12 @@
-﻿import { type Component, createSignal, For, Show } from "solid-js";
+﻿import { type Component, createMemo, createSignal, For, Show } from "solid-js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
 	Dialog,
 	DialogContent,
@@ -12,12 +16,26 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { TextField, TextFieldRoot } from "@/components/ui/textfield";
-import type { ExportData } from "@/libs/share";
+import {
+	groupActionsByWorkspace,
+	readClipboardAsJSON,
+	readFileAsJSON,
+	toggleIdInSet,
+} from "@/libs/importHelpers";
+import { performImport } from "@/libs/importLogic";
+import { safeParseExportData } from "@/libs/importSchema";
 import { showToast } from "@/libs/toast";
+import type { ExportData } from "@/models/export.model";
 import { useActionStore } from "@/store/action";
 import { useThemeStore } from "@/store/theme";
 import { useToolStore } from "@/store/tool";
 import { useWorkspaceStore } from "@/store/workspace";
+import type {
+	NewAction,
+	NewTheme,
+	NewTool,
+	NewWorkspace,
+} from "@/types/database";
 
 interface ImportDialogProps {
 	trigger: Component<{ onClick?: () => void }>;
@@ -31,13 +49,30 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 	const [, toolActions] = useToolStore();
 
 	const [importData, setImportData] = createSignal<ExportData | null>(null);
-	const [selectedWorkspaces, setSelectedWorkspaces] = createSignal<Set<number>>(new Set());
-	const [selectedActions, setSelectedActions] = createSignal<Set<number>>(new Set());
-	const [selectedTools, setSelectedTools] = createSignal<Set<number>>(new Set());
-	const [selectedThemes, setSelectedThemes] = createSignal<Set<number>>(new Set());
-	const [workspaceNames, setWorkspaceNames] = createSignal<Map<number, string>>(new Map());
-	const [actionNames, setActionNames] = createSignal<Map<number, string>>(new Map());
-	const [expandedWorkspaces, setExpandedWorkspaces] = createSignal<Set<number>>(new Set());
+	const actionsByWorkspace = createMemo(() =>
+		groupActionsByWorkspace(importData()?.actions || []),
+	);
+	const [selectedWorkspaces, setSelectedWorkspaces] = createSignal<Set<number>>(
+		new Set(),
+	);
+	const [selectedActions, setSelectedActions] = createSignal<Set<number>>(
+		new Set(),
+	);
+	const [selectedTools, setSelectedTools] = createSignal<Set<number>>(
+		new Set(),
+	);
+	const [selectedThemes, setSelectedThemes] = createSignal<Set<number>>(
+		new Set(),
+	);
+	const [workspaceNames, setWorkspaceNames] = createSignal<Map<number, string>>(
+		new Map(),
+	);
+	const [actionNames, setActionNames] = createSignal<Map<number, string>>(
+		new Map(),
+	);
+	const [expandedWorkspaces, setExpandedWorkspaces] = createSignal<Set<number>>(
+		new Set(),
+	);
 
 	const resetState = () => {
 		setImportData(null);
@@ -50,18 +85,14 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 		setExpandedWorkspaces(new Set<number>());
 	};
 
-	const parseJSON = (jsonString: string): ExportData => {
-		return JSON.parse(jsonString) as ExportData;
-	};
-
 	const handleFileInput = async (e: Event) => {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
 
 		try {
-			const text = await file.text();
-			const data = parseJSON(text);
+			const raw = await readFileAsJSON(file);
+			const data = safeParseExportData(raw);
 			setSelectedWorkspaces(new Set<number>());
 			setSelectedActions(new Set<number>());
 			setSelectedTools(new Set<number>());
@@ -73,7 +104,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 		} catch (err) {
 			showToast({
 				title: "Error",
-				description: `Failed to parse JSON: ${err}`,
+				description: `Failed to load file: ${err}`,
 				variant: "destructive",
 			});
 		}
@@ -81,8 +112,8 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 
 	const handleClipboardInput = async () => {
 		try {
-			const text = await navigator.clipboard.readText();
-			const data = parseJSON(text);
+			const raw = await readClipboardAsJSON();
+			const data = safeParseExportData(raw);
 			setSelectedWorkspaces(new Set<number>());
 			setSelectedActions(new Set<number>());
 			setSelectedTools(new Set<number>());
@@ -100,21 +131,15 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 		}
 	};
 
-	const getWorkspaceActions = (workspaceId: number) => {
-		return (importData()?.actions || []).filter((action) => {
-			const wsId =
-				typeof (action as { workspace_id?: number }).workspace_id === "number"
-					? (action as { workspace_id?: number }).workspace_id
-					: (action as { workspaceId?: number }).workspaceId;
-
-			return Number(wsId) === workspaceId;
-		});
-	};
+	const getWorkspaceActions = (workspaceId: number) =>
+		actionsByWorkspace().get(workspaceId) || [];
 
 	const getWorkspaceName = (workspaceId: number): string => {
 		const customName = workspaceNames().get(workspaceId);
 		if (customName) return customName;
-		const workspace = (importData()?.workspaces || []).find((w) => w.id === workspaceId);
+		const workspace = (importData()?.workspaces || []).find(
+			(w) => w.id === workspaceId,
+		);
 		return workspace?.name || "";
 	};
 
@@ -155,33 +180,15 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 	};
 
 	const toggleAction = (actionId: number) => {
-		const newSelected = new Set(selectedActions());
-		if (newSelected.has(actionId)) {
-			newSelected.delete(actionId);
-		} else {
-			newSelected.add(actionId);
-		}
-		setSelectedActions(newSelected);
+		setSelectedActions(toggleIdInSet(actionId, selectedActions()));
 	};
 
 	const toggleTool = (toolId: number) => {
-		const newSelected = new Set(selectedTools());
-		if (newSelected.has(toolId)) {
-			newSelected.delete(toolId);
-		} else {
-			newSelected.add(toolId);
-		}
-		setSelectedTools(newSelected);
+		setSelectedTools(toggleIdInSet(toolId, selectedTools()));
 	};
 
 	const toggleTheme = (themeId: number) => {
-		const newSelected = new Set(selectedThemes());
-		if (newSelected.has(themeId)) {
-			newSelected.delete(themeId);
-		} else {
-			newSelected.add(themeId);
-		}
-		setSelectedThemes(newSelected);
+		setSelectedThemes(toggleIdInSet(themeId, selectedThemes()));
 	};
 
 	const toggleExpanded = (workspaceId: number) => {
@@ -247,7 +254,9 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 	};
 
 	const getExistingWorkspaceNames = (): Set<string> => {
-		return new Set((workspaceStore.store.workspaces || []).map((w) => w.name.toLowerCase()));
+		return new Set(
+			(workspaceStore.store.workspaces || []).map((w) => w.name.toLowerCase()),
+		);
 	};
 
 	const hasWorkspaceNameConflict = (): boolean => {
@@ -293,108 +302,82 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 	const handleImport = async () => {
 		const data = importData();
 		if (!data) return;
-
-		try {
-			let importedCount = 0;
-
-			const workspaceIdMap = new Map<number, number>();
-			for (const workspace of data.workspaces || []) {
-				if (!selectedWorkspaces().has(workspace.id)) continue;
-
-				const name = getWorkspaceName(workspace.id);
-				const newWorkspace = await workspaceStore.actions.createWorkspace({
-					name,
-					description: workspace.description || undefined,
-					icon: workspace.icon || undefined,
-				});
-
-				if (newWorkspace) {
-					workspaceIdMap.set(workspace.id, newWorkspace.id);
-					importedCount++;
-				}
-			}
-
-			for (const tool of data.tools || []) {
-				if (!selectedTools().has(tool.id)) continue;
-
-				const result = await toolActions.createTool({
-					name: tool.name,
-					description: tool.description || undefined,
-					icon: tool.icon || undefined,
-					enabled: tool.enabled,
-					tool_type: tool.tool_type,
-					template: tool.template,
-					placeholders: tool.placeholders || "[]",
-					category: tool.category || undefined,
-				});
-
-				if (result) {
-					importedCount++;
-				}
-			}
-
-			for (const theme of data.themes || []) {
-				if (!selectedThemes().has(theme.id)) continue;
-
-				await themeActions.createTheme({
-					name: theme.name,
-					description: theme.description || undefined,
-					light_colors: theme.light_colors,
-					dark_colors: theme.dark_colors,
-					is_predefined: theme.is_predefined,
-				});
-
-				importedCount++;
-			}
-
-			for (const action of data.actions || []) {
-				if (!selectedActions().has(action.id)) continue;
-
-				const oldWorkspaceId = action.workspace_id;
-				const newWorkspaceId = oldWorkspaceId ? workspaceIdMap.get(oldWorkspaceId) : undefined;
-
-				if (!newWorkspaceId) continue;
-
-				const name = getActionName(action.id);
-
-				const detached =
-					typeof action.detached === "string"
-						? action.detached === "true" || action.detached === "1"
-						: Boolean(action.detached);
-
-				const track_process =
-					typeof action.track_process === "string"
-						? action.track_process === "true" || action.track_process === "1"
-						: Boolean(action.track_process);
-
-				await actionActions.addAction({
-					name,
-					workspace_id: newWorkspaceId,
-					action_type: action.action_type,
-					config: action.config,
-					dependencies: action.dependencies,
-					timeout_seconds: action.timeout_seconds,
-					detached,
-					track_process,
-					os_overrides: action.os_overrides,
-					order_index: action.order_index,
-				});
-
-				importedCount++;
-			}
-
+		const result = await performImport(
+			data,
+			{
+				selectedWorkspaces: selectedWorkspaces(),
+				selectedActions: selectedActions(),
+				selectedTools: selectedTools(),
+				selectedThemes: selectedThemes(),
+				renamedWorkspaces: workspaceNames(),
+				renamedActions: actionNames(),
+			},
+			{
+				createWorkspace: (d: NewWorkspace) =>
+					workspaceStore.actions
+						.createWorkspace(d)
+						.then((w) => (w ? { id: w.id } : null)),
+				createTool: (d: {
+					name: string;
+					description?: string;
+					icon?: string;
+					enabled: boolean;
+					tool_type: string;
+					template: string;
+					placeholders: string;
+					category?: string;
+				}) =>
+					toolActions.createTool({
+						name: d.name,
+						description: d.description ?? null,
+						icon: d.icon,
+						enabled: d.enabled,
+						tool_type: d.tool_type as "cli" | "binary",
+						template: d.template,
+						placeholders: d.placeholders,
+						category: d.category ?? null,
+					} as NewTool),
+				createAction: (d: {
+					name: string;
+					workspace_id: number;
+					action_type: string;
+					config: string;
+					dependencies: string | null;
+					timeout_seconds: number | null;
+					detached: boolean;
+					track_process: boolean;
+					os_overrides: string | null;
+					order_index: number;
+					auto_launch?: boolean;
+				}) =>
+					actionActions.addAction({
+						name: d.name,
+						workspace_id: d.workspace_id,
+						action_type: d.action_type as NewAction["action_type"],
+						config: d.config,
+						dependencies: d.dependencies,
+						timeout_seconds: d.timeout_seconds,
+						detached: d.detached,
+						track_process: d.track_process,
+						os_overrides: d.os_overrides,
+						order_index: d.order_index,
+						auto_launch: d.auto_launch ?? false,
+					} satisfies NewAction),
+				createTheme: (d: NewTheme) => themeActions.createTheme(d),
+			},
+		);
+		if (result.success) {
 			resetState();
 			setOpen(false);
-
 			showToast({
 				title: "Success",
-				description: `Imported ${importedCount} items`,
+				description: `Imported ${result.importedCount} items`,
 				variant: "success",
 			});
-		} catch (err) {
+		} else {
 			showToast({
 				title: "Error",
-				description: `Failed to import: ${err}`,
+				description: `Failed to import: ${result.error}`,
 				variant: "destructive",
 			});
 		}
@@ -407,18 +390,31 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 				<DialogContent class="max-w-4xl max-h-[80vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Import Data</DialogTitle>
-						<DialogDescription>Import workspaces, actions, and tools from JSON</DialogDescription>
+						<DialogDescription>
+							Import workspaces, actions, and tools from JSON
+						</DialogDescription>
 					</DialogHeader>
 
 					<div class="space-y-4">
 						<div class="flex gap-2">
-							<Button variant="outline" onClick={() => document.getElementById("import-file-input")?.click()}>
+							<Button
+								variant="outline"
+								onClick={() =>
+									document.getElementById("import-file-input")?.click()
+								}
+							>
 								Load from File
 							</Button>
 							<Button variant="outline" onClick={handleClipboardInput}>
 								Load from Clipboard
 							</Button>
-							<input id="import-file-input" type="file" accept=".json" class="hidden" onChange={handleFileInput} />
+							<input
+								id="import-file-input"
+								type="file"
+								accept=".json"
+								class="hidden"
+								onChange={handleFileInput}
+							/>
 						</div>
 
 						<Show when={importData()}>
@@ -427,13 +423,22 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 									<div class="space-y-2">
 										<div class="flex items-center justify-between">
 											<h3 class="text-lg font-semibold">
-												Workspaces <Badge>{importData()?.workspaces?.length || 0}</Badge>
+												Workspaces{" "}
+												<Badge>{importData()?.workspaces?.length || 0}</Badge>
 											</h3>
 											<div class="flex gap-2">
-												<Button size="sm" variant="outline" onClick={selectAllWorkspaces}>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={selectAllWorkspaces}
+												>
 													Select All
 												</Button>
-												<Button size="sm" variant="outline" onClick={deselectAllWorkspaces}>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={deselectAllWorkspaces}
+												>
 													Deselect All
 												</Button>
 											</div>
@@ -442,19 +447,28 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 										<div class="space-y-2 border rounded-md p-4">
 											<For each={importData()?.workspaces || []}>
 												{(workspace) => {
-													const isSelected = () => selectedWorkspaces().has(workspace.id);
-													const isExpanded = () => expandedWorkspaces().has(workspace.id);
-													const actions = () => getWorkspaceActions(workspace.id);
-													const hasDuplicate = () => isWorkspaceNameDuplicate(workspace.id);
+													const isSelected = () =>
+														selectedWorkspaces().has(workspace.id);
+													const isExpanded = () =>
+														expandedWorkspaces().has(workspace.id);
+													const actions = () =>
+														getWorkspaceActions(workspace.id);
+													const hasDuplicate = () =>
+														isWorkspaceNameDuplicate(workspace.id);
 
 													return (
-														<Collapsible open={isExpanded()} onOpenChange={() => toggleExpanded(workspace.id)}>
+														<Collapsible
+															open={isExpanded()}
+															onOpenChange={() => toggleExpanded(workspace.id)}
+														>
 															<div
 																class="flex items-center gap-2 p-2 rounded transition-colors"
 																classList={{
-																	"bg-accent/50 border border-accent": isSelected(),
+																	"bg-accent/50 border border-accent":
+																		isSelected(),
 																	"hover:bg-muted/50": !isSelected(),
-																	"border-destructive border-2": hasDuplicate() && isSelected(),
+																	"border-destructive border-2":
+																		hasDuplicate() && isSelected(),
 																}}
 															>
 																<CollapsibleTrigger
@@ -463,15 +477,22 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 																		"rotate-0": isExpanded(),
 																		"-rotate-90": !isExpanded(),
 																	}}
-																	onClick={(e: MouseEvent) => e.stopPropagation()}
+																	onClick={(e: MouseEvent) =>
+																		e.stopPropagation()
+																	}
 																/>
-																<Checkbox checked={isSelected()} onChange={() => toggleWorkspace(workspace.id)} />
+																<Checkbox
+																	checked={isSelected()}
+																	onChange={() => toggleWorkspace(workspace.id)}
+																/>
 																<Show
 																	when={isSelected()}
 																	fallback={
 																		<div class="flex-1 flex items-center justify-between gap-2">
 																			<span>{workspace.name}</span>
-																			<Badge variant="secondary">{actions().length}</Badge>
+																			<Badge variant="secondary">
+																				{actions().length}
+																			</Badge>
 																		</div>
 																	}
 																>
@@ -480,12 +501,21 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 																			<TextField
 																				value={getWorkspaceName(workspace.id)}
 																				onInput={(e: InputEvent) =>
-																					updateWorkspaceName(workspace.id, (e.currentTarget as HTMLInputElement).value)
+																					updateWorkspaceName(
+																						workspace.id,
+																						(
+																							e.currentTarget as HTMLInputElement
+																						).value,
+																					)
 																				}
-																				onClick={(e: MouseEvent) => e.stopPropagation()}
+																				onClick={(e: MouseEvent) =>
+																					e.stopPropagation()
+																				}
 																			/>
 																		</TextFieldRoot>
-																		<Badge variant="secondary">{actions().length}</Badge>
+																		<Badge variant="secondary">
+																			{actions().length}
+																		</Badge>
 																	</div>
 																</Show>
 															</div>
@@ -496,36 +526,53 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 																		<For each={actions()}>
 																			{(action) => {
 																				const actionId = action.id;
-																				const isActionSelected = () => selectedActions().has(actionId);
+																				const isActionSelected = () =>
+																					selectedActions().has(actionId);
 
 																				return (
 																					<button
 																						type="button"
 																						class="flex items-center gap-2 p-2 rounded transition-colors"
 																						classList={{
-																							"bg-accent/30 border border-accent": isActionSelected(),
-																							"hover:bg-muted/50": !isActionSelected(),
+																							"bg-accent/30 border border-accent":
+																								isActionSelected(),
+																							"hover:bg-muted/50":
+																								!isActionSelected(),
 																						}}
-																						onClick={() => toggleAction(actionId)}
+																						onClick={() =>
+																							toggleAction(actionId)
+																						}
 																					>
 																						<Checkbox
 																							checked={isActionSelected()}
-																							onChange={() => toggleAction(actionId)}
+																							onChange={() =>
+																								toggleAction(actionId)
+																							}
 																						/>
 																						<Show
 																							when={isActionSelected()}
-																							fallback={<span class="flex-1 text-sm">{action.name}</span>}
+																							fallback={
+																								<span class="flex-1 text-sm">
+																									{action.name}
+																								</span>
+																							}
 																						>
 																							<TextFieldRoot class="flex-1">
 																								<TextField
-																									value={getActionName(actionId)}
+																									value={getActionName(
+																										actionId,
+																									)}
 																									onInput={(e: InputEvent) =>
 																										updateActionName(
 																											actionId,
-																											(e.currentTarget as HTMLInputElement).value,
+																											(
+																												e.currentTarget as HTMLInputElement
+																											).value,
 																										)
 																									}
-																									onClick={(e: MouseEvent) => e.stopPropagation()}
+																									onClick={(e: MouseEvent) =>
+																										e.stopPropagation()
+																									}
 																								/>
 																							</TextFieldRoot>
 																						</Show>
@@ -551,10 +598,18 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 												Tools <Badge>{importData()?.tools?.length || 0}</Badge>
 											</h3>
 											<div class="flex gap-2">
-												<Button size="sm" variant="outline" onClick={selectAllTools}>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={selectAllTools}
+												>
 													Select All
 												</Button>
-												<Button size="sm" variant="outline" onClick={deselectAllTools}>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={deselectAllTools}
+												>
 													Deselect All
 												</Button>
 											</div>
@@ -570,16 +625,25 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 															type="button"
 															class="flex items-center gap-2 p-2 rounded transition-colors"
 															classList={{
-																"bg-accent/50 border border-accent": isSelected(),
+																"bg-accent/50 border border-accent":
+																	isSelected(),
 																"hover:bg-muted/50": !isSelected(),
 															}}
 															onClick={() => toggleTool(tool.id)}
 														>
-															<Checkbox checked={isSelected()} onChange={() => toggleTool(tool.id)} />
+															<Checkbox
+																checked={isSelected()}
+																onChange={() => toggleTool(tool.id)}
+															/>
 															<span class="flex-1">
-																{tool.name} <Badge variant="secondary">{tool.tool_type}</Badge>
+																{tool.name}{" "}
+																<Badge variant="secondary">
+																	{tool.tool_type}
+																</Badge>
 															</span>
-															<span class="text-sm text-muted-foreground truncate max-w-xs">{tool.template}</span>
+															<span class="text-sm text-muted-foreground truncate max-w-xs">
+																{tool.template}
+															</span>
 														</button>
 													);
 												}}
@@ -592,13 +656,22 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 									<div class="space-y-2">
 										<div class="flex items-center justify-between">
 											<h3 class="text-lg font-semibold">
-												Themes <Badge>{importData()?.themes?.length || 0}</Badge>
+												Themes{" "}
+												<Badge>{importData()?.themes?.length || 0}</Badge>
 											</h3>
 											<div class="flex gap-2">
-												<Button size="sm" variant="outline" onClick={selectAllThemes}>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={selectAllThemes}
+												>
 													Select All
 												</Button>
-												<Button size="sm" variant="outline" onClick={deselectAllThemes}>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={deselectAllThemes}
+												>
 													Deselect All
 												</Button>
 											</div>
@@ -607,23 +680,30 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 										<div class="space-y-2 border rounded-md p-4">
 											<For each={importData()?.themes || []}>
 												{(theme) => {
-													const isSelected = () => selectedThemes().has(theme.id);
+													const isSelected = () =>
+														selectedThemes().has(theme.id);
 
 													return (
 														<button
 															type="button"
 															class="flex items-center gap-2 p-2 rounded transition-colors"
 															classList={{
-																"bg-accent/50 border border-accent": isSelected(),
+																"bg-accent/50 border border-accent":
+																	isSelected(),
 																"hover:bg-muted/50": !isSelected(),
 															}}
 															onClick={() => toggleTheme(theme.id)}
 														>
-															<Checkbox checked={isSelected()} onChange={() => toggleTheme(theme.id)} />
+															<Checkbox
+																checked={isSelected()}
+																onChange={() => toggleTheme(theme.id)}
+															/>
 															<span class="flex-1">
 																{theme.name}
 																<Show when={theme.description}>
-																	<p class="text-xs text-muted-foreground">{theme.description}</p>
+																	<p class="text-xs text-muted-foreground">
+																		{theme.description}
+																	</p>
 																</Show>
 															</span>
 															<Show when={theme.is_predefined}>
@@ -654,14 +734,19 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 							>
 								<span>
 									Selected: {selectedWorkspaces().size} workspace
-									{selectedWorkspaces().size !== 1 ? "s" : ""}, {selectedActions().size} action
-									{selectedActions().size !== 1 ? "s" : ""}, {selectedTools().size} tool
-									{selectedTools().size !== 1 ? "s" : ""}, {selectedThemes().size} theme
+									{selectedWorkspaces().size !== 1 ? "s" : ""},{" "}
+									{selectedActions().size} action
+									{selectedActions().size !== 1 ? "s" : ""},{" "}
+									{selectedTools().size} tool
+									{selectedTools().size !== 1 ? "s" : ""},{" "}
+									{selectedThemes().size} theme
 									{selectedThemes().size !== 1 ? "s" : ""}
 								</span>
 							</Show>
 							<Show when={hasWorkspaceNameConflict()}>
-								<span class="text-destructive">Resolve duplicate workspace names</span>
+								<span class="text-destructive">
+									Resolve duplicate workspace names
+								</span>
 							</Show>
 						</div>
 						<div class="flex gap-2">
