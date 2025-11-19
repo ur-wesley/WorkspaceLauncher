@@ -77,6 +77,14 @@
           "args": true
         }
       ]
+    },
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        }
+      ]
     }
   ]
 }
