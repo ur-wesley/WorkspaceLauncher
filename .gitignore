@@ -3,3 +3,6 @@ dist
 ~/
 
 src-tauri/derby.log
+
+# Ignore CSS files for Biome linting (Tailwind @apply not supported)
+**/*.css

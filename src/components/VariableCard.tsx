@@ -2,13 +2,20 @@ import type { Component } from "solid-js";
 import { Show } from "solid-js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
 import { DeleteVariableDialog } from "@/components/variable/DeleteVariableDialog";
 import { VariableDialog } from "@/components/variable/VariableDialog";
-import { DeleteVariableTrigger, EditVariableTrigger } from "@/components/WorkspaceDetailTriggers";
+import {
+	DeleteVariableTrigger,
+	EditVariableTrigger,
+} from "@/components/WorkspaceDetailTriggers";
 import { cn } from "@/libs/cn";
-import type { Variable } from "@/types/database";
+import type { Variable } from "@/models/variable.model";
 
 interface VariableCardProps {
 	readonly variable: Variable;
@@ -46,7 +53,12 @@ export const VariableCard: Component<VariableCardProps> = (props) => {
 						</Show>
 
 						<DropdownMenu>
-							<DropdownMenuTrigger as={Button} variant="ghost" size="icon" class="h-7 w-7 shrink-0">
+							<DropdownMenuTrigger
+								as={Button}
+								variant="ghost"
+								size="icon"
+								class="h-7 w-7 shrink-0"
+							>
 								<div class="i-mdi-dots-vertical w-4 h-4" />
 							</DropdownMenuTrigger>
 							<DropdownMenuContent class="w-48">
@@ -55,7 +67,10 @@ export const VariableCard: Component<VariableCardProps> = (props) => {
 									variable={props.variable}
 									trigger={EditVariableTrigger}
 								/>
-								<DeleteVariableDialog variable={props.variable} trigger={DeleteVariableTrigger} />
+								<DeleteVariableDialog
+									variable={props.variable}
+									trigger={DeleteVariableTrigger}
+								/>
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
@@ -64,21 +79,30 @@ export const VariableCard: Component<VariableCardProps> = (props) => {
 				<div class="flex items-center justify-between gap-2">
 					<div class="flex items-center gap-1.5 flex-wrap text-xs">
 						<Show when={props.variable.is_secure}>
-							<Badge variant="outline" class="h-5 px-1.5 border-purple-500/50 text-purple-600 dark:text-purple-400">
+							<Badge
+								variant="outline"
+								class="h-5 px-1.5 border-purple-500/50 text-purple-600 dark:text-purple-400"
+							>
 								<div class="i-mdi-lock w-3 h-3 mr-0.5" />
 								Secure
 							</Badge>
 						</Show>
 						<Badge
 							variant={props.variable.enabled ? "default" : "secondary"}
-							class={cn("h-5 px-1.5", props.variable.enabled && "bg-green-500 hover:bg-green-600")}
+							class={cn(
+								"h-5 px-1.5",
+								props.variable.enabled && "bg-green-500 hover:bg-green-600",
+							)}
 						>
 							{props.variable.enabled ? "Active" : "Disabled"}
 						</Badge>
 					</div>
 
 					<div class="flex items-center gap-1.5">
-						<Switch checked={props.variable.enabled} onChange={(checked) => props.onToggle(props.variable.id, checked)}>
+						<Switch
+							checked={props.variable.enabled}
+							onChange={(checked) => props.onToggle(props.variable.id, checked)}
+						>
 							<SwitchControl>
 								<SwitchThumb />
 							</SwitchControl>

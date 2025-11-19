@@ -1,8 +1,20 @@
 import { defineStepper } from "@stepperize/solid";
-import { type Component, createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js";
+import {
+	type Component,
+	createEffect,
+	createMemo,
+	createSignal,
+	For,
+	onCleanup,
+	Show,
+} from "solid-js";
 import * as v from "valibot";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
 	Dialog,
 	DialogContent,
@@ -11,25 +23,33 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { StepperContent, StepperIndicator, StepperNavigation } from "@/components/ui/stepper";
+import {
+	StepperContent,
+	StepperIndicator,
+	StepperNavigation,
+} from "@/components/ui/stepper";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
 import { TextArea } from "@/components/ui/textarea";
-import { TextField, TextFieldLabel, TextFieldRoot } from "@/components/ui/textfield";
+import {
+	TextField,
+	TextFieldLabel,
+	TextFieldRoot,
+} from "@/components/ui/textfield";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/libs/cn";
 import { pickDirectory, pickExecutable } from "@/libs/filePicker";
 import { showToast } from "@/libs/toast";
+import type { Action } from "@/models/action.model";
+import type { Tool as ToolModel } from "@/models/tool.model";
 import { useActionStore } from "@/store/action";
 import { useToolStore } from "@/store/tool";
 import { useVariableStore } from "@/store/variable";
 import type {
-	Action,
 	CustomToolActionConfig,
 	NewAction,
 	NewTool,
 	PlaceholderDefinition,
 	SavedToolActionConfig,
-	Tool,
 	ToolActionConfig,
 } from "@/types/database";
 import { basicInfoSchema } from "./ActionDialogValidation";
@@ -64,7 +84,9 @@ type ActionDialogStepperProps = {
 	forceOpen?: boolean;
 };
 
-export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) => {
+export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
+	props,
+) => {
 	const [actionStore, actionActions] = useActionStore();
 	const [toolStore, toolActions] = useToolStore();
 	const [variableStore, variableActions] = useVariableStore();
@@ -72,7 +94,8 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 	const stepper = useStepper({ initialStep: "basic" });
 
 	const [open, setOpen] = createSignal(false);
-	const isOpen = () => (props.forceOpen !== undefined ? props.forceOpen : open());
+	const isOpen = () =>
+		props.forceOpen !== undefined ? props.forceOpen : open();
 	const [loading, setLoading] = createSignal(false);
 	const [savingCustomTool, setSavingCustomTool] = createSignal(false);
 	const [showAdvanced, setShowAdvanced] = createSignal(false);
@@ -84,18 +107,34 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 	const [name, setName] = createSignal(props.action?.name ?? "");
 	const [toolMode, setToolMode] = createSignal<ToolMode>("saved");
 	const [selectedToolId, setSelectedToolId] = createSignal<number | null>(null);
-	const [placeholderValues, setPlaceholderValues] = createSignal<Record<string, string>>({});
+	const [placeholderValues, setPlaceholderValues] = createSignal<
+		Record<string, string>
+	>({});
 	const [missingVariables, setMissingVariables] = createSignal<string[]>([]);
 
 	const initialTimeout =
-		props.action && typeof props.action.timeout_seconds === "number" ? props.action.timeout_seconds : 30;
-	const [timeoutSeconds, setTimeoutSeconds] = createSignal<number | null>(initialTimeout);
-	const [orderIndex, setOrderIndex] = createSignal<number>(props.action?.order_index ?? actionStore.actions.length);
-	const [detached, setDetached] = createSignal<boolean>(props.action?.detached ?? false);
-	const [trackProcess, setTrackProcess] = createSignal<boolean>(props.action?.track_process ?? true);
+		props.action && typeof props.action.timeout_seconds === "number"
+			? props.action.timeout_seconds
+			: 30;
+	const [timeoutSeconds, setTimeoutSeconds] = createSignal<number | null>(
+		initialTimeout,
+	);
+	const [orderIndex, setOrderIndex] = createSignal<number>(
+		props.action?.order_index ?? actionStore.actions.length,
+	);
+	const [detached, setDetached] = createSignal<boolean>(
+		props.action?.detached ?? false,
+	);
+	const [trackProcess, setTrackProcess] = createSignal<boolean>(
+		props.action?.track_process ?? true,
+	);
+	const [autoLaunch, setAutoLaunch] = createSignal<boolean>(
+		props.action?.auto_launch ?? false,
+	);
 
 	const [customToolName, setCustomToolName] = createSignal("");
-	const [customToolType, setCustomToolType] = createSignal<CustomToolType>("cli");
+	const [customToolType, setCustomToolType] =
+		createSignal<CustomToolType>("cli");
 	const [customCommand, setCustomCommand] = createSignal("");
 	const [customBinaryPath, setCustomBinaryPath] = createSignal("");
 	const [customArgsText, setCustomArgsText] = createSignal("");
@@ -138,8 +177,10 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		return null;
 	});
 
-	const allowedTools = createMemo(() => toolStore.tools.filter((tool) => tool.enabled));
-	const selectedTool = createMemo<Tool | null>(() => {
+	const allowedTools = createMemo(() =>
+		toolStore.tools.filter((tool) => tool.enabled),
+	);
+	const selectedTool = createMemo<ToolModel | null>(() => {
 		const id = selectedToolId();
 		if (id == null) {
 			return null;
@@ -161,7 +202,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 	});
 
 	const availableVariables = createMemo(() =>
-		variableStore.variables.filter((variable) => variable.enabled).map((variable) => variable.key),
+		variableStore.variables
+			.filter((variable) => variable.enabled)
+			.map((variable) => variable.key),
 	);
 
 	const customCommandPreview = createMemo(() => {
@@ -234,7 +277,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 			return false;
 		}
 
-		return customToolType() === "cli" ? customCommand().trim().length > 0 : customBinaryPath().trim().length > 0;
+		return customToolType() === "cli"
+			? customCommand().trim().length > 0
+			: customBinaryPath().trim().length > 0;
 	};
 
 	const isConfigValid = () => {
@@ -277,7 +322,8 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 
 		showToast({
 			title: "Command fixed!",
-			description: "Separated directory, command, and arguments into proper fields.",
+			description:
+				"Separated directory, command, and arguments into proper fields.",
 			variant: "success",
 		});
 	};
@@ -303,7 +349,10 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		resetCustomFields();
 	};
 
-	const applyCustomConfig = (config: CustomToolActionConfig, fallbackName: string) => {
+	const applyCustomConfig = (
+		config: CustomToolActionConfig,
+		fallbackName: string,
+	) => {
 		setToolMode("custom");
 		setCustomToolName(config.tool_name ?? fallbackName);
 		setCustomToolType(config.tool_type ?? "cli");
@@ -346,6 +395,7 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		setTimeoutSeconds(action.timeout_seconds ?? null);
 		setDetached(action.detached ?? false);
 		setTrackProcess(action.track_process ?? true);
+		setAutoLaunch(action.auto_launch ?? false);
 
 		const parsedConfig = parseToolActionConfig(action.config);
 		if (parsedConfig?.source === "saved") {
@@ -372,6 +422,7 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		setTimeoutSeconds(30);
 		setDetached(false);
 		setTrackProcess(true);
+		setAutoLaunch(false);
 
 		chooseDefaultTool();
 	};
@@ -395,7 +446,10 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 			tool_name: tool.name,
 			tool_type: tool.tool_type,
 			template: tool.template,
-			placeholder_values: normalizePlaceholderValues(placeholders, placeholderValues()),
+			placeholder_values: normalizePlaceholderValues(
+				placeholders,
+				placeholderValues(),
+			),
 		};
 	};
 
@@ -412,14 +466,17 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 			tool_name: trimmedName,
 			tool_type: customToolType(),
 			command: customToolType() === "cli" ? trimmedCommand : undefined,
-			binary_path: customToolType() === "binary" ? trimmedBinaryPath : undefined,
+			binary_path:
+				customToolType() === "binary" ? trimmedBinaryPath : undefined,
 			args: args.length > 0 ? args : undefined,
 			working_directory: workingDir.length > 0 ? workingDir : null,
 		};
 	};
 
 	const buildActionConfig = (): ToolActionConfig | null => {
-		return toolMode() === "saved" ? buildSavedActionConfig() : buildCustomActionConfig();
+		return toolMode() === "saved"
+			? buildSavedActionConfig()
+			: buildCustomActionConfig();
 	};
 
 	const buildActionPayload = (config: ToolActionConfig): NewAction => ({
@@ -431,6 +488,7 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		timeout_seconds: timeoutSeconds(),
 		detached: detached(),
 		track_process: trackProcess(),
+		auto_launch: autoLaunch(),
 		os_overrides: props.action?.os_overrides ?? null,
 		order_index: orderIndex(),
 	});
@@ -504,8 +562,10 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		const trimmedCommand = customCommand().trim();
 		const trimmedBinaryPath = customBinaryPath().trim();
 		const args = parseArgsText(customArgsText());
-		const templateBase = customToolType() === "cli" ? trimmedCommand : trimmedBinaryPath;
-		const template = args.length > 0 ? `${templateBase} ${args.join(" ")}` : templateBase;
+		const templateBase =
+			customToolType() === "cli" ? trimmedCommand : trimmedBinaryPath;
+		const template =
+			args.length > 0 ? `${templateBase} ${args.join(" ")}` : templateBase;
 
 		const newTool: NewTool = {
 			name: trimmedName,
@@ -599,7 +659,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		}
 
 		const currentActionId = props.action?.id ?? null;
-		const isSameAction = initializationRef.initialized && initializationRef.actionId === currentActionId;
+		const isSameAction =
+			initializationRef.initialized &&
+			initializationRef.actionId === currentActionId;
 
 		if (isSameAction) {
 			return;
@@ -620,7 +682,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		}
 
 		if (toolMode() === "saved") {
-			setPlaceholderValues((current) => normalizePlaceholderValues(toolPlaceholders(), current));
+			setPlaceholderValues((current) =>
+				normalizePlaceholderValues(toolPlaceholders(), current),
+			);
 		}
 	});
 
@@ -638,8 +702,15 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 		const sources =
 			toolMode() === "saved"
 				? Object.values(placeholderValues())
-				: [customCommand(), customBinaryPath(), customArgsText(), customWorkingDirectory()];
-		setMissingVariables(Array.from(gatherMissingVariables(sources, available)) as string[]);
+				: [
+						customCommand(),
+						customBinaryPath(),
+						customArgsText(),
+						customWorkingDirectory(),
+					];
+		setMissingVariables(
+			Array.from(gatherMissingVariables(sources, available)) as string[],
+		);
 	});
 
 	createEffect(() => {
@@ -675,16 +746,22 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 			<Dialog open={isOpen()} onOpenChange={handleOpenChange}>
 				<DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>{props.action ? "Edit Action" : "Create New Action"}</DialogTitle>
+						<DialogTitle>
+							{props.action ? "Edit Action" : "Create New Action"}
+						</DialogTitle>
 						<DialogDescription>
-							{props.action ? "Modify the action configuration." : "Create a new action step by step."}
+							{props.action
+								? "Modify the action configuration."
+								: "Create a new action step by step."}
 						</DialogDescription>
 					</DialogHeader>
 
 					<StepperIndicator
 						steps={stepper.all}
 						currentStepId={stepper.current.id}
-						onStepChange={(id: string) => stepper.goTo(id as "basic" | "tool" | "config" | "advanced")}
+						onStepChange={(id: string) =>
+							stepper.goTo(id as "basic" | "tool" | "config" | "advanced")
+						}
 						class="my-6"
 					/>
 
@@ -693,17 +770,22 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 							basic: () => (
 								<StepperContent title="What should this action be called?">
 									<TextFieldRoot>
-										<TextFieldLabel for="action-name">Action Name *</TextFieldLabel>
+										<TextFieldLabel for="action-name">
+											Action Name *
+										</TextFieldLabel>
 										<TextField
 											id="action-name"
 											value={name()}
-											onInput={(event: InputEvent) => setName((event.currentTarget as HTMLInputElement).value)}
+											onInput={(event: InputEvent) =>
+												setName((event.currentTarget as HTMLInputElement).value)
+											}
 											placeholder="e.g., Launch VS Code, Start Database, Open Browser"
 											required
 											autofocus
 										/>
 										<p class="text-xs text-muted-foreground mt-1">
-											Choose a descriptive name that clearly identifies what this action does.
+											Choose a descriptive name that clearly identifies what
+											this action does.
 										</p>
 									</TextFieldRoot>
 								</StepperContent>
@@ -723,7 +805,10 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 													}
 												}}
 											>
-												<ToggleGroupItem value="saved" disabled={allowedTools().length === 0}>
+												<ToggleGroupItem
+													value="saved"
+													disabled={allowedTools().length === 0}
+												>
 													<div class="i-mdi-package-variant w-4 h-4 mr-2" />
 													Saved Tool
 												</ToggleGroupItem>
@@ -734,14 +819,17 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 											</ToggleGroup>
 											<Show when={allowedTools().length === 0}>
 												<p class="text-xs text-muted-foreground mt-2">
-													No saved tools found. Create a custom command or save one globally to reuse later.
+													No saved tools found. Create a custom command or save
+													one globally to reuse later.
 												</p>
 											</Show>
 										</div>
 
 										<Show when={toolMode() === "saved"}>
 											<div>
-												<div class="text-sm font-medium mb-2">Select Tool *</div>
+												<div class="text-sm font-medium mb-2">
+													Select Tool *
+												</div>
 												<select
 													id="tool-select"
 													class="flex h-9 w-full items-center justify-between rounded-md bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus-visible:(ring-1.5 ring-ring) disabled:(cursor-not-allowed opacity-50) transition-shadow"
@@ -755,16 +843,26 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 												>
 													<option value="">Choose a tool...</option>
 													<For each={allowedTools()}>
-														{(tool) => <option value={tool.id.toString()}>{tool.name}</option>}
+														{(tool) => (
+															<option value={tool.id.toString()}>
+																{tool.name}
+															</option>
+														)}
 													</For>
 												</select>
 												<Show when={selectedTool()}>
 													{(tool) => (
 														<div class="mt-3">
-															<p class="text-xs text-muted-foreground mb-2">{tool().description}</p>
+															<p class="text-xs text-muted-foreground mb-2">
+																{tool().description}
+															</p>
 															<div class="p-3 bg-muted rounded-md">
-																<p class="text-xs font-medium mb-1">Command Template</p>
-																<code class="text-xs font-mono break-all">{tool().template}</code>
+																<p class="text-xs font-medium mb-1">
+																	Command Template
+																</p>
+																<code class="text-xs font-mono break-all">
+																	{tool().template}
+																</code>
 															</div>
 														</div>
 													)}
@@ -777,7 +875,11 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 
 							config: () => (
 								<StepperContent
-									title={toolMode() === "saved" ? "Configure the tool parameters" : "Set up your custom command"}
+									title={
+										toolMode() === "saved"
+											? "Configure the tool parameters"
+											: "Set up your custom command"
+									}
 								>
 									<div class="space-y-4">
 										<Show when={toolMode() === "saved"}>
@@ -786,15 +888,23 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 													<For each={toolPlaceholders()}>
 														{(placeholder: PlaceholderDefinition) => (
 															<TextFieldRoot>
-																<TextFieldLabel for={`placeholder-${placeholder.name}`}>
+																<TextFieldLabel
+																	for={`placeholder-${placeholder.name}`}
+																>
 																	{placeholder.name}
-																	{placeholder.required && <span class="text-destructive ml-1">*</span>}
+																	{placeholder.required && (
+																		<span class="text-destructive ml-1">*</span>
+																	)}
 																</TextFieldLabel>
 																<TextField
 																	id={`placeholder-${placeholder.name}`}
-																	value={placeholderValues()[placeholder.name] ?? ""}
+																	value={
+																		placeholderValues()[placeholder.name] ?? ""
+																	}
 																	onInput={(event: InputEvent) => {
-																		const value = (event.currentTarget as HTMLInputElement).value;
+																		const value = (
+																			event.currentTarget as HTMLInputElement
+																		).value;
 																		setPlaceholderValues((current) => ({
 																			...current,
 																			[placeholder.name]: value,
@@ -804,7 +914,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 																	required={placeholder.required}
 																/>
 																<Show when={placeholder.description}>
-																	<p class="text-xs text-muted-foreground mt-1">{placeholder.description}</p>
+																	<p class="text-xs text-muted-foreground mt-1">
+																		{placeholder.description}
+																	</p>
 																</Show>
 															</TextFieldRoot>
 														)}
@@ -815,8 +927,12 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 											<Show when={toolPlaceholders().length === 0}>
 												<div class="p-4 bg-muted rounded-md text-center">
 													<div class="i-mdi-check-circle w-12 h-12 mx-auto text-primary mb-2" />
-													<p class="text-sm font-medium">This tool is ready to use!</p>
-													<p class="text-xs text-muted-foreground mt-1">No additional configuration needed.</p>
+													<p class="text-sm font-medium">
+														This tool is ready to use!
+													</p>
+													<p class="text-xs text-muted-foreground mt-1">
+														No additional configuration needed.
+													</p>
 												</div>
 											</Show>
 										</Show>
@@ -825,12 +941,17 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 											<div class="space-y-4">
 												<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 													<TextFieldRoot>
-														<TextFieldLabel for="custom-tool-name">Tool Name *</TextFieldLabel>
+														<TextFieldLabel for="custom-tool-name">
+															Tool Name *
+														</TextFieldLabel>
 														<TextField
 															id="custom-tool-name"
 															value={customToolName()}
 															onInput={(event: InputEvent) =>
-																setCustomToolName((event.currentTarget as HTMLInputElement).value)
+																setCustomToolName(
+																	(event.currentTarget as HTMLInputElement)
+																		.value,
+																)
 															}
 															placeholder="e.g., Run Custom Script"
 															required
@@ -838,7 +959,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 													</TextFieldRoot>
 
 													<div>
-														<div class="text-sm font-medium mb-1">Tool Type *</div>
+														<div class="text-sm font-medium mb-1">
+															Tool Type *
+														</div>
 														<ToggleGroup
 															class="justify-start"
 															value={customToolType()}
@@ -849,7 +972,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 															}}
 														>
 															<ToggleGroupItem value="cli">CLI</ToggleGroupItem>
-															<ToggleGroupItem value="binary">Binary</ToggleGroupItem>
+															<ToggleGroupItem value="binary">
+																Binary
+															</ToggleGroupItem>
 														</ToggleGroup>
 													</div>
 												</div>
@@ -857,12 +982,17 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 												<Show when={customToolType() === "cli"}>
 													<div class="space-y-2">
 														<TextFieldRoot>
-															<TextFieldLabel for="custom-command">Command *</TextFieldLabel>
+															<TextFieldLabel for="custom-command">
+																Command *
+															</TextFieldLabel>
 															<TextField
 																id="custom-command"
 																value={customCommand()}
 																onInput={(event: InputEvent) =>
-																	setCustomCommand((event.currentTarget as HTMLInputElement).value)
+																	setCustomCommand(
+																		(event.currentTarget as HTMLInputElement)
+																			.value,
+																	)
 																}
 																placeholder="e.g., bun, node, python"
 																required
@@ -882,19 +1012,29 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 																				Compound command detected
 																			</p>
 																			<p class="text-xs text-amber-800 dark:text-amber-200">
-																				This command contains a directory change. It's better to use separate fields:
+																				This command contains a directory
+																				change. It's better to use separate
+																				fields:
 																			</p>
 																			<div class="bg-white/50 dark:bg-black/20 rounded px-2 py-1.5 text-xs font-mono space-y-0.5">
 																				<div>
-																					<span class="text-muted-foreground">Working Directory:</span>{" "}
+																					<span class="text-muted-foreground">
+																						Working Directory:
+																					</span>{" "}
 																					{suggestion().workingDirectory}
 																				</div>
 																				<div>
-																					<span class="text-muted-foreground">Command:</span> {suggestion().command}
+																					<span class="text-muted-foreground">
+																						Command:
+																					</span>{" "}
+																					{suggestion().command}
 																				</div>
 																				<Show when={suggestion().args}>
 																					<div>
-																						<span class="text-muted-foreground">Arguments:</span> {suggestion().args}
+																						<span class="text-muted-foreground">
+																							Arguments:
+																						</span>{" "}
+																						{suggestion().args}
 																					</div>
 																				</Show>
 																			</div>
@@ -917,13 +1057,18 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 
 												<Show when={customToolType() === "binary"}>
 													<TextFieldRoot>
-														<TextFieldLabel for="custom-binary">Executable Path *</TextFieldLabel>
+														<TextFieldLabel for="custom-binary">
+															Executable Path *
+														</TextFieldLabel>
 														<div class="flex gap-2">
 															<TextField
 																id="custom-binary"
 																value={customBinaryPath()}
 																onInput={(event: InputEvent) =>
-																	setCustomBinaryPath((event.currentTarget as HTMLInputElement).value)
+																	setCustomBinaryPath(
+																		(event.currentTarget as HTMLInputElement)
+																			.value,
+																	)
 																}
 																placeholder="C:\\Tools\\my-app.exe"
 																required
@@ -935,7 +1080,10 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 																onClick={handlePickExecutable}
 																title="Browse for executable"
 															>
-																<span class="iconify w-4 h-4" data-icon="mdi:folder-open" />
+																<span
+																	class="iconify w-4 h-4"
+																	data-icon="mdi:folder-open"
+																/>
 															</Button>
 														</div>
 														<p class="text-xs text-muted-foreground mt-1">
@@ -945,13 +1093,18 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 												</Show>
 
 												<TextFieldRoot>
-													<TextFieldLabel for="custom-args">Arguments (one per line)</TextFieldLabel>
+													<TextFieldLabel for="custom-args">
+														Arguments (one per line)
+													</TextFieldLabel>
 													<TextArea
 														id="custom-args"
 														rows={4}
 														value={customArgsText()}
 														onInput={(event: InputEvent) =>
-															setCustomArgsText((event.currentTarget as HTMLTextAreaElement).value)
+															setCustomArgsText(
+																(event.currentTarget as HTMLTextAreaElement)
+																	.value,
+															)
 														}
 														placeholder="--flag&#10;--path ${workspace_path}"
 														class="font-mono text-sm"
@@ -962,13 +1115,18 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 												</TextFieldRoot>
 
 												<TextFieldRoot>
-													<TextFieldLabel for="custom-working-dir">Working Directory</TextFieldLabel>
+													<TextFieldLabel for="custom-working-dir">
+														Working Directory
+													</TextFieldLabel>
 													<div class="flex gap-2">
 														<TextField
 															id="custom-working-dir"
 															value={customWorkingDirectory()}
 															onInput={(event: InputEvent) =>
-																setCustomWorkingDirectory((event.currentTarget as HTMLInputElement).value)
+																setCustomWorkingDirectory(
+																	(event.currentTarget as HTMLInputElement)
+																		.value,
+																)
 															}
 															placeholder="Optional path to run command from"
 															class="flex-1"
@@ -979,7 +1137,10 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 															onClick={handlePickWorkingDirectory}
 															title="Browse for directory"
 														>
-															<span class="iconify w-4 h-4" data-icon="mdi:folder-open" />
+															<span
+																class="iconify w-4 h-4"
+																data-icon="mdi:folder-open"
+															/>
 														</Button>
 													</div>
 													<p class="text-xs text-muted-foreground mt-1">
@@ -991,11 +1152,20 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 													<Show when={customCommandPreview()}>
 														{(preview) => (
 															<div class="p-3 bg-muted rounded-md flex-1">
-																<p class="text-sm font-medium mb-1">Command Preview</p>
-																<code class="text-sm font-mono break-all">{preview()}</code>
-																<Show when={customWorkingDirectory().trim().length > 0}>
+																<p class="text-sm font-medium mb-1">
+																	Command Preview
+																</p>
+																<code class="text-sm font-mono break-all">
+																	{preview()}
+																</code>
+																<Show
+																	when={
+																		customWorkingDirectory().trim().length > 0
+																	}
+																>
 																	<p class="text-xs text-muted-foreground mt-1">
-																		Working directory: {customWorkingDirectory().trim()}
+																		Working directory:{" "}
+																		{customWorkingDirectory().trim()}
 																	</p>
 																</Show>
 															</div>
@@ -1004,7 +1174,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 													<Button
 														variant="outline"
 														onClick={handleSaveCustomTool}
-														disabled={!canSaveCustomTool() || savingCustomTool()}
+														disabled={
+															!canSaveCustomTool() || savingCustomTool()
+														}
 													>
 														<Show when={savingCustomTool()}>
 															<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1028,7 +1200,11 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 											</div>
 											<div>
 												<p class="text-xs text-muted-foreground">Tool Mode</p>
-												<p class="text-sm font-medium">{toolMode() === "saved" ? "Saved Tool" : "Custom Command"}</p>
+												<p class="text-sm font-medium">
+													{toolMode() === "saved"
+														? "Saved Tool"
+														: "Custom Command"}
+												</p>
 											</div>
 											<Show when={toolMode() === "saved" && selectedTool()}>
 												{(tool) => (
@@ -1038,10 +1214,14 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 													</div>
 												)}
 											</Show>
-											<Show when={toolMode() === "custom" && customCommandPreview()}>
+											<Show
+												when={toolMode() === "custom" && customCommandPreview()}
+											>
 												<div>
 													<p class="text-xs text-muted-foreground">Command</p>
-													<code class="text-xs font-mono break-all">{customCommandPreview()}</code>
+													<code class="text-xs font-mono break-all">
+														{customCommandPreview()}
+													</code>
 												</div>
 											</Show>
 										</div>
@@ -1051,62 +1231,100 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 												<div class="flex items-start gap-2">
 													<div class="i-mdi-information w-4 h-4 text-primary mt-0.5" />
 													<div>
-														<p class="text-sm font-medium">New Environment Variables</p>
+														<p class="text-sm font-medium">
+															New Environment Variables
+														</p>
 														<p class="text-sm text-muted-foreground mt-1">
-															The following variables will be created with empty values:{" "}
-															<span class="font-mono">{missingVariables().join(", ")}</span>
+															The following variables will be created with empty
+															values:{" "}
+															<span class="font-mono">
+																{missingVariables().join(", ")}
+															</span>
 														</p>
 													</div>
 												</div>
 											</div>
 										</Show>
 
-										<Collapsible open={showAdvanced()} onOpenChange={setShowAdvanced}>
-											<CollapsibleTrigger as={Button} variant="outline" class="w-full justify-between" type="button">
+										<Collapsible
+											open={showAdvanced()}
+											onOpenChange={setShowAdvanced}
+										>
+											<CollapsibleTrigger
+												as={Button}
+												variant="outline"
+												class="w-full justify-between"
+												type="button"
+											>
 												<span class="flex items-center gap-2">
 													<div class="i-mdi-tune w-4 h-4" />
 													Advanced Settings
 												</span>
 												<div
-													class={cn("i-mdi-chevron-down w-4 h-4 transition-transform", showAdvanced() && "rotate-180")}
+													class={cn(
+														"i-mdi-chevron-down w-4 h-4 transition-transform",
+														showAdvanced() && "rotate-180",
+													)}
 												/>
 											</CollapsibleTrigger>
 											<CollapsibleContent class="mt-4 space-y-4">
 												<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 													<TextFieldRoot>
-														<TextFieldLabel for="execution-order">Execution Order</TextFieldLabel>
+														<TextFieldLabel for="execution-order">
+															Execution Order
+														</TextFieldLabel>
 														<TextField
 															id="execution-order"
 															type="number"
 															value={orderIndex().toString()}
 															onInput={(event: InputEvent) => {
-																const raw = (event.currentTarget as HTMLInputElement).value;
+																const raw = (
+																	event.currentTarget as HTMLInputElement
+																).value;
 																setOrderIndex(raw === "" ? 0 : Number(raw));
 															}}
 															placeholder="0"
 														/>
-														<p class="text-xs text-muted-foreground mt-1">Lower numbers run first.</p>
+														<p class="text-xs text-muted-foreground mt-1">
+															Lower numbers run first.
+														</p>
 													</TextFieldRoot>
 
 													<TextFieldRoot>
-														<TextFieldLabel for="timeout-seconds">Timeout (seconds)</TextFieldLabel>
+														<TextFieldLabel for="timeout-seconds">
+															Timeout (seconds)
+														</TextFieldLabel>
 														<TextField
 															id="timeout-seconds"
 															type="number"
-															value={timeoutSeconds() == null ? "" : (timeoutSeconds()?.toString() ?? "")}
+															value={
+																timeoutSeconds() == null
+																	? ""
+																	: (timeoutSeconds()?.toString() ?? "")
+															}
 															onInput={(event: InputEvent) => {
-																const raw = (event.currentTarget as HTMLInputElement).value.trim();
-																setTimeoutSeconds(raw === "" ? null : Number(raw));
+																const raw = (
+																	event.currentTarget as HTMLInputElement
+																).value.trim();
+																setTimeoutSeconds(
+																	raw === "" ? null : Number(raw),
+																);
 															}}
 															placeholder="30"
 														/>
-														<p class="text-xs text-muted-foreground mt-1">Leave blank for no timeout.</p>
+														<p class="text-xs text-muted-foreground mt-1">
+															Leave blank for no timeout.
+														</p>
 													</TextFieldRoot>
 
 													<div class="flex items-center justify-between space-x-2">
 														<div class="space-y-0.5">
-															<div class="text-sm font-medium">Run Detached</div>
-															<p class="text-xs text-muted-foreground">Launch without waiting for completion</p>
+															<div class="text-sm font-medium">
+																Run Detached
+															</div>
+															<p class="text-xs text-muted-foreground">
+																Launch without waiting for completion
+															</p>
 														</div>
 														<Switch checked={detached()} onChange={setDetached}>
 															<SwitchControl>
@@ -1117,10 +1335,36 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (props) 
 
 													<div class="flex items-center justify-between space-x-2">
 														<div class="space-y-0.5">
-															<div class="text-sm font-medium">Track Process</div>
-															<p class="text-xs text-muted-foreground">Monitor process lifecycle</p>
+															<div class="text-sm font-medium">
+																Track Process
+															</div>
+															<p class="text-xs text-muted-foreground">
+																Monitor process lifecycle
+															</p>
 														</div>
-														<Switch checked={trackProcess()} onChange={setTrackProcess}>
+														<Switch
+															checked={trackProcess()}
+															onChange={setTrackProcess}
+														>
+															<SwitchControl>
+																<SwitchThumb />
+															</SwitchControl>
+														</Switch>
+													</div>
+
+													<div class="flex items-center justify-between space-x-2">
+														<div class="space-y-0.5">
+															<div class="text-sm font-medium">
+																Auto-launch on app start
+															</div>
+															<p class="text-xs text-muted-foreground">
+																Register this action as a service
+															</p>
+														</div>
+														<Switch
+															checked={autoLaunch()}
+															onChange={setAutoLaunch}
+														>
 															<SwitchControl>
 																<SwitchThumb />
 															</SwitchControl>

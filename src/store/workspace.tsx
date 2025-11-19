@@ -3,7 +3,9 @@ import { createStore } from "solid-js/store";
 import * as api from "@/libs/api";
 import { fuzzySearch } from "@/libs/search";
 import { showToast } from "@/libs/toast";
-import type { NewWorkspace, Workspace } from "@/types/database";
+import type { Workspace } from "@/models/workspace.model";
+import { WorkspaceAdapter } from "@/models/workspace.model";
+import type { NewWorkspace } from "@/types/database";
 
 interface WorkspaceStore {
 	workspaces: Workspace[];
@@ -16,7 +18,10 @@ interface WorkspaceStore {
 interface WorkspaceActions {
 	loadWorkspaces: () => Promise<void>;
 	createWorkspace: (workspace: NewWorkspace) => Promise<Workspace | null>;
-	updateWorkspace: (id: number, workspace: NewWorkspace) => Promise<Workspace | null>;
+	updateWorkspace: (
+		id: number,
+		workspace: NewWorkspace,
+	) => Promise<Workspace | null>;
 	deleteWorkspace: (id: number) => Promise<boolean>;
 	selectWorkspace: (workspace: Workspace | null) => void;
 	getWorkspace: (id: number) => Workspace | undefined;
@@ -44,19 +49,27 @@ export const WorkspaceProvider: ParentComponent = (props) => {
 
 	const loadPinnedWorkspaces = () => {
 		try {
-			const stored = localStorage.getItem("workspace-launcher:pinned-workspaces");
+			const stored = localStorage.getItem(
+				"workspace-launcher:pinned-workspaces",
+			);
 			if (stored) {
 				const pinned = JSON.parse(stored) as number[];
 				setStore("pinnedWorkspaceIds", new Set(pinned));
 			}
 		} catch (error) {
-			console.warn("Failed to load pinned workspaces from localStorage:", error);
+			console.warn(
+				"Failed to load pinned workspaces from localStorage:",
+				error,
+			);
 		}
 	};
 
 	const savePinnedWorkspaces = (pinnedIds: Set<number>) => {
 		try {
-			localStorage.setItem("workspace-launcher:pinned-workspaces", JSON.stringify(Array.from(pinnedIds)));
+			localStorage.setItem(
+				"workspace-launcher:pinned-workspaces",
+				JSON.stringify(Array.from(pinnedIds)),
+			);
 		} catch (error) {
 			console.warn("Failed to save pinned workspaces to localStorage:", error);
 		}
@@ -71,7 +84,10 @@ export const WorkspaceProvider: ParentComponent = (props) => {
 			const result = await api.listWorkspaces();
 
 			if (result.isOk()) {
-				setStore("workspaces", result.value);
+				setStore(
+					"workspaces",
+					result.value.map((w) => WorkspaceAdapter.fromDb(w)),
+				);
 			} else {
 				showToast({
 					title: "Error",
@@ -87,7 +103,8 @@ export const WorkspaceProvider: ParentComponent = (props) => {
 			const result = await api.createWorkspace(workspace);
 
 			if (result.isOk()) {
-				setStore("workspaces", (prev) => [result.value, ...prev]);
+				const model = WorkspaceAdapter.fromDb(result.value);
+				setStore("workspaces", (prev) => [model, ...prev]);
 				showToast({
 					title: "Success",
 					description: "Workspace created successfully",
@@ -107,9 +124,10 @@ export const WorkspaceProvider: ParentComponent = (props) => {
 			const result = await api.updateWorkspace(id, workspace);
 
 			if (result.isOk()) {
-				setStore("workspaces", (w) => w.id === id, result.value);
+				const model = WorkspaceAdapter.fromDb(result.value);
+				setStore("workspaces", (w) => w.id === id, model);
 				if (store.selectedWorkspace?.id === id) {
-					setStore("selectedWorkspace", result.value);
+					setStore("selectedWorkspace", model);
 				}
 				showToast({
 					title: "Success",
@@ -194,13 +212,19 @@ export const WorkspaceProvider: ParentComponent = (props) => {
 		actions,
 	};
 
-	return <WorkspaceContext.Provider value={contextValue}>{props.children}</WorkspaceContext.Provider>;
+	return (
+		<WorkspaceContext.Provider value={contextValue}>
+			{props.children}
+		</WorkspaceContext.Provider>
+	);
 };
 
 export function useWorkspaceStore() {
 	const context = useContext(WorkspaceContext);
 	if (!context) {
-		throw new Error("useWorkspaceStore must be used within a WorkspaceProvider");
+		throw new Error(
+			"useWorkspaceStore must be used within a WorkspaceProvider",
+		);
 	}
 	return context;
 }

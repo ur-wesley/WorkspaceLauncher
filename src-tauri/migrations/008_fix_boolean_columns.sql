@@ -32,3 +32,9 @@ ALTER TABLE variables DROP COLUMN enabled;
 -- Rename new columns to original names
 ALTER TABLE variables RENAME COLUMN is_secure_new TO is_secure;
 ALTER TABLE variables RENAME COLUMN enabled_new TO enabled;
+
+
+
+
+
+

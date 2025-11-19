@@ -1,15 +1,26 @@
 import { type Component, createSignal, Show } from "solid-js";
 import { IconPicker } from "@/components/IconPicker";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
 import { TextArea } from "@/components/ui/textarea";
-import { TextField, TextFieldLabel, TextFieldRoot } from "@/components/ui/textfield";
+import {
+	TextField,
+	TextFieldLabel,
+	TextFieldRoot,
+} from "@/components/ui/textfield";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { pickExecutable } from "@/libs/filePicker";
 import { showToast } from "@/libs/toast";
+import type { Tool } from "@/models/tool.model";
 import { useToolStore } from "@/store/tool";
-import type { NewTool, PlaceholderDefinition, Tool } from "@/types/database";
+import type { NewTool, PlaceholderDefinition } from "@/types/database";
 
 interface ToolDialogProps {
 	tool?: Tool;
@@ -23,13 +34,19 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 	const [loading, setLoading] = createSignal(false);
 
 	const [name, setName] = createSignal(props.tool?.name || "");
-	const [description, setDescription] = createSignal(props.tool?.description || "");
+	const [description, setDescription] = createSignal(
+		props.tool?.description || "",
+	);
 	const [icon, setIcon] = createSignal(props.tool?.icon || "");
 	const [enabled, setEnabled] = createSignal(props.tool?.enabled ?? true);
-	const [toolType, setToolType] = createSignal<"binary" | "cli">(props.tool?.tool_type || "cli");
+	const [toolType, setToolType] = createSignal<"binary" | "cli">(
+		props.tool?.tool_type || "cli",
+	);
 	const [template, setTemplate] = createSignal(props.tool?.template || "");
 	const [category, setCategory] = createSignal(props.tool?.category || "");
-	const [placeholdersText, setPlaceholdersText] = createSignal(props.tool?.placeholders || "[]");
+	const [placeholdersText, setPlaceholdersText] = createSignal(
+		props.tool?.placeholders || "[]",
+	);
 
 	const handlePickBinary = async () => {
 		const path = await pickExecutable({ title: "Select Binary Executable" });
@@ -162,7 +179,9 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 			<Dialog open={open()} onOpenChange={handleOpenChange}>
 				<DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>{props.tool ? "Edit Tool" : "Create New Tool"}</DialogTitle>
+						<DialogTitle>
+							{props.tool ? "Edit Tool" : "Create New Tool"}
+						</DialogTitle>
 						<DialogDescription>
 							{props.tool
 								? "Modify the tool configuration."
@@ -180,7 +199,9 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 									<TextField
 										id="tool-name"
 										value={name()}
-										onInput={(e: InputEvent) => setName((e.target as HTMLInputElement).value)}
+										onInput={(e: InputEvent) =>
+											setName((e.target as HTMLInputElement).value)
+										}
 										placeholder="Tool name"
 										required
 									/>
@@ -191,18 +212,24 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 									<TextField
 										id="tool-category"
 										value={category()}
-										onInput={(e: InputEvent) => setCategory((e.target as HTMLInputElement).value)}
+										onInput={(e: InputEvent) =>
+											setCategory((e.target as HTMLInputElement).value)
+										}
 										placeholder="development, browser, utility, custom"
 									/>
 								</TextFieldRoot>
 							</div>
 
 							<TextFieldRoot>
-								<TextFieldLabel for="tool-description">Description</TextFieldLabel>
+								<TextFieldLabel for="tool-description">
+									Description
+								</TextFieldLabel>
 								<TextField
 									id="tool-description"
 									value={description()}
-									onInput={(e: InputEvent) => setDescription((e.target as HTMLInputElement).value)}
+									onInput={(e: InputEvent) =>
+										setDescription((e.target as HTMLInputElement).value)
+									}
 									placeholder="Tool description"
 								/>
 							</TextFieldRoot>
@@ -214,12 +241,18 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 										when={icon()}
 										fallback={
 											<div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-												<span class="iconify w-6 h-6 text-muted-foreground" data-icon="mdi:emoticon-outline" />
+												<span
+													class="iconify w-6 h-6 text-muted-foreground"
+													data-icon="mdi:emoticon-outline"
+												/>
 											</div>
 										}
 									>
 										<div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-											<span class="iconify w-6 h-6" data-icon={`mdi:${icon()?.replace(/^i-mdi-/, "")}`} />
+											<span
+												class="iconify w-6 h-6"
+												data-icon={`mdi:${icon()?.replace(/^i-mdi-/, "")}`}
+											/>
 										</div>
 									</Show>{" "}
 									<IconPicker
@@ -227,18 +260,28 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 										onChange={setIcon}
 										trigger={
 											<Button variant="outline" type="button">
-												<span class="iconify w-4 h-4 mr-2" data-icon="mdi:palette" />
+												<span
+													class="iconify w-4 h-4 mr-2"
+													data-icon="mdi:palette"
+												/>
 												{icon() ? "Change Icon" : "Choose Icon"}
 											</Button>
 										}
 									/>{" "}
 									<Show when={icon()}>
-										<Button variant="ghost" size="sm" type="button" onClick={() => setIcon("")}>
+										<Button
+											variant="ghost"
+											size="sm"
+											type="button"
+											onClick={() => setIcon("")}
+										>
 											Clear
 										</Button>
 									</Show>
 								</div>
-								<p class="text-xs text-muted-foreground">Search from 7,000+ Material Design Icons</p>
+								<p class="text-xs text-muted-foreground">
+									Search from 7,000+ Material Design Icons
+								</p>
 							</div>
 
 							<div class="space-y-2">
@@ -251,7 +294,8 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 									<span class="text-sm font-medium">Enabled</span>
 								</div>
 								<p class="text-xs text-muted-foreground">
-									When disabled, this tool won't be available for creating actions
+									When disabled, this tool won't be available for creating
+									actions
 								</p>
 							</div>
 						</div>
@@ -261,37 +305,63 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 
 							<div class="space-y-2">
 								<TextFieldLabel>Tool Type *</TextFieldLabel>
-								<ToggleGroup value={toolType()} onChange={(value) => setToolType(value as "binary" | "cli")}>
+								<ToggleGroup
+									value={toolType()}
+									onChange={(value) => setToolType(value as "binary" | "cli")}
+								>
 									<ToggleGroupItem value="cli">
-										<span class="iconify w-4 h-4 mr-2" data-icon="mdi:console" /> CLI Command
+										<span
+											class="iconify w-4 h-4 mr-2"
+											data-icon="mdi:console"
+										/>{" "}
+										CLI Command
 									</ToggleGroupItem>
 									<ToggleGroupItem value="binary">
-										<span class="iconify w-4 h-4 mr-2" data-icon="mdi:application" /> Binary Executable
+										<span
+											class="iconify w-4 h-4 mr-2"
+											data-icon="mdi:application"
+										/>{" "}
+										Binary Executable
 									</ToggleGroupItem>
 								</ToggleGroup>
 								<p class="text-xs text-muted-foreground">
-									CLI: Command-line tools (npm, bun, code). Binary: Direct executable files (.exe, .app)
+									CLI: Command-line tools (npm, bun, code). Binary: Direct
+									executable files (.exe, .app)
 								</p>
 							</div>
 
 							<TextFieldRoot>
 								<TextFieldLabel for="tool-template">
-									{toolType() === "binary" ? "Binary Path *" : "Command Template *"}
+									{toolType() === "binary"
+										? "Binary Path *"
+										: "Command Template *"}
 								</TextFieldLabel>
 								<div class="flex gap-2">
 									<TextField
 										id="tool-template"
 										value={template()}
-										onInput={(e: InputEvent) => setTemplate((e.target as HTMLInputElement).value)}
+										onInput={(e: InputEvent) =>
+											setTemplate((e.target as HTMLInputElement).value)
+										}
 										placeholder={
-											toolType() === "binary" ? "C:\\Program Files\\MyApp\\app.exe {args}" : "code {workspace_path}"
+											toolType() === "binary"
+												? "C:\\Program Files\\MyApp\\app.exe {args}"
+												: "code {workspace_path}"
 										}
 										required
 										class="flex-1"
 									/>
 									<Show when={toolType() === "binary"}>
-										<Button type="button" variant="outline" onClick={handlePickBinary} title="Browse for binary">
-											<span class="iconify w-4 h-4" data-icon="mdi:folder-open" />
+										<Button
+											type="button"
+											variant="outline"
+											onClick={handlePickBinary}
+											title="Browse for binary"
+										>
+											<span
+												class="iconify w-4 h-4"
+												data-icon="mdi:folder-open"
+											/>
 										</Button>
 									</Show>
 								</div>
@@ -308,35 +378,56 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 								<h3 class="text-lg font-medium">Placeholders</h3>
 								<div class="flex gap-2">
 									{placeholderExamples.map((example) => (
-										<Button type="button" variant="outline" size="sm" onClick={() => insertPlaceholderExample(example)}>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => insertPlaceholderExample(example)}
+										>
 											{example.name}
 										</Button>
 									))}
-									<Button type="button" variant="outline" size="sm" onClick={prettifyJson} title="Format JSON">
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={prettifyJson}
+										title="Format JSON"
+									>
 										<div class="i-mdi-code-json w-4 h-4" />
 									</Button>
 								</div>
 							</div>
 
 							<TextFieldRoot>
-								<TextFieldLabel for="placeholders">Placeholder Definitions (JSON)</TextFieldLabel>
+								<TextFieldLabel for="placeholders">
+									Placeholder Definitions (JSON)
+								</TextFieldLabel>
 								<TextArea
 									id="placeholders"
 									value={placeholdersText()}
-									onInput={(e: InputEvent) => setPlaceholdersText((e.target as HTMLTextAreaElement).value)}
+									onInput={(e: InputEvent) =>
+										setPlaceholdersText((e.target as HTMLTextAreaElement).value)
+									}
 									placeholder='[{"name": "workspace_path", "description": "Path to workspace", "required": true, "type": "path"}]'
 									rows={8}
 									class="font-mono text-sm"
 								/>
 								<div class="text-xs text-muted-foreground mt-1">
-									Define placeholders used in the template. Each placeholder should have: name, description, required,
-									type (text/path/url/number), and optional default value.
+									Define placeholders used in the template. Each placeholder
+									should have: name, description, required, type
+									(text/path/url/number), and optional default value.
 								</div>
 							</TextFieldRoot>
 						</div>
 
 						<div class="flex justify-end gap-3 pt-4 border-t">
-							<Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading()}>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setOpen(false)}
+								disabled={loading()}
+							>
 								Cancel
 							</Button>
 							<Button type="submit" disabled={loading()}>

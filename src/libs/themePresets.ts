@@ -148,4 +148,8 @@ export const catppuccinMacchiatoMocha: ThemePreset = {
 	},
 };
 
-export const themePresets = [defaultTheme, catppuccinLatteFrappe, catppuccinMacchiatoMocha];
+export const themePresets = [
+	defaultTheme,
+	catppuccinLatteFrappe,
+	catppuccinMacchiatoMocha,
+];

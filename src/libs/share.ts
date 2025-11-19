@@ -1,6 +1,9 @@
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import type { Action, Theme, Tool, Workspace } from "@/types/database";
+import type { Action } from "@/models/action.model";
+import type { Theme } from "@/models/theme.model";
+import type { Tool } from "@/models/tool.model";
+import type { Workspace } from "@/models/workspace.model";
 
 export interface ExportData {
 	version: string;

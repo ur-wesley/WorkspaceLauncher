@@ -9,7 +9,12 @@ import type {
 import { Toast as ToastPrimitive } from "@kobalte/core/toast";
 import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
-import type { ComponentProps, ValidComponent, VoidComponent, VoidProps } from "solid-js";
+import type {
+	ComponentProps,
+	ValidComponent,
+	VoidComponent,
+	VoidProps,
+} from "solid-js";
 import { mergeProps, splitProps } from "solid-js";
 import { Portal } from "solid-js/web";
 import { cn } from "@/libs/cn";
@@ -20,7 +25,8 @@ export const toastVariants = cva(
 		variants: {
 			variant: {
 				default: "border bg-background",
-				destructive: "destructive group border-destructive bg-destructive text-destructive-foreground",
+				destructive:
+					"destructive group border-destructive bg-destructive text-destructive-foreground",
 			},
 		},
 		defaultVariants: {
@@ -34,39 +40,62 @@ type toastProps<T extends ValidComponent = "li"> = ToastRootProps<T> &
 		class?: string;
 	};
 
-export const Toast = <T extends ValidComponent = "li">(props: PolymorphicProps<T, toastProps<T>>) => {
+export const Toast = <T extends ValidComponent = "li">(
+	props: PolymorphicProps<T, toastProps<T>>,
+) => {
 	const [local, rest] = splitProps(props as toastProps, ["class", "variant"]);
 
-	return <ToastPrimitive class={cn(toastVariants({ variant: local.variant }), local.class)} {...rest} />;
+	return (
+		<ToastPrimitive
+			class={cn(toastVariants({ variant: local.variant }), local.class)}
+			{...rest}
+		/>
+	);
 };
 
 type toastTitleProps<T extends ValidComponent = "div"> = ToastTitleProps<T> & {
 	class?: string;
 };
 
-export const ToastTitle = <T extends ValidComponent = "div">(props: PolymorphicProps<T, toastTitleProps<T>>) => {
+export const ToastTitle = <T extends ValidComponent = "div">(
+	props: PolymorphicProps<T, toastTitleProps<T>>,
+) => {
 	const [local, rest] = splitProps(props as toastTitleProps, ["class"]);
 
-	return <ToastPrimitive.Title class={cn("text-sm font-semibold [&+div]:text-xs", local.class)} {...rest} />;
+	return (
+		<ToastPrimitive.Title
+			class={cn("text-sm font-semibold [&+div]:text-xs", local.class)}
+			{...rest}
+		/>
+	);
 };
 
-type toastDescriptionProps<T extends ValidComponent = "div"> = ToastDescriptionProps<T> & {
-	class?: string;
-};
+type toastDescriptionProps<T extends ValidComponent = "div"> =
+	ToastDescriptionProps<T> & {
+		class?: string;
+	};
 
 export const ToastDescription = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, toastDescriptionProps<T>>,
 ) => {
 	const [local, rest] = splitProps(props as toastDescriptionProps, ["class"]);
 
-	return <ToastPrimitive.Description class={cn("text-sm opacity-90", local.class)} {...rest} />;
+	return (
+		<ToastPrimitive.Description
+			class={cn("text-sm opacity-90", local.class)}
+			{...rest}
+		/>
+	);
 };
 
-type toastRegionProps<T extends ValidComponent = "div"> = ToastRegionProps<T> & {
-	class?: string;
-};
+type toastRegionProps<T extends ValidComponent = "div"> =
+	ToastRegionProps<T> & {
+		class?: string;
+	};
 
-export const ToastRegion = <T extends ValidComponent = "div">(props: PolymorphicProps<T, toastRegionProps<T>>) => {
+export const ToastRegion = <T extends ValidComponent = "div">(
+	props: PolymorphicProps<T, toastRegionProps<T>>,
+) => {
 	const merge = mergeProps<toastRegionProps[]>(
 		{
 			swipeDirection: "down",
@@ -87,7 +116,9 @@ type toastListProps<T extends ValidComponent = "ol"> = VoidProps<
 	}
 >;
 
-export const ToastList = <T extends ValidComponent = "ol">(props: PolymorphicProps<T, toastListProps<T>>) => {
+export const ToastList = <T extends ValidComponent = "ol">(
+	props: PolymorphicProps<T, toastListProps<T>>,
+) => {
 	const [local, rest] = splitProps(props as toastListProps, ["class"]);
 
 	return (
@@ -108,7 +139,11 @@ export const ToastContent = (props: ComponentProps<"div">) => {
 		<div class={cn("flex w-full flex-col", local.class)} {...rest}>
 			<div>{local.children}</div>
 			<ToastPrimitive.CloseButton class="absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:(opacity-100 outline-none) group-hover:opacity-100 group-[.destructive]:(text-red-300 hover:text-red-50) bg-inherit">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 24 24"
+				>
 					<path
 						fill="none"
 						stroke="currentColor"

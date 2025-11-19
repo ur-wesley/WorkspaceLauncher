@@ -1,5 +1,11 @@
 import { useNavigate, useParams } from "@solidjs/router";
-import { createEffect, createMemo, createSignal, onMount, Show } from "solid-js";
+import {
+	createEffect,
+	createMemo,
+	createSignal,
+	onMount,
+	Show,
+} from "solid-js";
 import { ActionAIPromptDialog } from "@/components/ActionAIPromptDialog";
 import { ActionCard } from "@/components/ActionCard";
 import { ActionHistoryView } from "@/components/ActionHistoryView";
@@ -7,11 +13,27 @@ import { ActionDialogStepper as ActionDialog } from "@/components/action/ActionD
 import { RunningActionsPanel } from "@/components/RunningActionsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Tabs,
+	TabsContent,
+	TabsIndicator,
+	TabsList,
+	TabsTrigger,
+} from "@/components/ui/tabs";
 import { VariableCard } from "@/components/VariableCard";
 import { VariableDialog } from "@/components/variable/VariableDialog";
-import { AddActionTrigger, AddVariableTrigger, EditWorkspaceTrigger } from "@/components/WorkspaceDetailTriggers";
+import {
+	AddActionTrigger,
+	AddVariableTrigger,
+	EditWorkspaceTrigger,
+} from "@/components/WorkspaceDetailTriggers";
 import { WorkspaceEditDialog } from "@/components/WorkspaceEditDialog";
 import { stopProcess } from "@/libs/api";
 import { cn } from "@/libs/cn";
@@ -21,7 +43,10 @@ import {
 	launchWorkspace as launchWorkspaceTS,
 	prepareVariables,
 } from "@/libs/launcher";
-import { buildWorkspaceScript, formatScriptFilename } from "@/libs/scriptBuilder";
+import {
+	buildWorkspaceScript,
+	formatScriptFilename,
+} from "@/libs/scriptBuilder";
 import { showToast } from "@/libs/toast";
 import { setAppWindowTitle } from "@/libs/windowTitle";
 import {
@@ -29,6 +54,8 @@ import {
 	isDescriptionExpandable,
 	setWorkspaceDescriptionExpanded,
 } from "@/libs/workspaceDescriptionToggle";
+import type { Action } from "@/models/action.model";
+import type { Workspace } from "@/models/workspace.model";
 import {
 	fuzzyMatch,
 	getNextTab,
@@ -41,7 +68,6 @@ import { useActionStore } from "@/store/action";
 import { useUI } from "@/store/ui";
 import { useVariableStore } from "@/store/variable";
 import { useWorkspaceStore } from "@/store/workspace";
-import type { Action, Workspace } from "@/types/database";
 
 export default function WorkspaceDetailPage() {
 	const ui = useUI();
@@ -53,11 +79,14 @@ export default function WorkspaceDetailPage() {
 	const [, variableStoreActions] = useVariableStore() ?? [null, null];
 	const actionStore = useActionStore()?.[0] ?? { actions: [] };
 	const variableStore = useVariableStore()?.[0] ?? { variables: [] };
-	const [currentWorkspace, setCurrentWorkspace] = createSignal<Workspace | null>(null);
+	const [currentWorkspace, setCurrentWorkspace] =
+		createSignal<Workspace | null>(null);
 	const [isLaunching, setIsLaunching] = createSignal(false);
 	const [runningActionsCount, setRunningActionsCount] = createSignal(0);
 	const [showFullDescription, setShowFullDescription] = createSignal(false);
-	const [runningActionIds, setRunningActionIds] = createSignal<Set<number>>(new Set());
+	const [runningActionIds, setRunningActionIds] = createSignal<Set<number>>(
+		new Set(),
+	);
 	const [activeTab, setActiveTab] = createSignal(getStoredTab(workspaceId()));
 	const [actionsQuery, setActionsQuery] = createSignal("");
 	let filterActionsRef: HTMLInputElement | undefined;
@@ -69,7 +98,8 @@ export default function WorkspaceDetailPage() {
 		setRunningActionIds(new Set(runningActions.map((a) => a.action_id)));
 	};
 
-	const isActionRunning = (actionId: number) => runningActionIds().has(actionId);
+	const isActionRunning = (actionId: number) =>
+		runningActionIds().has(actionId);
 
 	const handleTabChange = (value: string) => {
 		setActiveTab(value);
@@ -98,7 +128,7 @@ export default function WorkspaceDetailPage() {
 		});
 
 		const id = workspaceId();
-		const workspace = workspaceCtx.store.workspaces.find((w: Workspace) => w.id === id);
+		const workspace = workspaceCtx.store.workspaces.find((w) => w.id === id);
 		if (!workspace) {
 			navigate("/");
 			return;
@@ -121,7 +151,7 @@ export default function WorkspaceDetailPage() {
 		actionStoreActions?.loadActions(id);
 		variableStoreActions?.loadVariables(id);
 
-		const workspace = workspaceCtx.store.workspaces.find((w: Workspace) => w.id === id);
+		const workspace = workspaceCtx.store.workspaces.find((w) => w.id === id);
 		setCurrentWorkspace(workspace || null);
 		setShowFullDescription(getWorkspaceDescriptionExpanded(id));
 
@@ -158,12 +188,16 @@ export default function WorkspaceDetailPage() {
 	const filteredActions = createMemo(() => {
 		const query = actionsQuery().trim();
 		if (!query) return actionStore.actions;
-		return actionStore.actions.filter((action) => fuzzyMatch(action.name, query));
+		return actionStore.actions.filter((action) =>
+			fuzzyMatch(action.name, query),
+		);
 	});
 
 	const handleGenerateScript = async () => {
 		const workspace = currentWorkspace();
-		const baseActions = [...actionStore.actions].sort((a, b) => a.order_index - b.order_index);
+		const baseActions = [...actionStore.actions].sort(
+			(a, b) => a.order_index - b.order_index,
+		);
 
 		if (baseActions.length === 0) {
 			showToast({
@@ -191,7 +225,10 @@ export default function WorkspaceDetailPage() {
 		const fileName = formatScriptFilename(workspace?.name ?? "workspace");
 
 		try {
-			if ("showSaveFilePicker" in window && typeof window.showSaveFilePicker === "function") {
+			if (
+				"showSaveFilePicker" in window &&
+				typeof window.showSaveFilePicker === "function"
+			) {
 				const handle = await window.showSaveFilePicker({
 					suggestedName: fileName,
 					types: [
@@ -237,7 +274,9 @@ export default function WorkspaceDetailPage() {
 		if (!workspace) return;
 
 		const existingRunningIds = new Set(runningActionIds());
-		const actionsToLaunch = actionStore.actions.filter((action) => !existingRunningIds.has(action.id));
+		const actionsToLaunch = actionStore.actions.filter(
+			(action) => !existingRunningIds.has(action.id),
+		);
 
 		if (actionsToLaunch.length === 0) {
 			showToast({
@@ -330,7 +369,9 @@ export default function WorkspaceDetailPage() {
 		const workspace = currentWorkspace();
 		if (!workspace) return;
 
-		const runningAction = runningActionsService.getByWorkspace(workspace.id).find((ra) => ra.action_id === action.id);
+		const runningAction = runningActionsService
+			.getByWorkspace(workspace.id)
+			.find((ra) => ra.action_id === action.id);
 
 		if (runningAction) {
 			try {
@@ -394,79 +435,105 @@ export default function WorkspaceDetailPage() {
 	};
 	return (
 		<div class="h-full flex flex-col w-full">
-			<Show when={currentWorkspace()} fallback={<div class="p-4 sm:p-6 lg:p-8">Loading workspace...</div>}>
+			<Show
+				when={currentWorkspace()}
+				fallback={<div class="p-4 sm:p-6 lg:p-8">Loading workspace...</div>}
+			>
 				{(workspace) => (
 					<>
-						<div class="w-full flex flex-col sm:flex-row justify-between items-start gap-4 px-4 py-4">
-							<div class="flex-1 min-w-0 w-full sm:w-auto space-y-4">
-								<h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold truncate">{workspace().name}</h1>
-								<Show when={workspace().description}>
-									<Card class="bg-muted/80 shadow-md">
-										<CardContent class="p-5">
-											<p
-												class={cn(
-													"text-muted-foreground whitespace-pre-line text-sm sm:text-base",
-													!showFullDescription() && "line-clamp-4",
-												)}
-											>
-												{workspace().description}
-											</p>
-											<Show
-												when={isDescriptionExpandable(workspace().description, {
-													minCharacters: 200,
-													minLineBreaks: 2,
-												})}
-											>
-												<button
-													type="button"
-													onClick={() => {
-														const next = !showFullDescription();
-														setShowFullDescription(next);
-														setWorkspaceDescriptionExpanded(workspace().id, next);
-													}}
-													class="text-sm text-primary hover:underline mt-2 inline-block"
-												>
-													{showFullDescription() ? "Show less" : "Show more"}
-												</button>
-											</Show>
-										</CardContent>
-									</Card>
-								</Show>
+						<div class="w-full flex flex-col gap-2 p-4">
+							<div class="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+								<h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold truncate flex-1 min-w-0">
+									{workspace().name}
+								</h1>
+								<div class="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
+									<Button
+										variant="outline"
+										onClick={handleLaunchWorkspace}
+										disabled={isLaunching() || actionStore.actions.length === 0}
+										class="whitespace-nowrap flex-1 sm:flex-initial"
+									>
+										<div class="i-mdi-play w-4 h-4 mr-2" />
+										<span class="hidden sm:inline">
+											{isLaunching() ? "Launching..." : "Run All Actions"}
+										</span>
+										<span class="sm:hidden">
+											{isLaunching() ? "Launching..." : "Run All"}
+										</span>
+									</Button>
+									<Button
+										variant="outline"
+										onClick={handleGenerateScript}
+										disabled={actionStore.actions.length === 0}
+										class="flex-1 sm:flex-initial whitespace-nowrap"
+									>
+										<div class="i-mdi-file-code-outline w-4 h-4 mr-2" />
+										Generate Script
+									</Button>
+									<Show when={workspace()}>
+										{(ws) => (
+											<WorkspaceEditDialog
+												workspace={ws()}
+												trigger={EditWorkspaceTrigger}
+											/>
+										)}
+									</Show>
+								</div>
 							</div>
-							<div class="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
-								<Button
-									variant="outline"
-									onClick={handleLaunchWorkspace}
-									disabled={isLaunching() || actionStore.actions.length === 0}
-									class="whitespace-nowrap flex-1 sm:flex-initial"
-								>
-									<div class="i-mdi-play w-4 h-4 mr-2" />
-									<span class="hidden sm:inline">{isLaunching() ? "Launching..." : "Run All Actions"}</span>
-									<span class="sm:hidden">{isLaunching() ? "Launching..." : "Run All"}</span>
-								</Button>
-								<Button
-									variant="outline"
-									onClick={handleGenerateScript}
-									disabled={actionStore.actions.length === 0}
-									class="flex-1 sm:flex-initial whitespace-nowrap"
-								>
-									<div class="i-mdi-file-code-outline w-4 h-4 mr-2" />
-									Generate Script
-								</Button>
-								<Show when={workspace()}>
-									{(ws) => <WorkspaceEditDialog workspace={ws()} trigger={EditWorkspaceTrigger} />}
-								</Show>
-							</div>
+							<Show when={workspace().description}>
+								<Card class="bg-muted/80 shadow-md">
+									<CardContent class="p-5">
+										<p
+											class={cn(
+												"text-muted-foreground whitespace-pre-line text-sm sm:text-base",
+												!showFullDescription() && "line-clamp-4",
+											)}
+										>
+											{workspace().description}
+										</p>
+										<Show
+											when={isDescriptionExpandable(workspace().description, {
+												minCharacters: 200,
+												minLineBreaks: 2,
+											})}
+										>
+											<button
+												type="button"
+												onClick={() => {
+													const next = !showFullDescription();
+													setShowFullDescription(next);
+													setWorkspaceDescriptionExpanded(workspace().id, next);
+												}}
+												class="text-sm text-primary hover:underline mt-2 inline-block"
+											>
+												{showFullDescription() ? "Show less" : "Show more"}
+											</button>
+										</Show>
+									</CardContent>
+								</Card>
+							</Show>
 						</div>
 
-						<Tabs value={activeTab()} onChange={handleTabChange} class="flex-1 flex flex-col w-full px-4 py-4 min-h-0">
+						<Tabs
+							value={activeTab()}
+							onChange={handleTabChange}
+							class="flex-1 flex flex-col w-full px-4 py-4 min-h-0"
+						>
 							<TabsList class="mb-4 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-								<TabsTrigger value="actions" class="flex-1 sm:flex-initial min-w-0">
+								<TabsTrigger
+									value="actions"
+									class="flex-1 sm:flex-initial min-w-0"
+								>
 									<div class="i-mdi-play-circle w-4 h-4 mr-2 flex-shrink-0" />
-									<span class="hidden sm:inline truncate">Actions ({actionStore.actions.length})</span>
+									<span class="hidden sm:inline truncate">
+										Actions ({actionStore.actions.length})
+									</span>
 									<span class="sm:hidden truncate">Actions</span>
 								</TabsTrigger>
-								<TabsTrigger value="variables" class="flex-1 sm:flex-initial min-w-0">
+								<TabsTrigger
+									value="variables"
+									class="flex-1 sm:flex-initial min-w-0"
+								>
 									<div class="i-mdi-variable w-4 h-4 mr-2 flex-shrink-0" />
 									<span class="hidden sm:inline truncate">
 										Environment Variables ({variableStore.variables.length})
@@ -497,15 +564,24 @@ export default function WorkspaceDetailPage() {
 										<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 											<div>
 												<CardTitle>Actions</CardTitle>
-												<CardDescription>Tasks and commands to run in this workspace</CardDescription>
+												<CardDescription>
+													Tasks and commands to run in this workspace
+												</CardDescription>
 											</div>
 											<div class="flex gap-2">
 												<ActionAIPromptDialog
 													workspaceId={workspaceId()}
-													onImportSuccess={() => actionStoreActions?.loadActions(workspaceId())}
+													onImportSuccess={() =>
+														actionStoreActions?.loadActions(workspaceId())
+													}
 												/>
 												<Show when={workspace()}>
-													{(ws) => <ActionDialog workspaceId={ws().id.toString()} trigger={AddActionTrigger} />}
+													{(ws) => (
+														<ActionDialog
+															workspaceId={ws().id.toString()}
+															trigger={AddActionTrigger}
+														/>
+													)}
 												</Show>
 											</div>
 										</div>
@@ -527,8 +603,12 @@ export default function WorkspaceDetailPage() {
 											fallback={
 												<div class="text-center py-12 text-muted-foreground">
 													<div class="i-mdi-play-circle-outline text-5xl mb-3 opacity-50" />
-													<p class="text-lg font-medium">No actions configured</p>
-													<p class="text-sm mt-1">Add actions to automate your workflow</p>
+													<p class="text-lg font-medium">
+														No actions configured
+													</p>
+													<p class="text-sm mt-1">
+														Add actions to automate your workflow
+													</p>
 												</div>
 											}
 										>
@@ -551,10 +631,14 @@ export default function WorkspaceDetailPage() {
 								<Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
 									<CardHeader class="px-0 pt-0">
 										<CardTitle>Running Actions</CardTitle>
-										<CardDescription>Currently executing actions with live process monitoring</CardDescription>
+										<CardDescription>
+											Currently executing actions with live process monitoring
+										</CardDescription>
 									</CardHeader>
 									<CardContent class="flex-1 overflow-y-auto px-0 pb-0">
-										<Show when={workspace()}>{(ws) => <RunningActionsPanel workspaceId={ws().id} />}</Show>
+										<Show when={workspace()}>
+											{(ws) => <RunningActionsPanel workspaceId={ws().id} />}
+										</Show>
 									</CardContent>
 								</Card>
 							</TabsContent>
@@ -563,24 +647,39 @@ export default function WorkspaceDetailPage() {
 								<Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
 									<CardHeader class="px-0 pt-0">
 										<CardTitle>Action History</CardTitle>
-										<CardDescription>Complete execution history with status tracking</CardDescription>
+										<CardDescription>
+											Complete execution history with status tracking
+										</CardDescription>
 									</CardHeader>
 									<CardContent class="flex-1 overflow-y-auto px-0 pb-0">
-										<Show when={workspace()}>{(ws) => <ActionHistoryView workspaceId={ws().id} />}</Show>
+										<Show when={workspace()}>
+											{(ws) => <ActionHistoryView workspaceId={ws().id} />}
+										</Show>
 									</CardContent>
 								</Card>
 							</TabsContent>
 
-							<TabsContent value="variables" class="flex-1 w-full overflow-auto">
+							<TabsContent
+								value="variables"
+								class="flex-1 w-full overflow-auto"
+							>
 								<Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
 									<CardHeader class="px-0 pt-0">
 										<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 											<div>
 												<CardTitle>Environment Variables</CardTitle>
-												<CardDescription>Key-value pairs available to all actions in this workspace</CardDescription>
+												<CardDescription>
+													Key-value pairs available to all actions in this
+													workspace
+												</CardDescription>
 											</div>
 											<Show when={workspace()}>
-												{(ws) => <VariableDialog workspaceId={ws().id.toString()} trigger={AddVariableTrigger} />}
+												{(ws) => (
+													<VariableDialog
+														workspaceId={ws().id.toString()}
+														trigger={AddVariableTrigger}
+													/>
+												)}
 											</Show>
 										</div>
 									</CardHeader>
@@ -593,12 +692,16 @@ export default function WorkspaceDetailPage() {
 													<div class="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
 														<div class="i-mdi-variable text-2xl" />
 													</div>
-													<h3 class="text-lg font-medium text-foreground mb-2">No environment variables</h3>
+													<h3 class="text-lg font-medium text-foreground mb-2">
+														No environment variables
+													</h3>
 													<p class="text-sm">
-														Environment variables allow you to configure paths and settings for your actions
+														Environment variables allow you to configure paths
+														and settings for your actions
 													</p>
 													<p class="text-sm mt-2 text-muted-foreground">
-														Use the button in the top right to add your first variable
+														Use the button in the top right to add your first
+														variable
 													</p>
 												</div>
 											}

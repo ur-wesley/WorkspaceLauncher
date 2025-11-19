@@ -30,10 +30,15 @@ const LayoutContent: ParentComponent<LayoutProps> = (props) => {
 
 	return (
 		<div class="flex h-screen bg-background overflow-hidden">
-			<Sidebar collapsed={ui.store.sidebarCollapsed} onToggle={ui.actions.toggleSidebar} />
+			<Sidebar
+				collapsed={ui.store.sidebarCollapsed}
+				onToggle={ui.actions.toggleSidebar}
+			/>
 
 			<div class="flex-1 flex flex-col overflow-hidden">
-				<main class="flex-1 overflow-y-auto w-full xl:max-w-screen-xl mx-auto">{props.children}</main>
+				<main class="flex-1 overflow-y-auto w-full xl:max-w-screen-xl mx-auto">
+					{props.children}
+				</main>
 				<Commander />
 				<WorkspaceCreateDialog
 					open={ui.store.workspaceCreateOpen}

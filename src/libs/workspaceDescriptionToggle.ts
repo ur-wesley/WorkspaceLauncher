@@ -23,7 +23,10 @@ function readState(): ExpandedDescriptions {
 		}
 
 		return Object.fromEntries(
-			Object.entries(parsed as ExpandedDescriptions).map(([key, value]) => [key, Boolean(value)]),
+			Object.entries(parsed as ExpandedDescriptions).map(([key, value]) => [
+				key,
+				Boolean(value),
+			]),
 		);
 	} catch {
 		return {};
@@ -42,7 +45,10 @@ export function getWorkspaceDescriptionExpanded(workspaceId: number): boolean {
 	return key in state ? Boolean(state[key]) : false;
 }
 
-export function setWorkspaceDescriptionExpanded(workspaceId: number, expanded: boolean): void {
+export function setWorkspaceDescriptionExpanded(
+	workspaceId: number,
+	expanded: boolean,
+): void {
 	const state = readState();
 	state[String(workspaceId)] = expanded;
 	writeState(state);

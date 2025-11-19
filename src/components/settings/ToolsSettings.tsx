@@ -4,8 +4,18 @@ import { DeleteToolDialog } from "@/components/DeleteToolDialog";
 import { ToolDialog } from "@/components/ToolDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,9 +24,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { Tool } from "@/models/tool.model";
 import { useToolStore } from "@/store/tool";
-import type { Tool } from "@/types/database";
 
 const AddToolTrigger = (props: { onClick?: () => void }) => (
 	<Button onClick={props.onClick}>
@@ -53,7 +67,9 @@ const DeleteToolTrigger = (props: { onClick?: () => void }) => (
 
 export const ToolsSettings: Component = () => {
 	const [toolStore, toolActions] = useToolStore();
-	const [expandedTools, setExpandedTools] = createSignal<Set<number>>(new Set());
+	const [expandedTools, setExpandedTools] = createSignal<Set<number>>(
+		new Set(),
+	);
 
 	onMount(() => {
 		toolActions.loadTools();
@@ -103,12 +119,13 @@ export const ToolsSettings: Component = () => {
 					<div class="flex items-center justify-between">
 						<div>
 							<CardTitle>Tool Library</CardTitle>
-							<CardDescription>Manage CLI tools and binaries for action creation</CardDescription>
+							<CardDescription>
+								Manage CLI tools and binaries for action creation
+							</CardDescription>
 						</div>
 						<ToolDialog
 							trigger={AddToolTrigger}
-							onSubmit={async (newTool) => {
-								await toolActions.createTool(newTool);
+							onClose={() => {
 								toolActions.loadTools();
 							}}
 						/>
@@ -119,22 +136,35 @@ export const ToolsSettings: Component = () => {
 						<For each={Object.entries(groupedTools())}>
 							{([category, tools]) => (
 								<div class="space-y-2">
-									<h4 class="text-sm font-medium text-muted-foreground">{category}</h4>
+									<h4 class="text-sm font-medium text-muted-foreground">
+										{category}
+									</h4>
 									<div class="space-y-2">
 										<For each={tools}>
 											{(tool) => (
-												<Collapsible open={expandedTools().has(tool.id)} onOpenChange={() => toggleTool(tool.id)}>
+												<Collapsible
+													open={expandedTools().has(tool.id)}
+													onOpenChange={() => toggleTool(tool.id)}
+												>
 													<CollapsibleTrigger as="div">
 														<div class="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer">
 															<div class="flex items-center gap-3">
-																<div class={`w-2 h-2 rounded-full ${getToolTypeColor(tool.tool_type)}`} />
+																<div
+																	class={`w-2 h-2 rounded-full ${getToolTypeColor(tool.tool_type)}`}
+																/>
 																<div>
 																	<p class="font-medium">{tool.name}</p>
-																	<p class="text-sm text-muted-foreground">{tool.description}</p>
+																	<p class="text-sm text-muted-foreground">
+																		{tool.description}
+																	</p>
 																</div>
 															</div>
 															<div class="flex items-center gap-2">
-																<Badge variant={tool.enabled ? "default" : "secondary"}>
+																<Badge
+																	variant={
+																		tool.enabled ? "default" : "secondary"
+																	}
+																>
 																	{tool.enabled ? "Enabled" : "Disabled"}
 																</Badge>
 																<div class="i-mdi-chevron-down w-4 h-4" />
@@ -147,7 +177,9 @@ export const ToolsSettings: Component = () => {
 																<div class="flex items-center gap-2">
 																	<Switch
 																		checked={tool.enabled}
-																		onChange={(enabled) => handleToggleTool(tool.id, enabled)}
+																		onChange={(enabled) =>
+																			handleToggleTool(tool.id, enabled)
+																		}
 																	>
 																		<SwitchControl>
 																			<SwitchThumb />
@@ -164,26 +196,22 @@ export const ToolsSettings: Component = () => {
 																				</Button>
 																			</DropdownMenuTrigger>
 																		</TooltipTrigger>
-																		<TooltipContent>Tool options</TooltipContent>
+																		<TooltipContent>
+																			Tool options
+																		</TooltipContent>
 																	</Tooltip>
 																	<DropdownMenuContent>
 																		<ToolDialog
 																			tool={tool}
 																			trigger={EditToolTrigger}
-																			onSubmit={async (updatedTool) => {
-																				await toolActions.updateTool(tool.id, updatedTool);
+																			onClose={() => {
 																				toolActions.loadTools();
 																			}}
 																		/>
 																		<DropdownMenuSeparator />
 																		<DeleteToolDialog
-																			toolId={tool.id}
-																			toolName={tool.name}
+																			tool={tool}
 																			trigger={DeleteToolTrigger}
-																			onConfirm={async () => {
-																				await toolActions.deleteTool(tool.id);
-																				toolActions.loadTools();
-																			}}
 																		/>
 																	</DropdownMenuContent>
 																</DropdownMenu>

@@ -24,7 +24,9 @@ export async function checkForUpdates(silent = false): Promise<void> {
 				await update.downloadAndInstall((event: DownloadEvent) => {
 					switch (event.event) {
 						case "Started":
-							console.log(`Starting download of ${event.data.contentLength} bytes`);
+							console.log(
+								`Starting download of ${event.data.contentLength} bytes`,
+							);
 							break;
 						case "Progress":
 							console.log(`Downloaded ${event.data.chunkLength} bytes`);

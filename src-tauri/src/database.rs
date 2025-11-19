@@ -32,6 +32,7 @@ pub struct Action {
     pub timeout_seconds: Option<i32>,
     pub detached: bool,
     pub track_process: bool,
+    pub auto_launch: bool,
     pub os_overrides: Option<String>,
     pub order_index: i32,
     pub created_at: String,
@@ -49,6 +50,7 @@ pub struct NewAction {
     pub timeout_seconds: Option<i32>,
     pub detached: bool,
     pub track_process: bool,
+    pub auto_launch: bool,
     pub os_overrides: Option<String>,
     pub order_index: i32,
 }
@@ -234,6 +236,12 @@ pub fn get_migrations() -> Vec<Migration> {
             version: 8,
             description: "Fix boolean columns to use proper SQLite boolean handling",
             sql: include_str!("../migrations/008_fix_boolean_columns.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 9,
+            description: "Add auto_launch flag to actions",
+            sql: include_str!("../migrations/009_add_auto_launch_to_actions.sql"),
             kind: MigrationKind::Up,
         },
     ]

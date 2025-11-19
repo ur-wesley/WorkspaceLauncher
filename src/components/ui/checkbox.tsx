@@ -10,12 +10,17 @@ export const Checkbox = CheckboxPrimitive;
 export const CheckboxErrorMessage = CheckboxPrimitive.ErrorMessage;
 export const CheckboxDescription = CheckboxPrimitive.Description;
 
-type checkboxControlProps<T extends ValidComponent = "div"> = VoidProps<CheckboxControlProps<T> & { class?: string }>;
+type checkboxControlProps<T extends ValidComponent = "div"> = VoidProps<
+	CheckboxControlProps<T> & { class?: string }
+>;
 
 export const CheckboxControl = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, checkboxControlProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as checkboxControlProps, ["class", "children"]);
+	const [local, rest] = splitProps(props as checkboxControlProps, [
+		"class",
+		"children",
+	]);
 
 	return (
 		<>
@@ -28,7 +33,11 @@ export const CheckboxControl = <T extends ValidComponent = "div">(
 				{...rest}
 			>
 				<CheckboxPrimitive.Indicator class="flex items-center justify-center text-current">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 24 24"
+						class="h-4 w-4"
+					>
 						<path
 							fill="none"
 							stroke="currentColor"

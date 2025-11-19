@@ -30,7 +30,8 @@ export function Commander() {
 		if (k.length === 1) return k.toUpperCase();
 		return k;
 	};
-	const shortcut = (id: HotkeyId) => bindings()[id]?.keys.map(formatKey).join("+") || "";
+	const shortcut = (id: HotkeyId) =>
+		bindings()[id]?.keys.map(formatKey).join("+") || "";
 
 	const workspaces = () => workspaceCtx.store.workspaces;
 
@@ -39,7 +40,9 @@ export function Commander() {
 	return (
 		<CommandDialog
 			open={ui.store.commanderOpen}
-			onOpenChange={(v) => (v ? ui.actions.openCommander() : ui.actions.closeCommander())}
+			onOpenChange={(v) =>
+				v ? ui.actions.openCommander() : ui.actions.closeCommander()
+			}
 		>
 			<Command>
 				<CommandInput placeholder="Type a command or search..." />
@@ -53,7 +56,8 @@ export function Commander() {
 								close();
 							}}
 						>
-							<div class="i-mdi-view-dashboard-outline w-4 h-4 mr-2" /> Dashboard
+							<div class="i-mdi-view-dashboard-outline w-4 h-4 mr-2" />{" "}
+							Dashboard
 							<CommandShortcut>{shortcut("navigateDashboard")}</CommandShortcut>
 						</CommandItem>
 						<CommandItem
@@ -111,7 +115,8 @@ export function Commander() {
 									close();
 								}}
 							>
-								<div class="i-mdi-plus-circle-outline w-4 h-4 mr-2" /> Create Action
+								<div class="i-mdi-plus-circle-outline w-4 h-4 mr-2" /> Create
+								Action
 								<CommandShortcut>{shortcut("createAction")}</CommandShortcut>
 							</CommandItem>
 							<CommandItem
@@ -133,7 +138,8 @@ export function Commander() {
 									close();
 								}}
 							>
-								<div class="i-mdi-plus-box-outline w-4 h-4 mr-2" /> Create Variable
+								<div class="i-mdi-plus-box-outline w-4 h-4 mr-2" /> Create
+								Variable
 								<CommandShortcut>{shortcut("createVariable")}</CommandShortcut>
 							</CommandItem>
 						</CommandGroup>

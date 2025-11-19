@@ -16,55 +16,80 @@ import { textfieldLabel } from "./textfield";
 
 export const NumberFieldHiddenInput = NumberFieldPrimitive.HiddenInput;
 
-type numberFieldLabelProps<T extends ValidComponent = "div"> = NumberFieldLabelProps<T> & {
-	class?: string;
-};
+type numberFieldLabelProps<T extends ValidComponent = "div"> =
+	NumberFieldLabelProps<T> & {
+		class?: string;
+	};
 
 export const NumberFieldLabel = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, numberFieldLabelProps<T>>,
 ) => {
 	const [local, rest] = splitProps(props as numberFieldLabelProps, ["class"]);
 
-	return <NumberFieldPrimitive.Label class={cn(textfieldLabel({ label: true }), local.class)} {...rest} />;
-};
-
-type numberFieldDescriptionProps<T extends ValidComponent = "div"> = NumberFieldDescriptionProps<T> & {
-	class?: string;
-};
-
-export const NumberFieldDescription = <T extends ValidComponent = "div">(
-	props: PolymorphicProps<T, numberFieldDescriptionProps<T>>,
-) => {
-	const [local, rest] = splitProps(props as numberFieldDescriptionProps, ["class"]);
-
 	return (
-		<NumberFieldPrimitive.Description
-			class={cn(textfieldLabel({ description: true, label: false }), local.class)}
+		<NumberFieldPrimitive.Label
+			class={cn(textfieldLabel({ label: true }), local.class)}
 			{...rest}
 		/>
 	);
 };
 
-type numberFieldErrorMessageProps<T extends ValidComponent = "div"> = NumberFieldErrorMessageProps<T> & {
-	class?: string;
+type numberFieldDescriptionProps<T extends ValidComponent = "div"> =
+	NumberFieldDescriptionProps<T> & {
+		class?: string;
+	};
+
+export const NumberFieldDescription = <T extends ValidComponent = "div">(
+	props: PolymorphicProps<T, numberFieldDescriptionProps<T>>,
+) => {
+	const [local, rest] = splitProps(props as numberFieldDescriptionProps, [
+		"class",
+	]);
+
+	return (
+		<NumberFieldPrimitive.Description
+			class={cn(
+				textfieldLabel({ description: true, label: false }),
+				local.class,
+			)}
+			{...rest}
+		/>
+	);
 };
+
+type numberFieldErrorMessageProps<T extends ValidComponent = "div"> =
+	NumberFieldErrorMessageProps<T> & {
+		class?: string;
+	};
 
 export const NumberFieldErrorMessage = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, numberFieldErrorMessageProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as numberFieldErrorMessageProps, ["class"]);
+	const [local, rest] = splitProps(props as numberFieldErrorMessageProps, [
+		"class",
+	]);
 
-	return <NumberFieldPrimitive.ErrorMessage class={cn(textfieldLabel({ error: true }), local.class)} {...rest} />;
+	return (
+		<NumberFieldPrimitive.ErrorMessage
+			class={cn(textfieldLabel({ error: true }), local.class)}
+			{...rest}
+		/>
+	);
 };
 
-type numberFieldProps<T extends ValidComponent = "div"> = NumberFieldRootProps<T> & {
-	class?: string;
-};
+type numberFieldProps<T extends ValidComponent = "div"> =
+	NumberFieldRootProps<T> & {
+		class?: string;
+	};
 
-export const NumberField = <T extends ValidComponent = "div">(props: PolymorphicProps<T, numberFieldProps<T>>) => {
+export const NumberField = <T extends ValidComponent = "div">(
+	props: PolymorphicProps<T, numberFieldProps<T>>,
+) => {
 	const [local, rest] = splitProps(props as numberFieldProps, ["class"]);
 
-	return <NumberFieldPrimitive class={cn("grid gap-1.5", local.class)} {...rest} />;
+	return (
+		<NumberFieldPrimitive class={cn("grid gap-1.5", local.class)} {...rest} />
+	);
 };
 
 export const NumberFieldGroup = (props: ComponentProps<"div">) => {
@@ -72,15 +97,19 @@ export const NumberFieldGroup = (props: ComponentProps<"div">) => {
 
 	return (
 		<div
-			class={cn("relative focus-within:(outline-none ring-1.5 ring-ring) transition-shadow rounded-md", local.class)}
+			class={cn(
+				"relative focus-within:(outline-none ring-1.5 ring-ring) transition-shadow rounded-md",
+				local.class,
+			)}
 			{...rest}
 		/>
 	);
 };
 
-type numberFieldInputProps<T extends ValidComponent = "input"> = NumberFieldInputProps<T> & {
-	class?: string;
-};
+type numberFieldInputProps<T extends ValidComponent = "input"> =
+	NumberFieldInputProps<T> & {
+		class?: string;
+	};
 
 export const NumberFieldInput = <T extends ValidComponent = "input">(
 	props: PolymorphicProps<T, VoidProps<numberFieldInputProps<T>>>,
@@ -98,23 +127,35 @@ export const NumberFieldInput = <T extends ValidComponent = "input">(
 	);
 };
 
-type numberFieldDecrementTriggerProps<T extends ValidComponent = "button"> = VoidProps<
-	NumberFieldDecrementTriggerProps<T> & {
-		class?: string;
-	}
->;
+type numberFieldDecrementTriggerProps<T extends ValidComponent = "button"> =
+	VoidProps<
+		NumberFieldDecrementTriggerProps<T> & {
+			class?: string;
+		}
+	>;
 
-export const NumberFieldDecrementTrigger = <T extends ValidComponent = "button">(
+export const NumberFieldDecrementTrigger = <
+	T extends ValidComponent = "button",
+>(
 	props: PolymorphicProps<T, VoidProps<numberFieldDecrementTriggerProps<T>>>,
 ) => {
-	const [local, rest] = splitProps(props as numberFieldDecrementTriggerProps, ["class"]);
+	const [local, rest] = splitProps(props as numberFieldDecrementTriggerProps, [
+		"class",
+	]);
 
 	return (
 		<NumberFieldPrimitive.DecrementTrigger
-			class={cn("absolute top-1/2 -translate-y-1/2 left-0 p-3 disabled:(cursor-not-allowed opacity-20)", local.class)}
+			class={cn(
+				"absolute top-1/2 -translate-y-1/2 left-0 p-3 disabled:(cursor-not-allowed opacity-20)",
+				local.class,
+			)}
 			{...rest}
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="size-4"
+				viewBox="0 0 24 24"
+			>
 				<path
 					fill="none"
 					stroke="currentColor"
@@ -129,23 +170,35 @@ export const NumberFieldDecrementTrigger = <T extends ValidComponent = "button">
 	);
 };
 
-type numberFieldIncrementTriggerProps<T extends ValidComponent = "button"> = VoidProps<
-	NumberFieldIncrementTriggerProps<T> & {
-		class?: string;
-	}
->;
+type numberFieldIncrementTriggerProps<T extends ValidComponent = "button"> =
+	VoidProps<
+		NumberFieldIncrementTriggerProps<T> & {
+			class?: string;
+		}
+	>;
 
-export const NumberFieldIncrementTrigger = <T extends ValidComponent = "button">(
+export const NumberFieldIncrementTrigger = <
+	T extends ValidComponent = "button",
+>(
 	props: PolymorphicProps<T, numberFieldIncrementTriggerProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as numberFieldIncrementTriggerProps, ["class"]);
+	const [local, rest] = splitProps(props as numberFieldIncrementTriggerProps, [
+		"class",
+	]);
 
 	return (
 		<NumberFieldPrimitive.IncrementTrigger
-			class={cn("absolute top-1/2 -translate-y-1/2 right-0 disabled:(cursor-not-allowed opacity-20) p-3", local.class)}
+			class={cn(
+				"absolute top-1/2 -translate-y-1/2 right-0 disabled:(cursor-not-allowed opacity-20) p-3",
+				local.class,
+			)}
 			{...rest}
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="size-4"
+				viewBox="0 0 24 24"
+			>
 				<path
 					fill="none"
 					stroke="currentColor"

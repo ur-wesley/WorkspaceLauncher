@@ -67,7 +67,9 @@ export const SettingsThemeCreatorPage: Component = () => {
 	};
 
 	const handleHeaderSave = () => {
-		const saveButton = document.querySelector("[data-theme-save-button]") as HTMLButtonElement;
+		const saveButton = document.querySelector(
+			"[data-theme-save-button]",
+		) as HTMLButtonElement;
 		if (saveButton) {
 			saveButton.click();
 		}
@@ -89,8 +91,12 @@ export const SettingsThemeCreatorPage: Component = () => {
 					</Button>
 				</div>
 				<div class="text-right">
-					<h1 class="text-2xl font-bold">{searchParams.id ? "Edit Theme" : "Create Theme"}</h1>
-					<p class="text-sm text-muted-foreground">Customize colors for light and dark modes</p>
+					<h1 class="text-2xl font-bold">
+						{searchParams.id ? "Edit Theme" : "Create Theme"}
+					</h1>
+					<p class="text-sm text-muted-foreground">
+						Customize colors for light and dark modes
+					</p>
 				</div>
 			</div>
 

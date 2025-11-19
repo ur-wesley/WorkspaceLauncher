@@ -11,7 +11,10 @@ export interface Searchable {
 /**
  * Performs fuzzy search on workspace items
  */
-export function fuzzySearch<T extends Searchable>(items: T[], query: string): T[] {
+export function fuzzySearch<T extends Searchable>(
+	items: T[],
+	query: string,
+): T[] {
 	if (!query.trim()) {
 		return items;
 	}
@@ -26,7 +29,11 @@ export function fuzzySearch<T extends Searchable>(items: T[], query: string): T[
 		}
 
 		let queryIndex = 0;
-		for (let i = 0; i < searchText.length && queryIndex < normalizedQuery.length; i++) {
+		for (
+			let i = 0;
+			i < searchText.length && queryIndex < normalizedQuery.length;
+			i++
+		) {
 			if (searchText[i] === normalizedQuery[queryIndex]) {
 				queryIndex++;
 			}
@@ -52,7 +59,10 @@ export function fuzzySearch<T extends Searchable>(items: T[], query: string): T[
 /**
  * Debounced search function
  */
-export function createDebouncedSearch<T>(searchFn: (query: string) => T, delay = 300): (query: string) => void {
+export function createDebouncedSearch<T>(
+	searchFn: (query: string) => T,
+	delay = 300,
+): (query: string) => void {
 	let timeoutId: NodeJS.Timeout;
 
 	return (query: string) => {

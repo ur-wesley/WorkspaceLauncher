@@ -3,8 +3,17 @@ import type { Component } from "solid-js";
 import { createEffect, createSignal, For, onCleanup } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TextField, TextFieldLabel, TextFieldRoot } from "@/components/ui/textfield";
-import { type HotkeyId, type HotkeyMap, loadBindings, saveBindings } from "@/libs/hotkeys";
+import {
+	TextField,
+	TextFieldLabel,
+	TextFieldRoot,
+} from "@/components/ui/textfield";
+import {
+	type HotkeyId,
+	type HotkeyMap,
+	loadBindings,
+	saveBindings,
+} from "@/libs/hotkeys";
 
 const LABELS: Record<HotkeyId, string> = {
 	openCommander: "Open Commander",
@@ -99,7 +108,9 @@ export const SettingsHotkeysPage: Component = () => {
 				</A>
 				<div class="text-right">
 					<h1 class="text-2xl font-bold">Hotkeys</h1>
-					<p class="text-sm text-muted-foreground">Customize keyboard shortcuts</p>
+					<p class="text-sm text-muted-foreground">
+						Customize keyboard shortcuts
+					</p>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto px-4 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 space-y-4">
@@ -114,12 +125,21 @@ export const SettingsHotkeysPage: Component = () => {
 									<TextFieldLabel>{LABELS[id]}</TextFieldLabel>
 									<div class="flex gap-2">
 										<TextField
-											value={recording() === id ? Array.from(comboKeys()).join(" + ") : bindings()[id].keys.join(" + ")}
+											value={
+												recording() === id
+													? Array.from(comboKeys()).join(" + ")
+													: bindings()[id].keys.join(" + ")
+											}
 											readOnly
 											class="flex-1"
 										/>
-										<Button onClick={() => startRecording(id)} disabled={Boolean(recording()) && recording() !== id}>
-											{recording() === id ? "Press keys... (Esc to cancel)" : "Rebind"}
+										<Button
+											onClick={() => startRecording(id)}
+											disabled={Boolean(recording()) && recording() !== id}
+										>
+											{recording() === id
+												? "Press keys... (Esc to cancel)"
+												: "Rebind"}
 										</Button>
 									</div>
 								</TextFieldRoot>

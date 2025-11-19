@@ -3,13 +3,25 @@ import type { Component } from "solid-js";
 import { createSignal, For, onMount } from "solid-js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useThemeStore } from "@/store/theme";
 
 export const ThemesSettings: Component = () => {
 	const [themeStore, themeActions] = useThemeStore();
-	const [expandedThemes, setExpandedThemes] = createSignal<Set<number>>(new Set());
+	const [expandedThemes, setExpandedThemes] = createSignal<Set<number>>(
+		new Set(),
+	);
 
 	onMount(() => {
 		themeActions.loadThemes();
@@ -25,9 +37,14 @@ export const ThemesSettings: Component = () => {
 		setExpandedThemes(newSet);
 	};
 
-	const getThemeColor = (theme: { dark_colors: string; light_colors: string }, isDark: boolean) => {
+	const getThemeColor = (
+		theme: { dark_colors: string; light_colors: string },
+		isDark: boolean,
+	) => {
 		try {
-			const colors = JSON.parse(isDark ? theme.dark_colors : theme.light_colors);
+			const colors = JSON.parse(
+				isDark ? theme.dark_colors : theme.light_colors,
+			);
 			return colors.primary || "#3b82f6";
 		} catch {
 			return "#3b82f6";
@@ -41,7 +58,9 @@ export const ThemesSettings: Component = () => {
 					<div class="flex items-center justify-between">
 						<div>
 							<CardTitle>Theme Library</CardTitle>
-							<CardDescription>Manage and customize color themes</CardDescription>
+							<CardDescription>
+								Manage and customize color themes
+							</CardDescription>
 						</div>
 						<A href="/settings/themes/create">
 							<Button>
@@ -55,22 +74,33 @@ export const ThemesSettings: Component = () => {
 					<div class="space-y-2">
 						<For each={themeStore.themes}>
 							{(theme) => (
-								<Collapsible open={expandedThemes().has(theme.id)} onOpenChange={() => toggleTheme(theme.id)}>
+								<Collapsible
+									open={expandedThemes().has(theme.id)}
+									onOpenChange={() => toggleTheme(theme.id)}
+								>
 									<CollapsibleTrigger as="div">
 										<div class="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer">
 											<div class="flex items-center gap-3">
 												<div
 													class="w-4 h-4 rounded-full border"
-													style={{ "background-color": getThemeColor(theme, false) }}
+													style={{
+														"background-color": getThemeColor(theme, false),
+													}}
 												/>
 												<div>
 													<p class="font-medium">{theme.name}</p>
-													<p class="text-sm text-muted-foreground">{theme.description}</p>
+													<p class="text-sm text-muted-foreground">
+														{theme.description}
+													</p>
 												</div>
 											</div>
 											<div class="flex items-center gap-2">
-												{theme.is_predefined && <Badge variant="secondary">Built-in</Badge>}
-												{themeStore.activeTheme?.id === theme.id && <Badge variant="default">Active</Badge>}
+												{theme.is_predefined && (
+													<Badge variant="secondary">Built-in</Badge>
+												)}
+												{themeStore.activeTheme?.id === theme.id && (
+													<Badge variant="default">Active</Badge>
+												)}
 												<div class="i-mdi-chevron-down w-4 h-4" />
 											</div>
 										</div>
@@ -84,7 +114,9 @@ export const ThemesSettings: Component = () => {
 													disabled={themeStore.activeTheme?.id === theme.id}
 												>
 													<div class="i-mdi-check w-4 h-4 mr-1" />
-													{themeStore.activeTheme?.id === theme.id ? "Active" : "Activate"}
+													{themeStore.activeTheme?.id === theme.id
+														? "Active"
+														: "Activate"}
 												</Button>
 												{!theme.is_predefined && (
 													<>
@@ -94,7 +126,11 @@ export const ThemesSettings: Component = () => {
 																Edit
 															</Button>
 														</A>
-														<Button size="sm" variant="destructive" onClick={() => themeActions.deleteTheme(theme.id)}>
+														<Button
+															size="sm"
+															variant="destructive"
+															onClick={() => themeActions.deleteTheme(theme.id)}
+														>
 															<div class="i-mdi-delete w-4 h-4 mr-1" />
 															Delete
 														</Button>

@@ -54,12 +54,20 @@ export function isInteractiveTarget(target: HTMLElement | null): boolean {
 	const tag = target.tagName;
 	const isEditable = target.isContentEditable;
 	const inDialog = !!target.closest('[role="dialog"]');
-	const interactiveTags: readonly string[] = ["INPUT", "TEXTAREA", "SELECT", "BUTTON"];
+	const interactiveTags: readonly string[] = [
+		"INPUT",
+		"TEXTAREA",
+		"SELECT",
+		"BUTTON",
+	];
 
 	return isEditable || interactiveTags.includes(tag) || inDialog;
 }
 
-export function getNextTab(currentTab: string, direction: "forward" | "backward"): string {
+export function getNextTab(
+	currentTab: string,
+	direction: "forward" | "backward",
+): string {
 	const order = ["actions", "variables", "running", "history"];
 	const idx = order.indexOf(currentTab);
 	if (idx === -1) return currentTab;

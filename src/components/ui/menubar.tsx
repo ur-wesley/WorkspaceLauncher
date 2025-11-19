@@ -24,12 +24,17 @@ type menubarProps<T extends ValidComponent = "div"> = MenubarRootProps<T> & {
 	class?: string;
 };
 
-export const Menubar = <T extends ValidComponent = "div">(props: PolymorphicProps<T, menubarProps<T>>) => {
+export const Menubar = <T extends ValidComponent = "div">(
+	props: PolymorphicProps<T, menubarProps<T>>,
+) => {
 	const [local, rest] = splitProps(props as menubarProps, ["class"]);
 
 	return (
 		<MenubarPrimitive
-			class={cn("flex h-9 items-center space-x-1 rounded-md border bg-background p-1 shadow-sm", local.class)}
+			class={cn(
+				"flex h-9 items-center space-x-1 rounded-md border bg-background p-1 shadow-sm",
+				local.class,
+			)}
 			{...rest}
 		/>
 	);
@@ -48,9 +53,10 @@ export const MenubarMenu = (props: MenubarMenuProps) => {
 	return <MenubarPrimitive.Menu {...merge} />;
 };
 
-type menubarTriggerProps<T extends ValidComponent = "button"> = MenubarTriggerProps<T> & {
-	class?: string;
-};
+type menubarTriggerProps<T extends ValidComponent = "button"> =
+	MenubarTriggerProps<T> & {
+		class?: string;
+	};
 
 export const MenubarTrigger = <T extends ValidComponent = "button">(
 	props: PolymorphicProps<T, menubarTriggerProps<T>>,
@@ -78,7 +84,11 @@ type menubarSubTriggerProps<T extends ValidComponent = "button"> = ParentProps<
 export const MenubarSubTrigger = <T extends ValidComponent = "button">(
 	props: PolymorphicProps<T, menubarSubTriggerProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as menubarSubTriggerProps, ["class", "children", "inset"]);
+	const [local, rest] = splitProps(props as menubarSubTriggerProps, [
+		"class",
+		"children",
+		"inset",
+	]);
 
 	return (
 		<MenubarPrimitive.SubTrigger
@@ -90,7 +100,13 @@ export const MenubarSubTrigger = <T extends ValidComponent = "button">(
 			{...rest}
 		>
 			{local.children}
-			<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" class="ml-auto h-4 w-4">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="1em"
+				height="1em"
+				viewBox="0 0 24 24"
+				class="ml-auto h-4 w-4"
+			>
 				<path
 					fill="none"
 					stroke="currentColor"
@@ -114,7 +130,10 @@ type menubarSubContentProps<T extends ValidComponent = "div"> = ParentProps<
 export const MenubarSubContent = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, menubarSubContentProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as menubarSubContentProps, ["class", "children"]);
+	const [local, rest] = splitProps(props as menubarSubContentProps, [
+		"class",
+		"children",
+	]);
 
 	return (
 		<MenubarPrimitive.Portal>
@@ -140,7 +159,10 @@ type menubarContentProps<T extends ValidComponent = "div"> = ParentProps<
 export const MenubarContent = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, menubarContentProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as menubarContentProps, ["class", "children"]);
+	const [local, rest] = splitProps(props as menubarContentProps, [
+		"class",
+		"children",
+	]);
 
 	return (
 		<MenubarPrimitive.Portal>
@@ -157,13 +179,19 @@ export const MenubarContent = <T extends ValidComponent = "div">(
 	);
 };
 
-type menubarItemProps<T extends ValidComponent = "div"> = MenubarItemProps<T> & {
-	class?: string;
-	inset?: boolean;
-};
+type menubarItemProps<T extends ValidComponent = "div"> =
+	MenubarItemProps<T> & {
+		class?: string;
+		inset?: boolean;
+	};
 
-export const MenubarItem = <T extends ValidComponent = "div">(props: PolymorphicProps<T, menubarItemProps<T>>) => {
-	const [local, rest] = splitProps(props as menubarItemProps, ["class", "inset"]);
+export const MenubarItem = <T extends ValidComponent = "div">(
+	props: PolymorphicProps<T, menubarItemProps<T>>,
+) => {
+	const [local, rest] = splitProps(props as menubarItemProps, [
+		"class",
+		"inset",
+	]);
 
 	return (
 		<MenubarPrimitive.Item
@@ -177,34 +205,48 @@ export const MenubarItem = <T extends ValidComponent = "div">(props: Polymorphic
 	);
 };
 
-type menubarItemLabelProps<T extends ValidComponent = "div"> = MenubarItemLabelProps<T> & {
-	class?: string;
-	inset?: boolean;
-};
+type menubarItemLabelProps<T extends ValidComponent = "div"> =
+	MenubarItemLabelProps<T> & {
+		class?: string;
+		inset?: boolean;
+	};
 
 export const MenubarItemLabel = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, menubarItemLabelProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as menubarItemLabelProps, ["class", "inset"]);
+	const [local, rest] = splitProps(props as menubarItemLabelProps, [
+		"class",
+		"inset",
+	]);
 
 	return (
 		<MenubarPrimitive.ItemLabel
-			class={cn("px-2 py-1.5 text-sm font-semibold", local.inset && "pl-8", local.class)}
+			class={cn(
+				"px-2 py-1.5 text-sm font-semibold",
+				local.inset && "pl-8",
+				local.class,
+			)}
 			{...rest}
 		/>
 	);
 };
 
-type menubarSeparatorProps<T extends ValidComponent = "hr"> = MenubarSeparatorProps<T> & {
-	class?: string;
-};
+type menubarSeparatorProps<T extends ValidComponent = "hr"> =
+	MenubarSeparatorProps<T> & {
+		class?: string;
+	};
 
 export const MenubarSeparator = <T extends ValidComponent = "hr">(
 	props: PolymorphicProps<T, menubarSeparatorProps<T>>,
 ) => {
 	const [local, rest] = splitProps(props as menubarSeparatorProps, ["class"]);
 
-	return <MenubarPrimitive.Separator class={cn("-mx-1 my-1 h-px bg-muted", local.class)} {...rest} />;
+	return (
+		<MenubarPrimitive.Separator
+			class={cn("-mx-1 my-1 h-px bg-muted", local.class)}
+			{...rest}
+		/>
+	);
 };
 
 type menubarCheckboxItemProps<T extends ValidComponent = "div"> = ParentProps<
@@ -216,7 +258,10 @@ type menubarCheckboxItemProps<T extends ValidComponent = "div"> = ParentProps<
 export const MenubarCheckboxItem = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, menubarCheckboxItemProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as menubarCheckboxItemProps, ["class", "children"]);
+	const [local, rest] = splitProps(props as menubarCheckboxItemProps, [
+		"class",
+		"children",
+	]);
 
 	return (
 		<MenubarPrimitive.CheckboxItem
@@ -227,7 +272,11 @@ export const MenubarCheckboxItem = <T extends ValidComponent = "div">(
 			{...rest}
 		>
 			<MenubarPrimitive.ItemIndicator class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					class="h-4 w-4"
+				>
 					<path
 						fill="none"
 						stroke="currentColor"
@@ -253,7 +302,10 @@ type menubarRadioItemProps<T extends ValidComponent = "div"> = ParentProps<
 export const MenubarRadioItem = <T extends ValidComponent = "div">(
 	props: PolymorphicProps<T, menubarRadioItemProps<T>>,
 ) => {
-	const [local, rest] = splitProps(props as menubarRadioItemProps, ["class", "children"]);
+	const [local, rest] = splitProps(props as menubarRadioItemProps, [
+		"class",
+		"children",
+	]);
 
 	return (
 		<MenubarPrimitive.RadioItem
@@ -264,10 +316,22 @@ export const MenubarRadioItem = <T extends ValidComponent = "div">(
 			{...rest}
 		>
 			<MenubarPrimitive.ItemIndicator class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-2 w-2">
-					<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					class="h-2 w-2"
+				>
+					<g
+						fill="none"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+					>
 						<path d="M0 0h24v24H0z" />
-						<path fill="currentColor" d="M7 3.34a10 10 0 1 1-4.995 8.984L2 12l.005-.324A10 10 0 0 1 7 3.34" />
+						<path
+							fill="currentColor"
+							d="M7 3.34a10 10 0 1 1-4.995 8.984L2 12l.005-.324A10 10 0 0 1 7 3.34"
+						/>
 					</g>
 					<title>Radio</title>
 				</svg>
@@ -280,5 +344,13 @@ export const MenubarRadioItem = <T extends ValidComponent = "div">(
 export const MenubarShortcut = (props: ComponentProps<"span">) => {
 	const [local, rest] = splitProps(props, ["class"]);
 
-	return <span class={cn("ml-auto text-xs tracking-widest text-muted-foreground", local.class)} {...rest} />;
+	return (
+		<span
+			class={cn(
+				"ml-auto text-xs tracking-widest text-muted-foreground",
+				local.class,
+			)}
+			{...rest}
+		/>
+	);
 };

@@ -23,6 +23,7 @@ export interface Action {
 	timeout_seconds: number | null;
 	detached: boolean;
 	track_process: boolean;
+	auto_launch: boolean;
 	os_overrides: string | null;
 	order_index: number;
 	created_at: string;
@@ -38,6 +39,7 @@ export interface NewAction {
 	timeout_seconds: number | null;
 	detached: boolean;
 	track_process: boolean;
+	auto_launch: boolean;
 	os_overrides: string | null;
 	order_index: number;
 }
@@ -65,6 +67,8 @@ export interface CommandActionConfig extends ActionConfigBase {
 	working_directory?: string;
 	environment_variables?: Record<string, string>;
 	keep_terminal_open?: boolean;
+	detached?: boolean;
+	track_process?: boolean;
 }
 
 export interface URLActionConfig extends ActionConfigBase {
@@ -132,6 +136,7 @@ export interface RunningAction {
 	action_id: number;
 	action_name: string;
 	process_id: number;
+	run_id?: number;
 	started_at: string;
 }
 
@@ -207,6 +212,8 @@ export interface SavedToolActionConfig extends ActionConfigBase {
 	tool_type: "binary" | "cli";
 	template: string;
 	placeholder_values: Record<string, string>;
+	detached?: boolean;
+	track_process?: boolean;
 }
 
 export interface CustomToolActionConfig extends ActionConfigBase {
@@ -219,6 +226,7 @@ export interface CustomToolActionConfig extends ActionConfigBase {
 	args?: string[];
 	working_directory?: string | null;
 	detached?: boolean;
+	track_process?: boolean;
 }
 
 export type ToolActionConfig = SavedToolActionConfig | CustomToolActionConfig;

@@ -89,28 +89,32 @@ export const UIProvider: ParentComponent = (props) => {
 			setStore("workspaceCreateOpen", false);
 		},
 		openActionCreate(workspaceId) {
-			if (typeof workspaceId === "number") setStore("currentWorkspaceId", workspaceId);
+			if (typeof workspaceId === "number")
+				setStore("currentWorkspaceId", workspaceId);
 			setStore("actionCreateOpen", true);
 		},
 		closeActionCreate() {
 			setStore("actionCreateOpen", false);
 		},
 		openVariableCreate(workspaceId) {
-			if (typeof workspaceId === "number") setStore("currentWorkspaceId", workspaceId);
+			if (typeof workspaceId === "number")
+				setStore("currentWorkspaceId", workspaceId);
 			setStore("variableCreateOpen", true);
 		},
 		closeVariableCreate() {
 			setStore("variableCreateOpen", false);
 		},
 		openImport(workspaceId) {
-			if (typeof workspaceId === "number") setStore("currentWorkspaceId", workspaceId);
+			if (typeof workspaceId === "number")
+				setStore("currentWorkspaceId", workspaceId);
 			setStore("importOpen", true);
 		},
 		closeImport() {
 			setStore("importOpen", false);
 		},
 		openShare(workspaceId) {
-			if (typeof workspaceId === "number") setStore("currentWorkspaceId", workspaceId);
+			if (typeof workspaceId === "number")
+				setStore("currentWorkspaceId", workspaceId);
 			setStore("shareOpen", true);
 		},
 		closeShare() {
@@ -139,7 +143,11 @@ export const UIProvider: ParentComponent = (props) => {
 		},
 	};
 
-	return <UIContext.Provider value={{ store, actions }}>{props.children}</UIContext.Provider>;
+	return (
+		<UIContext.Provider value={{ store, actions }}>
+			{props.children}
+		</UIContext.Provider>
+	);
 };
 
 export function useUI() {

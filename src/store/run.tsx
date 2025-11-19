@@ -1,6 +1,11 @@
 import { createContext, type JSX, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
-import { cleanupOldRuns, createRun, listRunsByWorkspace, stopProcess } from "@/libs/api";
+import {
+	cleanupOldRuns,
+	createRun,
+	listRunsByWorkspace,
+	stopProcess,
+} from "@/libs/api";
 import { showToast } from "@/libs/toast";
 import { runningActionsService } from "@/services/runningActions";
 import type { NewRun, Run, RunningAction } from "@/types/database";
@@ -8,6 +13,7 @@ import type { NewRun, Run, RunningAction } from "@/types/database";
 interface RunStoreState {
 	runs: Run[];
 	runningActions: RunningAction[];
+	logs: Record<string, string[]>;
 	loading: boolean;
 	error: string | null;
 }
@@ -18,6 +24,7 @@ interface RunStoreActions {
 	stopAction: (action: RunningAction) => Promise<void>;
 	clearRuns: () => void;
 	refreshRunningActions: () => void;
+	appendLog: (runId: number, message: string) => void;
 }
 
 type RunStore = [RunStoreState, RunStoreActions];
@@ -28,6 +35,7 @@ export function RunStoreProvider(props: { readonly children: JSX.Element }) {
 	const [store, setStore] = createStore<RunStoreState>({
 		runs: [],
 		runningActions: [],
+		logs: {},
 		loading: false,
 		error: null,
 	});
@@ -108,9 +116,29 @@ export function RunStoreProvider(props: { readonly children: JSX.Element }) {
 		clearRuns() {
 			setStore({ runs: [], error: null });
 		},
+
+		appendLog(runId: number, message: string) {
+			const key = runId.toString();
+			setStore("logs", key, (prev) => [...(prev || []), message]);
+		},
 	};
 
-	return <RunStoreContext.Provider value={[store, actions]}>{props.children}</RunStoreContext.Provider>;
+	if (typeof window !== "undefined") {
+		window.addEventListener("action-log", ((event: CustomEvent) => {
+			const { run_id, message } = event.detail;
+			actions.appendLog(run_id, message);
+		}) as EventListener);
+
+		window.addEventListener("running-actions-changed", () => {
+			actions.refreshRunningActions();
+		});
+	}
+
+	return (
+		<RunStoreContext.Provider value={[store, actions]}>
+			{props.children}
+		</RunStoreContext.Provider>
+	);
 }
 
 export function useRunStore(): RunStore {

@@ -1,6 +1,8 @@
 export async function setAppWindowTitle(title?: string): Promise<void> {
 	const isDev = import.meta.env.DEV;
-	let windowTitle = title ? `${title} - WorkspaceLauncher` : "WorkspaceLauncher";
+	let windowTitle = title
+		? `${title} - WorkspaceLauncher`
+		: "WorkspaceLauncher";
 	if (isDev) windowTitle = `DEV - ${windowTitle}`;
 	try {
 		const { getCurrentWindow } = await import("@tauri-apps/api/window");

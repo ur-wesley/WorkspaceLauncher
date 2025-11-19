@@ -18,7 +18,10 @@ export const Command = (props: CommandRootProps) => {
 
 	return (
 		<CommandPrimitive
-			class={cn("flex size-full flex-col overflow-hidden bg-popover text-popover-foreground", local.class)}
+			class={cn(
+				"flex size-full flex-col overflow-hidden bg-popover text-popover-foreground",
+				local.class,
+			)}
 			{...rest}
 		/>
 	);
@@ -28,7 +31,13 @@ export const CommandList = (props: CommandListProps) => {
 	const [local, rest] = splitProps(props, ["class"]);
 
 	return (
-		<CommandPrimitive.List class={cn("max-h-[300px] overflow-y-auto overflow-x-hidden p-1", local.class)} {...rest} />
+		<CommandPrimitive.List
+			class={cn(
+				"max-h-[300px] overflow-y-auto overflow-x-hidden p-1",
+				local.class,
+			)}
+			{...rest}
+		/>
 	);
 };
 
@@ -37,7 +46,11 @@ export const CommandInput = (props: VoidProps<CommandInputProps>) => {
 
 	return (
 		<div class="flex items-center border-b px-3" cmdk-input-wrapper="">
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 h-4 w-4 shrink-0 opacity-50">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 24 24"
+				class="mr-2 h-4 w-4 shrink-0 opacity-50"
+			>
 				<path
 					fill="none"
 					stroke="currentColor"
@@ -76,7 +89,15 @@ export const CommandItem = (props: CommandItemProps) => {
 export const CommandShortcut = (props: ComponentProps<"span">) => {
 	const [local, rest] = splitProps(props, ["class"]);
 
-	return <span class={cn("ml-auto text-xs tracking-widest text-muted-foreground", local.class)} {...rest} />;
+	return (
+		<span
+			class={cn(
+				"ml-auto text-xs tracking-widest text-muted-foreground",
+				local.class,
+			)}
+			{...rest}
+		/>
+	);
 };
 
 export const CommandDialog = (props: CommandDialogProps) => {
@@ -96,7 +117,12 @@ export const CommandDialog = (props: CommandDialogProps) => {
 export const CommandEmpty = (props: CommandEmptyProps) => {
 	const [local, rest] = splitProps(props, ["class"]);
 
-	return <CommandPrimitive.Empty class={cn("py-6 text-center text-sm", local.class)} {...rest} />;
+	return (
+		<CommandPrimitive.Empty
+			class={cn("py-6 text-center text-sm", local.class)}
+			{...rest}
+		/>
+	);
 };
 
 export const CommandGroup = (props: CommandGroupProps) => {
@@ -116,5 +142,10 @@ export const CommandGroup = (props: CommandGroupProps) => {
 export const CommandSeparator = (props: CommandEmptyProps) => {
 	const [local, rest] = splitProps(props, ["class"]);
 
-	return <CommandPrimitive.Separator class={cn("-mx-1 h-px bg-border", local.class)} {...rest} />;
+	return (
+		<CommandPrimitive.Separator
+			class={cn("-mx-1 h-px bg-border", local.class)}
+			{...rest}
+		/>
+	);
 };

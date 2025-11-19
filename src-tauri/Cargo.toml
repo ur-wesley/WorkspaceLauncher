@@ -1,6 +1,6 @@
 [package]
 name = "workspacelauncher"
-version = "0.3.9"
+version = "0.4.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -29,6 +29,7 @@ tauri-plugin-shell = "2"
 sqlx = { version = "0.8", features = ["sqlite"] }
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1", features = ["full"] }
+sysinfo = "0.37.2"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.27", features = ["signal"] }

@@ -1,20 +1,31 @@
 import type { Component } from "solid-js";
-import { Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { ActionRunHistory } from "@/components/ActionRunHistory";
 import { ActionDialogStepper as ActionDialog } from "@/components/action/ActionDialogStepper";
 import { DeleteActionDialog } from "@/components/DeleteActionDialog";
+import { LogViewer } from "@/components/LogViewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DeleteActionTrigger, EditActionTrigger } from "@/components/WorkspaceDetailTriggers";
+import {
+	DeleteActionTrigger,
+	EditActionTrigger,
+} from "@/components/WorkspaceDetailTriggers";
 import { cn } from "@/libs/cn";
+import type { Action } from "@/models/action.model";
 import { parseActionConfig } from "@/pages/WorkspaceDetailPage.helpers";
-import type { Action } from "@/types/database";
+import { useRunStore } from "@/store/run";
 
 interface ActionCardProps {
 	readonly action: Action;
@@ -25,6 +36,11 @@ interface ActionCardProps {
 
 export const ActionCard: Component<ActionCardProps> = (props) => {
 	const config = () => parseActionConfig(props.action.config);
+	const [state] = useRunStore();
+	const [showLogs, setShowLogs] = createSignal(false);
+
+	const runningAction = () =>
+		state.runningActions.find((a) => a.action_id === props.action.id);
 
 	return (
 		<div
@@ -57,19 +73,39 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 								</Button>
 							}
 						/>
+
+						<Show when={props.isRunning && runningAction()?.run_id}>
+							<Button
+								variant="ghost"
+								size="icon"
+								class="h-7 w-7 text-muted-foreground hover:text-foreground"
+								onClick={() => setShowLogs(true)}
+								title="View Logs"
+							>
+								<div class="i-mdi-console w-4 h-4" />
+							</Button>
+						</Show>
 						<Button
 							variant={props.isRunning ? "destructive" : "default"}
 							size="sm"
 							onClick={() => props.onLaunch(props.action)}
 							class="h-7 px-2 gap-1"
 						>
-							<Show when={props.isRunning} fallback={<div class="i-mdi-play w-3.5 h-3.5" />}>
+							<Show
+								when={props.isRunning}
+								fallback={<div class="i-mdi-play w-3.5 h-3.5" />}
+							>
 								<div class="i-mdi-stop w-3.5 h-3.5" />
 							</Show>
 							<span class="text-xs">{props.isRunning ? "Stop" : "Launch"}</span>
 						</Button>
 						<DropdownMenu>
-							<DropdownMenuTrigger as={Button} variant="ghost" size="icon" class="h-7 w-7">
+							<DropdownMenuTrigger
+								as={Button}
+								variant="ghost"
+								size="icon"
+								class="h-7 w-7"
+							>
 								<div class="i-mdi-dots-vertical w-4 h-4" />
 							</DropdownMenuTrigger>
 							<DropdownMenuContent class="w-48">
@@ -79,7 +115,10 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 									trigger={EditActionTrigger}
 								/>
 								<DropdownMenuSeparator />
-								<DeleteActionDialog action={props.action} trigger={DeleteActionTrigger} />
+								<DeleteActionDialog
+									action={props.action}
+									trigger={DeleteActionTrigger}
+								/>
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
@@ -97,15 +136,30 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 						</Badge>
 					</Show>
 					<Show when={props.action.detached}>
-						<Badge variant="outline" class="h-5 px-1.5 border-orange-500/50 text-orange-600 dark:text-orange-400">
+						<Badge
+							variant="outline"
+							class="h-5 px-1.5 border-orange-500/50 text-orange-600 dark:text-orange-400"
+						>
 							<div class="i-mdi-launch w-3 h-3 mr-0.5" />
 							Detached
 						</Badge>
 					</Show>
 					<Show when={props.action.track_process}>
-						<Badge variant="outline" class="h-5 px-1.5 border-blue-500/50 text-blue-600 dark:text-blue-400">
+						<Badge
+							variant="outline"
+							class="h-5 px-1.5 border-blue-500/50 text-blue-600 dark:text-blue-400"
+						>
 							<div class="i-mdi-chart-line w-3 h-3 mr-0.5" />
 							Tracked
+						</Badge>
+					</Show>
+					<Show when={props.action.auto_launch}>
+						<Badge
+							variant="outline"
+							class="h-5 px-1.5 border-green-500/50 text-green-600 dark:text-green-400"
+						>
+							<div class="i-mdi-rocket-launch w-3 h-3 mr-0.5" />
+							Auto-start
 						</Badge>
 					</Show>
 					<Show when={props.action.timeout_seconds}>
@@ -121,6 +175,24 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 					</Show>
 				</div>
 			</div>
+
+			<Dialog open={showLogs()} onOpenChange={setShowLogs}>
+				<DialogContent class="max-w-3xl h-[80vh] flex flex-col">
+					<DialogHeader>
+						<DialogTitle>Action Logs: {props.action.name}</DialogTitle>
+					</DialogHeader>
+					<div class="flex-1 min-h-0">
+						<Show
+							when={runningAction()?.run_id}
+							fallback={<div>No active run logs</div>}
+						>
+							{(runId) => (
+								<LogViewer logs={state.logs[runId().toString()] || []} />
+							)}
+						</Show>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 };

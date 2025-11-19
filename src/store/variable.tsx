@@ -7,7 +7,9 @@ import {
 	toggleVariableEnabled,
 	updateVariable,
 } from "@/libs/api";
-import type { NewVariable, Variable } from "@/types/database";
+import type { Variable } from "@/models/variable.model";
+import { VariableAdapter } from "@/models/variable.model";
+import type { NewVariable } from "@/types/database";
 
 interface VariableStoreState {
 	variables: Variable[];
@@ -28,7 +30,9 @@ type VariableStore = [VariableStoreState, VariableStoreActions];
 
 const VariableStoreContext = createContext<VariableStore>();
 
-export function VariableStoreProvider(props: { readonly children: JSX.Element }) {
+export function VariableStoreProvider(props: {
+	readonly children: JSX.Element;
+}) {
 	const [store, setStore] = createStore<VariableStoreState>({
 		variables: [],
 		loading: false,
@@ -41,12 +45,18 @@ export function VariableStoreProvider(props: { readonly children: JSX.Element })
 			try {
 				const result = await listVariablesByWorkspace(workspaceId);
 				if (result.isOk()) {
-					setStore({ variables: result.value, loading: false });
+					setStore({
+						variables: result.value.map((v) => VariableAdapter.fromDb(v)),
+						loading: false,
+					});
 				} else {
 					setStore({ error: result.error.message, loading: false });
 				}
 			} catch (error) {
-				setStore({ error: `Failed to load variables: ${error}`, loading: false });
+				setStore({
+					error: `Failed to load variables: ${error}`,
+					loading: false,
+				});
 			}
 		},
 
@@ -55,13 +65,17 @@ export function VariableStoreProvider(props: { readonly children: JSX.Element })
 			try {
 				const result = await createVariable(variable);
 				if (result.isOk()) {
-					setStore("variables", (prev) => [...prev, result.value]);
+					const model = VariableAdapter.fromDb(result.value);
+					setStore("variables", (prev) => [...prev, model]);
 					setStore({ loading: false });
 				} else {
 					setStore({ error: result.error.message, loading: false });
 				}
 			} catch (error) {
-				setStore({ error: `Failed to create variable: ${error}`, loading: false });
+				setStore({
+					error: `Failed to create variable: ${error}`,
+					loading: false,
+				});
 			}
 		},
 
@@ -70,13 +84,19 @@ export function VariableStoreProvider(props: { readonly children: JSX.Element })
 			try {
 				const result = await updateVariable(id, variable);
 				if (result.isOk()) {
-					setStore("variables", (prev) => prev.map((v) => (v.id === id ? result.value : v)));
+					const model = VariableAdapter.fromDb(result.value);
+					setStore("variables", (prev) =>
+						prev.map((v) => (v.id === id ? model : v)),
+					);
 					setStore({ loading: false });
 				} else {
 					setStore({ error: result.error.message, loading: false });
 				}
 			} catch (error) {
-				setStore({ error: `Failed to update variable: ${error}`, loading: false });
+				setStore({
+					error: `Failed to update variable: ${error}`,
+					loading: false,
+				});
 			}
 		},
 
@@ -91,7 +111,10 @@ export function VariableStoreProvider(props: { readonly children: JSX.Element })
 					setStore({ error: result.error.message, loading: false });
 				}
 			} catch (error) {
-				setStore({ error: `Failed to delete variable: ${error}`, loading: false });
+				setStore({
+					error: `Failed to delete variable: ${error}`,
+					loading: false,
+				});
 			}
 		},
 
@@ -106,7 +129,10 @@ export function VariableStoreProvider(props: { readonly children: JSX.Element })
 				);
 
 				if (result.isOk()) {
-					setStore("variables", (prev) => prev.map((v) => (v.id === id ? result.value : v)));
+					const model = VariableAdapter.fromDb(result.value);
+					setStore("variables", (prev) =>
+						prev.map((v) => (v.id === id ? model : v)),
+					);
 					console.log("Store: Variable updated successfully");
 				} else {
 					console.error("Store: API error:", result.error.message);
@@ -123,13 +149,19 @@ export function VariableStoreProvider(props: { readonly children: JSX.Element })
 		},
 	};
 
-	return <VariableStoreContext.Provider value={[store, actions]}>{props.children}</VariableStoreContext.Provider>;
+	return (
+		<VariableStoreContext.Provider value={[store, actions]}>
+			{props.children}
+		</VariableStoreContext.Provider>
+	);
 }
 
 export function useVariableStore(): VariableStore {
 	const context = useContext(VariableStoreContext);
 	if (!context) {
-		throw new Error("useVariableStore must be used within a VariableStoreProvider");
+		throw new Error(
+			"useVariableStore must be used within a VariableStoreProvider",
+		);
 	}
 	return context;
 }

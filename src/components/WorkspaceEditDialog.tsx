@@ -23,9 +23,13 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { TextArea } from "@/components/ui/textarea";
-import { TextField, TextFieldLabel, TextFieldRoot } from "@/components/ui/textfield";
+import {
+	TextField,
+	TextFieldLabel,
+	TextFieldRoot,
+} from "@/components/ui/textfield";
+import type { Workspace } from "@/models/workspace.model";
 import { useWorkspaceStore } from "@/store/workspace";
-import type { Workspace } from "@/types/database";
 
 type WorkspaceEditDialogProps = {
 	workspace: Workspace;
@@ -33,14 +37,18 @@ type WorkspaceEditDialogProps = {
 	onClose?: () => void;
 };
 
-export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (props) => {
+export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
+	props,
+) => {
 	const navigate = useNavigate();
 	const workspaceContext = useWorkspaceStore();
 	const [open, setOpen] = createSignal(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = createSignal(false);
 
 	const [name, setName] = createSignal(props.workspace.name);
-	const [description, setDescription] = createSignal(props.workspace.description || "");
+	const [description, setDescription] = createSignal(
+		props.workspace.description || "",
+	);
 	const [icon, setIcon] = createSignal(props.workspace.icon || undefined);
 
 	const [loading, setLoading] = createSignal(false);
@@ -104,7 +112,9 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (props) 
 				<DialogContent class="max-w-lg">
 					<DialogHeader>
 						<DialogTitle>Edit Workspace</DialogTitle>
-						<DialogDescription>Modify the workspace details or delete it permanently.</DialogDescription>
+						<DialogDescription>
+							Modify the workspace details or delete it permanently.
+						</DialogDescription>
 					</DialogHeader>
 
 					<div class="space-y-4">
@@ -113,7 +123,9 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (props) 
 							<TextField
 								id="workspace-name"
 								value={name()}
-								onInput={(e: InputEvent) => setName((e.target as HTMLInputElement).value)}
+								onInput={(e: InputEvent) =>
+									setName((e.target as HTMLInputElement).value)
+								}
 								placeholder="Workspace name"
 								required
 							/>
@@ -124,17 +136,23 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (props) 
 							<div class="flex items-center gap-2">
 								<IconPicker value={icon()} onChange={setIcon} />
 								<Show when={icon()}>
-									<span class="text-sm text-muted-foreground">Custom icon selected</span>
+									<span class="text-sm text-muted-foreground">
+										Custom icon selected
+									</span>
 								</Show>
 							</div>
 						</div>
 
 						<TextFieldRoot>
-							<TextFieldLabel for="workspace-description">Description</TextFieldLabel>
+							<TextFieldLabel for="workspace-description">
+								Description
+							</TextFieldLabel>
 							<TextArea
 								id="workspace-description"
 								value={description()}
-								onInput={(e: InputEvent) => setDescription((e.target as HTMLTextAreaElement).value)}
+								onInput={(e: InputEvent) =>
+									setDescription((e.target as HTMLTextAreaElement).value)
+								}
 								placeholder="Optional description..."
 								rows={3}
 							/>
@@ -143,10 +161,17 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (props) 
 
 					<DialogFooter class="flex justify-between">
 						<div class="flex gap-2">
-							<Button variant="outline" onClick={() => setOpen(false)} disabled={loading() || deleting()}>
+							<Button
+								variant="outline"
+								onClick={() => setOpen(false)}
+								disabled={loading() || deleting()}
+							>
 								Cancel
 							</Button>
-							<Button onClick={handleSubmit} disabled={loading() || deleting() || !name().trim()}>
+							<Button
+								onClick={handleSubmit}
+								disabled={loading() || deleting() || !name().trim()}
+							>
 								<Show when={loading()}>
 									<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
 								</Show>
@@ -154,9 +179,15 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (props) 
 							</Button>
 						</div>
 
-						<AlertDialog open={deleteDialogOpen()} onOpenChange={setDeleteDialogOpen}>
+						<AlertDialog
+							open={deleteDialogOpen()}
+							onOpenChange={setDeleteDialogOpen}
+						>
 							<AlertDialogTrigger>
-								<Button variant="destructive" disabled={loading() || deleting()}>
+								<Button
+									variant="destructive"
+									disabled={loading() || deleting()}
+								>
 									<Show when={deleting()}>
 										<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
 									</Show>
@@ -167,12 +198,15 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (props) 
 								<AlertDialogHeader>
 									<AlertDialogTitle>Delete Workspace</AlertDialogTitle>
 									<AlertDialogDescription>
-										Are you sure you want to delete "{props.workspace.name}"? This action cannot be undone. All actions
-										and environment variables will be permanently deleted.
+										Are you sure you want to delete "{props.workspace.name}"?
+										This action cannot be undone. All actions and environment
+										variables will be permanently deleted.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogClose disabled={deleting()}>Cancel</AlertDialogClose>
+									<AlertDialogClose disabled={deleting()}>
+										Cancel
+									</AlertDialogClose>
 									<AlertDialogAction
 										onClick={handleDelete}
 										disabled={deleting()}

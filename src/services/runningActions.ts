@@ -29,7 +29,9 @@ export const runningActionsService = {
 	 * Get running actions for a specific workspace
 	 */
 	getByWorkspace(workspaceId: number): RunningAction[] {
-		return this.getAll().filter((action) => action.workspace_id === workspaceId);
+		return this.getAll().filter(
+			(action) => action.workspace_id === workspaceId,
+		);
 	},
 
 	/**
@@ -64,7 +66,9 @@ export const runningActionsService = {
 	 */
 	removeByWorkspace(workspaceId: number): void {
 		const all = this.getAll();
-		const filtered = all.filter((action) => action.workspace_id !== workspaceId);
+		const filtered = all.filter(
+			(action) => action.workspace_id !== workspaceId,
+		);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 		notifyChange();
 	},

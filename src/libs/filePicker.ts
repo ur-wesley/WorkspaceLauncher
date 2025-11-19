@@ -15,7 +15,9 @@ export interface FilePickerOptions {
  * Open a file picker dialog to select a file
  * @returns The selected file path or null if cancelled
  */
-export async function pickFile(options: FilePickerOptions = {}): Promise<string | null> {
+export async function pickFile(
+	options: FilePickerOptions = {},
+): Promise<string | null> {
 	try {
 		const result = await open({
 			title: options.title || "Select File",
@@ -40,7 +42,9 @@ export async function pickFile(options: FilePickerOptions = {}): Promise<string 
  * Open a file picker dialog to select multiple files
  * @returns Array of selected file paths or empty array if cancelled
  */
-export async function pickFiles(options: FilePickerOptions = {}): Promise<string[]> {
+export async function pickFiles(
+	options: FilePickerOptions = {},
+): Promise<string[]> {
 	try {
 		const result = await open({
 			title: options.title || "Select Files",
@@ -65,7 +69,9 @@ export async function pickFiles(options: FilePickerOptions = {}): Promise<string
  * Open a directory picker dialog
  * @returns The selected directory path or null if cancelled
  */
-export async function pickDirectory(options: Omit<FilePickerOptions, "directory"> = {}): Promise<string | null> {
+export async function pickDirectory(
+	options: Omit<FilePickerOptions, "directory"> = {},
+): Promise<string | null> {
 	try {
 		const result = await open({
 			title: options.title || "Select Directory",
@@ -89,9 +95,14 @@ export async function pickDirectory(options: Omit<FilePickerOptions, "directory"
  * Open a file picker specifically for executable files
  * @returns The selected executable path or null if cancelled
  */
-export async function pickExecutable(options: Omit<FilePickerOptions, "filters"> = {}): Promise<string | null> {
+export async function pickExecutable(
+	options: Omit<FilePickerOptions, "filters"> = {},
+): Promise<string | null> {
 	const filters = [
-		{ name: "Executable", extensions: ["exe", "bat", "cmd", "sh", "app", "bin"] },
+		{
+			name: "Executable",
+			extensions: ["exe", "bat", "cmd", "sh", "app", "bin"],
+		},
 		{ name: "All Files", extensions: ["*"] },
 	];
 
