@@ -31,16 +31,26 @@ interface ActionCardProps {
 	readonly action: Action;
 	readonly workspaceId: number;
 	readonly isRunning: boolean;
-	readonly onLaunch: (action: Action) => void;
+	readonly onLaunch: (action: Action) => Promise<void>;
 }
 
 export const ActionCard: Component<ActionCardProps> = (props) => {
 	const config = () => parseActionConfig(props.action.config);
 	const [state] = useRunStore();
 	const [showLogs, setShowLogs] = createSignal(false);
+	const [isLaunching, setIsLaunching] = createSignal(false);
 
 	const runningAction = () =>
 		state.runningActions.find((a) => a.action_id === props.action.id);
+
+	const handleLaunch = async () => {
+		setIsLaunching(true);
+		try {
+			await props.onLaunch(props.action);
+		} finally {
+			setIsLaunching(false);
+		}
+	};
 
 	return (
 		<div
@@ -88,16 +98,26 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 						<Button
 							variant={props.isRunning ? "destructive" : "default"}
 							size="sm"
-							onClick={() => props.onLaunch(props.action)}
+							onClick={handleLaunch}
+							disabled={isLaunching()}
 							class="h-7 px-2 gap-1"
 						>
 							<Show
-								when={props.isRunning}
-								fallback={<div class="i-mdi-play w-3.5 h-3.5" />}
+								when={!isLaunching()}
+								fallback={
+									<div class="i-mdi-loading w-3.5 h-3.5 animate-spin" />
+								}
 							>
-								<div class="i-mdi-stop w-3.5 h-3.5" />
+								<Show
+									when={props.isRunning}
+									fallback={<div class="i-mdi-play w-3.5 h-3.5" />}
+								>
+									<div class="i-mdi-stop w-3.5 h-3.5" />
+								</Show>
 							</Show>
-							<span class="text-xs">{props.isRunning ? "Stop" : "Launch"}</span>
+							<span class="text-xs">
+								{isLaunching() ? "..." : props.isRunning ? "Stop" : "Launch"}
+							</span>
 						</Button>
 						<DropdownMenu>
 							<DropdownMenuTrigger
