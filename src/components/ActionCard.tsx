@@ -39,6 +39,16 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 	const [state] = useRunStore();
 	const [showLogs, setShowLogs] = createSignal(false);
 	const [isLaunching, setIsLaunching] = createSignal(false);
+	const [showEditDialog, setShowEditDialog] = createSignal(false);
+	let isClosingDialog = false;
+
+	const handleDialogClose = (setter: (value: boolean) => void) => {
+		isClosingDialog = true;
+		setter(false);
+		setTimeout(() => {
+			isClosingDialog = false;
+		}, 100);
+	};
 
 	const runningAction = () =>
 		state.runningActions.find((a) => a.action_id === props.action.id);
@@ -52,13 +62,39 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 		}
 	};
 
+	const handleCardClick = (e: MouseEvent) => {
+		if (isClosingDialog) {
+			return;
+		}
+		const target = e.target as HTMLElement;
+		if (
+			target.closest("button") ||
+			target.closest("a") ||
+			target.closest("[role='button']") ||
+			target.closest("[role='menuitem']")
+		) {
+			return;
+		}
+		setShowEditDialog(true);
+	};
+
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: Cannot use <button> element because the card contains interactive button children, which would create invalid nested buttons
 		<div
+			role="button"
+			tabIndex={0}
 			class={cn(
 				"group rounded-md transition-all duration-200",
 				"bg-card border border-border hover:border-primary/50",
-				"shadow-sm hover:shadow",
+				"shadow-sm hover:shadow cursor-pointer",
 			)}
+			onClick={handleCardClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					handleCardClick(e as unknown as MouseEvent);
+				}
+			}}
 		>
 			<div class="p-3">
 				<div class="flex items-center justify-between gap-2 mb-2">
@@ -77,6 +113,12 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 							workspaceId={props.workspaceId}
 							actionId={props.action.id}
 							actionName={props.action.name}
+							onClose={() => {
+								isClosingDialog = true;
+								setTimeout(() => {
+									isClosingDialog = false;
+								}, 100);
+							}}
 							trigger={
 								<Button variant="ghost" size="icon" class="h-7 w-7">
 									<div class="i-mdi-history w-4 h-4" />
@@ -196,7 +238,16 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 				</div>
 			</div>
 
-			<Dialog open={showLogs()} onOpenChange={setShowLogs}>
+			<Dialog
+				open={showLogs()}
+				onOpenChange={(open) => {
+					if (!open) {
+						handleDialogClose(setShowLogs);
+					} else {
+						setShowLogs(true);
+					}
+				}}
+			>
 				<DialogContent class="max-w-3xl h-[80vh] flex flex-col">
 					<DialogHeader>
 						<DialogTitle>Action Logs: {props.action.name}</DialogTitle>
@@ -213,6 +264,14 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 					</div>
 				</DialogContent>
 			</Dialog>
+
+			<ActionDialog
+				workspaceId={props.workspaceId.toString()}
+				action={props.action}
+				forceOpen={showEditDialog()}
+				onClose={() => handleDialogClose(setShowEditDialog)}
+				trigger={() => <div />}
+			/>
 		</div>
 	);
 };

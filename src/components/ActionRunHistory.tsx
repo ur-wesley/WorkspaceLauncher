@@ -18,6 +18,7 @@ interface ActionRunHistoryProps {
 	actionId: number;
 	actionName: string;
 	trigger?: JSX.Element;
+	onClose?: () => void;
 }
 
 const getStatusBadge = (status: Run["status"]) => {
@@ -99,7 +100,13 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 	};
 
 	return (
-		<Dialog>
+		<Dialog
+			onOpenChange={(open) => {
+				if (!open) {
+					props.onClose?.();
+				}
+			}}
+		>
 			<Show
 				when={props.trigger}
 				fallback={
