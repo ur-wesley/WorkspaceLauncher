@@ -1,8 +1,7 @@
-import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import solidPlugin from "vite-plugin-solid";
-
 import UnocssPlugin from "@unocss/vite";
 
 const __filename = fileURLToPath(import.meta.url);
