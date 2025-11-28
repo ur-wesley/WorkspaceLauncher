@@ -101,10 +101,11 @@ export async function initializeDatabase(): Promise<Result<void, ApiError>> {
 		return ok(undefined);
 	} catch (error: unknown) {
 		console.error("Database initialization error:", error);
-		if (typeof error === 'string' && (
+		if (
+			typeof error === "string" &&
 			error.includes("migration") &&
 			error.includes("previously applied but has been modified")
-		)) {
+		) {
 			console.log("Detected corrupted migration. Scheduling database reset...");
 			try {
 				await invoke("schedule_db_reset");
