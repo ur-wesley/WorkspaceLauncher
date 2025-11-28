@@ -1,6 +1,6 @@
 {
   "name": "@urwesley/workspacelauncher",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "windows application to launch environments with one click",
   "repository": "https://github.com/ur-wesley/WorkspaceLauncher",
   "type": "module",
