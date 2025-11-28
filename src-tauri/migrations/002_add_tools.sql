@@ -1,34 +1,33 @@
 -- Add tools table for simplified action creation
--- Tools define templates that can be used to create actions
-
 CREATE TABLE IF NOT EXISTS tools (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
-    icon TEXT, -- Icon class/name (e.g., 'i-mdi-code', 'i-mdi-web')
-    enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    tool_type TEXT NOT NULL, -- 'binary' or 'cli'
-    template TEXT NOT NULL, -- Template with placeholders (e.g., 'code {workspace_path}')
-    placeholders TEXT, -- JSON array of placeholder definitions
-    category TEXT, -- 'development', 'browser', 'utility', etc.
+    icon TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+    tool_type TEXT NOT NULL CHECK(tool_type IN ('command', 'script', 'http')),
+    template TEXT NOT NULL,
+    placeholders TEXT NOT NULL DEFAULT '[]',
+    category TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default tools
-INSERT INTO tools (name, description, icon, tool_type, template, placeholders, category) VALUES
-('VS Code', 'Microsoft Visual Studio Code', 'i-mdi-microsoft-visual-studio-code', 'cli', 'code {workspace_path}', '[{"name": "workspace_path", "description": "Path to workspace/folder", "required": true, "type": "path"}]', 'development'),
-('Chrome', 'Google Chrome Browser', 'i-mdi-google-chrome', 'cli', 'chrome {url}', '[{"name": "url", "description": "URL to open", "required": true, "type": "url"}]', 'browser'),
-('Firefox', 'Mozilla Firefox Browser', 'i-mdi-firefox', 'cli', 'firefox {url}', '[{"name": "url", "description": "URL to open", "required": true, "type": "url"}]', 'browser'),
-('Explorer', 'Windows File Explorer', 'i-mdi-folder-open', 'cli', 'explorer {path}', '[{"name": "path", "description": "Path to open", "required": true, "type": "path"}]', 'utility'),
-('Terminal', 'Command Line Terminal', 'i-mdi-terminal', 'cli', 'cmd /c start cmd /k "cd /d {path}"', '[{"name": "path", "description": "Working directory", "required": false, "type": "path", "default": "."}]', 'utility'),
-('PowerShell', 'PowerShell Terminal', 'i-mdi-powershell', 'cli', 'powershell -NoExit -Command "Set-Location ''{path}''"', '[{"name": "path", "description": "Working directory", "required": false, "type": "path", "default": "."}]', 'utility'),
-('Custom Binary', 'Custom executable', 'i-mdi-application', 'binary', '{binary_path} {args}', '[{"name": "binary_path", "description": "Path to executable", "required": true, "type": "path"}, {"name": "args", "description": "Command line arguments", "required": false, "type": "text"}]', 'custom'),
-('Eclipse', 'Eclipse IDE', 'i-mdi-eclipse', 'binary', '{eclipse_path} -data {workspace_path}', '[{"name": "eclipse_path", "description": "Path to Eclipse executable", "required": true, "type": "path"}, {"name": "workspace_path", "description": "Eclipse workspace directory", "required": true, "type": "path"}]', 'development'),
-('Cursor', 'Cursor AI Editor', 'i-mdi-cursor-default-click', 'cli', 'cursor {project_path}', '[{"name": "project_path", "description": "Path to project folder", "required": true, "type": "path"}]', 'development'),
-('Command with Args', 'Run command with arguments', 'i-mdi-console-line', 'cli', '{command} {args}', '[{"name": "command", "description": "Command to execute", "required": true, "type": "text"}, {"name": "args", "description": "Command arguments", "required": false, "type": "text"}]', 'utility'),
-('URL Opener', 'Open URL in default browser', 'i-mdi-web', 'cli', 'start {url}', '[{"name": "url", "description": "URL to open", "required": true, "type": "url"}]', 'browser');
-
--- Create index for enabled tools
 CREATE INDEX IF NOT EXISTS idx_tools_enabled ON tools(enabled);
 CREATE INDEX IF NOT EXISTS idx_tools_category ON tools(category);
+
+INSERT INTO tools (name, description, icon, enabled, tool_type, template, placeholders, category) VALUES
+('PowerShell Script', 'Run a PowerShell script', '🔷', 1, 'command', 'powershell -ExecutionPolicy Bypass -File "{{script_path}}"', '[{"key":"script_path","label":"Script Path","type":"text"}]', 'Scripts'),
+('Command', 'Execute a shell command', '⚡', 1, 'command', '{{command}}', '[{"key":"command","label":"Command","type":"text"}]', 'System'),
+('Node Script', 'Run a Node.js script', '🟢', 1, 'command', 'node "{{script_path}}"', '[{"key":"script_path","label":"Script Path","type":"text"}]', 'Scripts'),
+('Python Script', 'Run a Python script', '🐍', 1, 'command', 'python "{{script_path}}"', '[{"key":"script_path","label":"Script Path","type":"text"}]', 'Scripts'),
+('Bash Script', 'Run a Bash script (WSL/Linux)', '🐚', 1, 'command', 'bash "{{script_path}}"', '[{"key":"script_path","label":"Script Path","type":"text"}]', 'Scripts'),
+('HTTP Request', 'Make an HTTP request', '🌐', 1, 'http', '{{url}}', '[{"key":"url","label":"URL","type":"text"},{"key":"method","label":"Method","type":"select","options":["GET","POST","PUT","DELETE"]},{"key":"headers","label":"Headers (JSON)","type":"text"},{"key":"body","label":"Body","type":"text"}]', 'Network'),
+('Docker Command', 'Run a Docker command', '🐳', 1, 'command', 'docker {{command}}', '[{"key":"command","label":"Docker Command","type":"text"}]', 'Containers'),
+('Docker Compose', 'Run docker-compose', '🐳', 1, 'command', 'docker-compose -f "{{compose_file}}" {{command}}', '[{"key":"compose_file","label":"Compose File Path","type":"text"},{"key":"command","label":"Command (up/down/restart)","type":"text"}]', 'Containers'),
+('NPM Script', 'Run an npm script', '📦', 1, 'command', 'npm run {{script}}', '[{"key":"script","label":"Script Name","type":"text"}]', 'Package Managers'),
+('Yarn Script', 'Run a yarn script', '📦', 1, 'command', 'yarn {{script}}', '[{"key":"script","label":"Script Name","type":"text"}]', 'Package Managers'),
+('Git Command', 'Run a git command', '🔱', 1, 'command', 'git {{command}}', '[{"key":"command","label":"Git Command","type":"text"}]', 'Version Control'),
+('VS Code', 'Open VS Code', '💻', 1, 'command', 'code "{{path}}"', '[{"key":"path","label":"Path","type":"text"}]', 'Editors'),
+('Open URL', 'Open a URL in browser', '🌐', 1, 'command', 'start {{url}}', '[{"key":"url","label":"URL","type":"text"}]', 'Browser'),
+('SSH Command', 'Execute SSH command', '🔐', 1, 'command', 'ssh {{user}}@{{host}} "{{command}}"', '[{"key":"user","label":"User","type":"text"},{"key":"host","label":"Host","type":"text"},{"key":"command","label":"Command","type":"text"}]', 'Network');

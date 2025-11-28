@@ -108,6 +108,23 @@ export interface NewVariable {
 	enabled?: boolean;
 }
 
+export interface GlobalVariable {
+	id: number;
+	key: string;
+	value: string;
+	is_secure: boolean;
+	enabled: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface NewGlobalVariable {
+	key: string;
+	value: string;
+	is_secure: boolean;
+	enabled?: boolean;
+}
+
 export interface Run {
 	id: number;
 	workspace_id: number;

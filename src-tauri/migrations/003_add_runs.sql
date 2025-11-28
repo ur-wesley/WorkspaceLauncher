@@ -1,4 +1,4 @@
--- Create runs table for tracking completed action executions
+-- Add runs table for tracking completed action executions
 CREATE TABLE IF NOT EXISTS runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     workspace_id INTEGER NOT NULL,

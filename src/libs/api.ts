@@ -4,7 +4,9 @@ import Database from "@tauri-apps/plugin-sql";
 import { err, ok, type Result } from "neverthrow";
 import type {
 	Action,
+	GlobalVariable,
 	NewAction,
+	NewGlobalVariable,
 	NewRun,
 	NewTheme,
 	NewTool,
@@ -78,7 +80,9 @@ let db: Database | null = null;
 export async function initializeDatabase(): Promise<Result<void, ApiError>> {
 	try {
 		console.log("Attempting to load database...");
-		db = await Database.load("sqlite:workspacelauncher.db");
+		const dbPath = await invoke<string>("get_db_path");
+		console.log(`Loading database from: ${dbPath}`);
+		db = await Database.load(`sqlite:${dbPath}`);
 		console.log("Database loaded successfully");
 
 		const testResult = await db.execute("SELECT 1");
@@ -95,8 +99,24 @@ export async function initializeDatabase(): Promise<Result<void, ApiError>> {
 		}
 
 		return ok(undefined);
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Database initialization error:", error);
+		if (typeof error === 'string' && (
+			error.includes("migration") &&
+			error.includes("previously applied but has been modified")
+		)) {
+			console.log("Detected corrupted migration. Scheduling database reset...");
+			try {
+				await invoke("schedule_db_reset");
+				return err({
+					message:
+						"Database corrupted. Self-healing scheduled. Please restart the application.",
+					code: "DB_RESET_SCHEDULED",
+				});
+			} catch (resetError) {
+				console.error("Failed to schedule database reset:", resetError);
+			}
+		}
 		return err({
 			message: `Failed to initialize database: ${error}`,
 			code: "DB_INIT_ERROR",
@@ -450,8 +470,8 @@ export async function createVariable(
 				variable.workspace_id,
 				variable.key,
 				variable.value,
-				variable.is_secure,
-				variable.enabled ?? true,
+				variable.is_secure ? 1 : 0,
+				(variable.enabled ?? true) ? 1 : 0,
 			],
 		);
 		console.log("Variable inserted, ID:", result.lastInsertId);
@@ -500,8 +520,8 @@ export async function updateVariable(
 				variable.workspace_id,
 				variable.key,
 				variable.value,
-				variable.is_secure,
-				variable.enabled ?? true,
+				variable.is_secure ? 1 : 0,
+				(variable.enabled ?? true) ? 1 : 0,
 				id,
 			],
 		);
@@ -539,7 +559,7 @@ export async function toggleVariableEnabled(
 		const db = getDatabase();
 		await db.execute(
 			"UPDATE variables SET enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
-			[enabled, id],
+			[enabled ? 1 : 0, id],
 		);
 		const rows = await db.select<RawVariableRow[]>(
 			"SELECT id, workspace_id, key, value, is_secure, enabled, created_at, updated_at FROM variables WHERE id = $1",
@@ -552,6 +572,134 @@ export async function toggleVariableEnabled(
 		return ok(convertedVariable);
 	} catch (error) {
 		return err({ message: `Failed to toggle variable: ${error}` });
+	}
+}
+
+interface RawGlobalVariableRow {
+	id: number;
+	key: string;
+	value: string;
+	is_secure: string | number | boolean;
+	enabled: string | number | boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+function convertDatabaseRowToGlobalVariable(
+	row: RawGlobalVariableRow,
+): GlobalVariable {
+	return {
+		...row,
+		is_secure: sqliteBoolean(row.is_secure),
+		enabled: sqliteBoolean(row.enabled),
+	};
+}
+
+export async function createGlobalVariable(
+	variable: NewGlobalVariable,
+): Promise<Result<GlobalVariable, ApiError>> {
+	try {
+		const db = getDatabase();
+		const result = await db.execute(
+			"INSERT INTO global_variables (key, value, is_secure, enabled) VALUES ($1, $2, $3, $4)",
+			[
+				variable.key,
+				variable.value,
+				variable.is_secure ? 1 : 0,
+				(variable.enabled ?? true) ? 1 : 0,
+			],
+		);
+		const rows = await db.select<RawGlobalVariableRow[]>(
+			"SELECT id, key, value, is_secure, enabled, created_at, updated_at FROM global_variables WHERE id = $1",
+			[result.lastInsertId],
+		);
+		if (rows.length === 0) {
+			throw new Error("Failed to retrieve created global variable");
+		}
+		return ok(convertDatabaseRowToGlobalVariable(rows[0]));
+	} catch (error) {
+		return err({ message: `Failed to create global variable: ${error}` });
+	}
+}
+
+export async function listGlobalVariables(): Promise<
+	Result<GlobalVariable[], ApiError>
+> {
+	try {
+		const db = getDatabase();
+		const rows = await db.select<RawGlobalVariableRow[]>(
+			"SELECT id, key, value, is_secure, enabled, created_at, updated_at FROM global_variables ORDER BY key ASC",
+		);
+		const variables = rows.map((row) =>
+			convertDatabaseRowToGlobalVariable(row),
+		);
+		return ok(variables);
+	} catch (error) {
+		return err({ message: `Failed to list global variables: ${error}` });
+	}
+}
+
+export async function updateGlobalVariable(
+	id: number,
+	variable: NewGlobalVariable,
+): Promise<Result<GlobalVariable, ApiError>> {
+	try {
+		const db = getDatabase();
+		await db.execute(
+			"UPDATE global_variables SET key = $1, value = $2, is_secure = $3, enabled = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5",
+			[
+				variable.key,
+				variable.value,
+				variable.is_secure ? 1 : 0,
+				(variable.enabled ?? true) ? 1 : 0,
+				id,
+			],
+		);
+		const rows = await db.select<RawGlobalVariableRow[]>(
+			"SELECT id, key, value, is_secure, enabled, created_at, updated_at FROM global_variables WHERE id = $1",
+			[id],
+		);
+		if (rows.length === 0) {
+			throw new Error("Global variable not found");
+		}
+		return ok(convertDatabaseRowToGlobalVariable(rows[0]));
+	} catch (error) {
+		return err({ message: `Failed to update global variable: ${error}` });
+	}
+}
+
+export async function deleteGlobalVariable(
+	id: number,
+): Promise<Result<void, ApiError>> {
+	try {
+		const db = getDatabase();
+		await db.execute("DELETE FROM global_variables WHERE id = $1", [id]);
+		return ok(undefined);
+	} catch (error) {
+		return err({ message: `Failed to delete global variable: ${error}` });
+	}
+}
+
+export async function toggleGlobalVariableEnabled(
+	id: number,
+	enabled: boolean,
+): Promise<Result<GlobalVariable, ApiError>> {
+	try {
+		const db = getDatabase();
+		await db.execute(
+			"UPDATE global_variables SET enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+			[enabled ? 1 : 0, id],
+		);
+		const rows = await db.select<RawGlobalVariableRow[]>(
+			"SELECT id, key, value, is_secure, enabled, created_at, updated_at FROM global_variables WHERE id = $1",
+			[id],
+		);
+		if (rows.length === 0) {
+			throw new Error("Global variable not found");
+		}
+		return ok(convertDatabaseRowToGlobalVariable(rows[0]));
+	} catch (error) {
+		return err({ message: `Failed to toggle global variable: ${error}` });
 	}
 }
 

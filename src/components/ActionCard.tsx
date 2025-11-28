@@ -67,11 +67,20 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 			return;
 		}
 		const target = e.target as HTMLElement;
+		const currentTarget = e.currentTarget as HTMLElement;
+
+		const closestButton = target.closest("[role='button']");
+		if (closestButton && closestButton !== currentTarget) {
+			return;
+		}
+
 		if (
 			target.closest("button") ||
 			target.closest("a") ||
-			target.closest("[role='button']") ||
-			target.closest("[role='menuitem']")
+			target.closest("[role='menuitem']") ||
+			target.closest("input") ||
+			target.closest("textarea") ||
+			target.closest("[role='dialog']")
 		) {
 			return;
 		}

@@ -65,6 +65,7 @@ import {
 } from "@/pages/WorkspaceDetailPage.helpers";
 import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
+import { useGlobalVariableStore } from "@/store/globalVariable";
 import { useUI } from "@/store/ui";
 import { useVariableStore } from "@/store/variable";
 import { useWorkspaceStore } from "@/store/workspace";
@@ -77,8 +78,15 @@ export default function WorkspaceDetailPage() {
 	const workspaceCtx = useWorkspaceStore();
 	const [, actionStoreActions] = useActionStore() ?? [null, null];
 	const [, variableStoreActions] = useVariableStore() ?? [null, null];
+	const [, globalVariableStoreActions] = useGlobalVariableStore() ?? [
+		null,
+		null,
+	];
 	const actionStore = useActionStore()?.[0] ?? { actions: [] };
 	const variableStore = useVariableStore()?.[0] ?? { variables: [] };
+	const globalVariableStore = useGlobalVariableStore()?.[0] ?? {
+		variables: [],
+	};
 	const [currentWorkspace, setCurrentWorkspace] =
 		createSignal<Workspace | null>(null);
 	const [isLaunching, setIsLaunching] = createSignal(false);
@@ -119,6 +127,7 @@ export default function WorkspaceDetailPage() {
 
 	onMount(async () => {
 		await workspaceCtx.actions.loadWorkspaces();
+		await globalVariableStoreActions?.loadVariables();
 
 		ui.actions.setWorkspaceContext(workspaceId());
 		ui.actions.setFocusSearch(() => {
@@ -289,7 +298,19 @@ export default function WorkspaceDetailPage() {
 
 		setIsLaunching(true);
 		try {
-			const variables = prepareVariables(variableStore.variables);
+			// Ensure global variables are up to date
+			await globalVariableStoreActions?.loadVariables();
+
+			console.log("Launching workspace. Global Store State:", {
+				variablesLength: globalVariableStore.variables.length,
+				loading: globalVariableStore.loading,
+				error: globalVariableStore.error,
+			});
+
+			const variables = prepareVariables(
+				variableStore.variables,
+				globalVariableStore.variables,
+			);
 			const context = { workspaceId: workspace.id, variables };
 			const results = await launchWorkspaceTS(actionsToLaunch, context);
 
@@ -402,7 +423,17 @@ export default function WorkspaceDetailPage() {
 		}
 
 		try {
-			const variables = prepareVariables(variableStore.variables);
+			// Ensure global variables are up to date
+			await globalVariableStoreActions?.loadVariables();
+
+			console.log("Launching action. Global Store State:", {
+				variablesLength: globalVariableStore.variables.length,
+			});
+
+			const variables = prepareVariables(
+				variableStore.variables,
+				globalVariableStore.variables,
+			);
 			const context = { workspaceId: workspace.id, variables };
 			const result = await launchActionTS(action, context);
 

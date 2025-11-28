@@ -33,6 +33,9 @@
     "fs:allow-write-file",
     "updater:default",
     "updater:allow-check",
+    "process:default",
+    "process:allow-exit",
+    "process:allow-restart",
     {
       "identifier": "shell:allow-spawn",
       "allow": [

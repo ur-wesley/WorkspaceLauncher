@@ -56,12 +56,10 @@ export const ActiveActionsManagerDialog: Component<
 	const workspaceStore = useWorkspaceStore();
 	const [now, setNow] = createSignal(Date.now());
 
-	// Update "now" every second for live duration
 	const clearTimer = makeTimer(() => setNow(Date.now()), 1000, setInterval);
 
 	onCleanup(() => clearTimer());
 
-	// Refresh running actions list every 5 seconds
 	let refreshInterval: number | undefined;
 
 	createEffect(() => {

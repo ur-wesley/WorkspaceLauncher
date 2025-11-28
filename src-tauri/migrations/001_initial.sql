@@ -1,3 +1,4 @@
+-- Create initial tables
 -- Initial database schema for WorkspaceLauncher
 -- This creates a flattened structure without environments
 

@@ -1,5 +1,6 @@
 import type { ParentComponent } from "solid-js";
 import { ActionStoreProvider } from "./action";
+import { GlobalVariableStoreProvider } from "./globalVariable";
 import { RunStoreProvider } from "./run";
 import { SettingsProvider } from "./settings";
 import { ThemeProvider } from "./theme";
@@ -15,7 +16,9 @@ export const StoreProvider: ParentComponent = (props) => {
 					<WorkspaceProvider>
 						<ActionStoreProvider>
 							<VariableStoreProvider>
-								<RunStoreProvider>{props.children}</RunStoreProvider>
+								<GlobalVariableStoreProvider>
+									<RunStoreProvider>{props.children}</RunStoreProvider>
+								</GlobalVariableStoreProvider>
 							</VariableStoreProvider>
 						</ActionStoreProvider>
 					</WorkspaceProvider>
@@ -26,6 +29,7 @@ export const StoreProvider: ParentComponent = (props) => {
 };
 
 export { useActionStore } from "./action";
+export { useGlobalVariableStore } from "./globalVariable";
 export { useRunStore } from "./run";
 export { useSettingsStore } from "./settings";
 export { useThemeStore } from "./theme";

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use tauri_plugin_sql::{Migration, MigrationKind};
+use sqlx::FromRow;
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Workspace {
     pub id: i64,
     pub name: String,
@@ -13,7 +13,7 @@ pub struct Workspace {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewWorkspace {
     pub name: String,
     pub description: Option<String>,
@@ -21,7 +21,7 @@ pub struct NewWorkspace {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Action {
     pub id: i64,
     pub workspace_id: i64,
@@ -40,7 +40,7 @@ pub struct Action {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewAction {
     pub workspace_id: i64,
     pub name: String,
@@ -56,7 +56,7 @@ pub struct NewAction {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Variable {
     pub id: i64,
     pub workspace_id: i64,
@@ -69,7 +69,7 @@ pub struct Variable {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewVariable {
     pub workspace_id: i64,
     pub key: String,
@@ -79,27 +79,30 @@ pub struct NewVariable {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Run {
     pub id: i64,
     pub workspace_id: i64,
+    pub action_id: i64,
     pub status: String,
-    pub started_at: Option<String>,
-    pub ended_at: Option<String>,
+    pub started_at: String,
+    pub completed_at: String,
+    pub exit_code: Option<i32>,
+    pub error_message: Option<String>,
     pub created_at: String,
-    pub updated_at: String,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewRun {
     pub workspace_id: i64,
+    pub action_id: i64,
     pub status: String,
-    pub started_at: Option<String>,
+    pub started_at: String,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Log {
     pub id: i64,
     pub run_id: i64,
@@ -110,7 +113,7 @@ pub struct Log {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewLog {
     pub run_id: i64,
     pub action_id: Option<i64>,
@@ -119,7 +122,7 @@ pub struct NewLog {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Setting {
     pub id: i64,
     pub key: String,
@@ -129,14 +132,14 @@ pub struct Setting {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewSetting {
     pub key: String,
     pub value: String,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Tool {
     pub id: i64,
     pub name: String,
@@ -152,7 +155,7 @@ pub struct Tool {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewTool {
     pub name: String,
     pub description: Option<String>,
@@ -165,7 +168,7 @@ pub struct NewTool {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Theme {
     pub id: i64,
     pub name: String,
@@ -179,7 +182,7 @@ pub struct Theme {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NewTheme {
     pub name: String,
     pub description: Option<String>,
@@ -188,61 +191,25 @@ pub struct NewTheme {
     pub dark_colors: String,
 }
 
-pub fn get_migrations() -> Vec<Migration> {
-    vec![
-        Migration {
-            version: 1,
-            description: "Create initial tables",
-            sql: include_str!("../migrations/001_initial.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 2,
-            description: "Add tools table for simplified action creation",
-            sql: include_str!("../migrations/002_add_tools.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 3,
-            description: "Add runs table for tracking completed action executions",
-            sql: include_str!("../migrations/003_add_runs.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 4,
-            description: "Add icon column to workspaces table",
-            sql: include_str!("../migrations/004_add_workspace_icon.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 5,
-            description: "Add error_message column to runs table",
-            sql: include_str!("../migrations/005_add_runs_error_message.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 6,
-            description: "Add track_process column to actions table",
-            sql: include_str!("../migrations/006_add_track_process_to_actions.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 7,
-            description: "Add themes table for customizable color themes",
-            sql: include_str!("../migrations/007_add_themes.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 8,
-            description: "Fix boolean columns to use proper SQLite boolean handling",
-            sql: include_str!("../migrations/008_fix_boolean_columns.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 9,
-            description: "Add auto_launch flag to actions",
-            sql: include_str!("../migrations/009_add_auto_launch_to_actions.sql"),
-            kind: MigrationKind::Up,
-        },
-    ]
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct GlobalVariable {
+    pub id: i64,
+    pub key: String,
+    pub value: String,
+    pub is_secure: bool,
+    pub enabled: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct NewGlobalVariable {
+    pub key: String,
+    pub value: String,
+    pub is_secure: bool,
+    pub enabled: bool,
+}
+
+include!(concat!(env!("OUT_DIR"), "/migrations.rs"));

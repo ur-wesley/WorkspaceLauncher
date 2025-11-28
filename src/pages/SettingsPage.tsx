@@ -3,6 +3,7 @@ import type { Component } from "solid-js";
 import { createEffect, createSignal } from "solid-js";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
+import { GlobalVariablesSettings } from "@/components/settings/GlobalVariablesSettings";
 import { ThemesSettings } from "@/components/settings/ThemesSettings";
 import { ToolsSettings } from "@/components/settings/ToolsSettings";
 import {
@@ -43,11 +44,12 @@ export const SettingsPage: Component = () => {
 				</div>
 
 				<Tabs value={activeTab()} onChange={setActiveTab} class="w-full">
-					<TabsList class="grid w-full grid-cols-4">
+					<TabsList class="grid w-full grid-cols-5">
 						<TabsTrigger value="general">General</TabsTrigger>
 						<TabsTrigger value="appearance">Appearance</TabsTrigger>
 						<TabsTrigger value="themes">Themes</TabsTrigger>
 						<TabsTrigger value="tools">Tools</TabsTrigger>
+						<TabsTrigger value="variables">Global Variables</TabsTrigger>
 						<TabsIndicator />
 					</TabsList>
 
@@ -65,6 +67,10 @@ export const SettingsPage: Component = () => {
 
 					<TabsContent value="tools" class="space-y-4">
 						<ToolsSettings />
+					</TabsContent>
+
+					<TabsContent value="variables" class="space-y-4">
+						<GlobalVariablesSettings />
 					</TabsContent>
 				</Tabs>
 			</div>

@@ -26,7 +26,6 @@ function normalizeActionConfig(
 		return { type: t as "tool" | "command" | "url" | "delay", config };
 	}
 
-	// Attempt to infer type from config properties if actionType is not explicit
 	type ConfigWithUnknownKeys = ActionConfig & Record<string, unknown>;
 	const c = config as ConfigWithUnknownKeys;
 
@@ -120,13 +119,29 @@ function replaceVariables(
 
 export function prepareVariables(
 	variables: Variable[],
+	globalVariables: { key: string; value: string; enabled: boolean }[] = [],
 ): Record<string, string> {
+	console.log("prepareVariables called with:", {
+		workspaceVariablesCount: variables.length,
+		globalVariablesCount: globalVariables.length,
+		globalVariablesSample: globalVariables.slice(0, 3),
+	});
+
 	const variableMap: Record<string, string> = {};
+
+	for (const variable of globalVariables) {
+		if (variable.enabled) {
+			variableMap[variable.key] = variable.value;
+		}
+	}
+
 	for (const variable of variables) {
 		if (variable.enabled) {
 			variableMap[variable.key] = variable.value;
 		}
 	}
+
+	console.log("prepareVariables result keys:", Object.keys(variableMap));
 	return variableMap;
 }
 
@@ -558,7 +573,6 @@ async function launchCustomTool(
 			console.log(`Custom tool launched with PID: ${resolvedPid}`);
 		} else {
 			const child = await cmd.spawn();
-			// Child type from @tauri-apps/plugin-shell has pid property but it's not in type definitions
 			parentPidForResolve = (child as { pid: number }).pid;
 			resolvedPid = parentPidForResolve;
 			console.log(`Custom tool launched with PID: ${resolvedPid}`);

@@ -1,44 +1,22 @@
--- Create themes table
+-- Add themes table for customizable color themes
 CREATE TABLE IF NOT EXISTS themes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     description TEXT,
-    is_predefined BOOLEAN NOT NULL DEFAULT FALSE,
-    is_active BOOLEAN NOT NULL DEFAULT FALSE,
-    light_colors TEXT NOT NULL, -- JSON with HSL color values
-    dark_colors TEXT NOT NULL,  -- JSON with HSL color values
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    is_predefined INTEGER NOT NULL DEFAULT 0 CHECK (is_predefined IN (0, 1)),
+    is_active INTEGER NOT NULL DEFAULT 0 CHECK (is_active IN (0, 1)),
+    light_colors TEXT NOT NULL,
+    dark_colors TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default theme (current colors from app.css)
-INSERT INTO themes (name, description, is_predefined, is_active, light_colors, dark_colors) VALUES (
-    'Default',
-    'Classic light and dark theme',
-    TRUE,
-    TRUE,
-    '{"background":"0 0% 100%","foreground":"240 10% 3.9%","card":"0 0% 100%","cardForeground":"240 10% 3.9%","popover":"0 0% 100%","popoverForeground":"240 10% 3.9%","primary":"240 5.9% 10%","primaryForeground":"0 0% 98%","secondary":"240 4.8% 95.9%","secondaryForeground":"240 5.9% 10%","muted":"240 4.8% 95.9%","mutedForeground":"240 3.8% 46.1%","accent":"240 4.8% 95.9%","accentForeground":"240 5.9% 10%","destructive":"0 84.2% 60.2%","destructiveForeground":"0 0% 98%","border":"240 5.9% 90%","input":"240 5.9% 90%","ring":"240 5.9% 10%"}',
-    '{"background":"240 10% 3.9%","foreground":"0 0% 98%","card":"240 10% 3.9%","cardForeground":"0 0% 98%","popover":"240 10% 3.9%","popoverForeground":"0 0% 98%","primary":"0 0% 98%","primaryForeground":"240 5.9% 10%","secondary":"240 3.7% 15.9%","secondaryForeground":"0 0% 98%","muted":"240 3.7% 15.9%","mutedForeground":"240 5% 64.9%","accent":"240 3.7% 15.9%","accentForeground":"0 0% 98%","destructive":"0 62.8% 30.6%","destructiveForeground":"0 0% 98%","border":"240 3.7% 15.9%","input":"240 3.7% 15.9%","ring":"240 4.9% 83.9%"}'
-);
+CREATE INDEX IF NOT EXISTS idx_themes_is_active ON themes(is_active);
+CREATE INDEX IF NOT EXISTS idx_themes_is_predefined ON themes(is_predefined);
 
--- Insert Catppuccin Latte (light) and Frappé (medium dark)
-INSERT INTO themes (name, description, is_predefined, is_active, light_colors, dark_colors) VALUES (
-    'Catppuccin Latte/Frappé',
-    'Warm pastel theme with soothing colors',
-    TRUE,
-    FALSE,
-    '{"background":"220 23% 97%","foreground":"234 16% 35%","card":"220 23% 97%","cardForeground":"234 16% 35%","popover":"220 23% 97%","popoverForeground":"234 16% 35%","primary":"217 92% 59%","primaryForeground":"220 23% 97%","secondary":"220 17% 88%","secondaryForeground":"234 16% 35%","muted":"220 17% 88%","mutedForeground":"233 13% 54%","accent":"218 54% 71%","accentForeground":"234 16% 35%","destructive":"347 87% 44%","destructiveForeground":"220 23% 97%","border":"220 16% 82%","input":"220 16% 82%","ring":"217 92% 59%"}',
-    '{"background":"240 21% 15%","foreground":"227 68% 88%","card":"240 21% 15%","cardForeground":"227 68% 88%","popover":"240 21% 15%","popoverForeground":"227 68% 88%","primary":"217 92% 76%","primaryForeground":"240 21% 15%","secondary":"233 12% 27%","secondaryForeground":"227 68% 88%","muted":"233 12% 27%","mutedForeground":"228 39% 66%","accent":"220 57% 77%","accentForeground":"240 21% 15%","destructive":"347 87% 63%","destructiveForeground":"227 68% 88%","border":"237 16% 23%","input":"237 16% 23%","ring":"217 92% 76%"}'
-);
-
--- Insert Catppuccin Macchiato (darker) and Mocha (darkest)
-INSERT INTO themes (name, description, is_predefined, is_active, light_colors, dark_colors) VALUES (
-    'Catppuccin Macchiato/Mocha',
-    'Deep and rich dark color palette',
-    TRUE,
-    FALSE,
-    '{"background":"233 25% 18%","foreground":"227 70% 87%","card":"233 25% 18%","cardForeground":"227 70% 87%","popover":"233 25% 18%","popoverForeground":"227 70% 87%","primary":"220 91% 71%","primaryForeground":"233 25% 18%","secondary":"233 12% 29%","secondaryForeground":"227 70% 87%","muted":"233 12% 29%","mutedForeground":"229 40% 65%","accent":"189 71% 72%","accentForeground":"233 25% 18%","destructive":"355 76% 66%","destructiveForeground":"227 70% 87%","border":"236 18% 26%","input":"236 18% 26%","ring":"220 91% 71%"}',
-    '{"background":"240 21% 12%","foreground":"226 64% 88%","card":"240 21% 12%","cardForeground":"226 64% 88%","popover":"240 21% 12%","popoverForeground":"226 64% 88%","primary":"217 92% 76%","primaryForeground":"240 21% 12%","secondary":"240 13% 23%","secondaryForeground":"226 64% 88%","muted":"240 13% 23%","mutedForeground":"227 35% 65%","accent":"189 71% 73%","accentForeground":"240 21% 12%","destructive":"343 81% 75%","destructiveForeground":"226 64% 88%","border":"240 16% 20%","input":"240 16% 20%","ring":"217 92% 76%"}'
-);
-
-
+INSERT INTO themes (name, description, is_predefined, is_active, light_colors, dark_colors) VALUES
+('Default', 'Clean and modern default theme', 1, 0, '{"primary":"#3b82f6","secondary":"#8b5cf6","accent":"#06b6d4","background":"#ffffff","surface":"#f8fafc","text":"#1e293b","textSecondary":"#64748b","border":"#e2e8f0","error":"#ef4444","warning":"#f59e0b","success":"#10b981","info":"#3b82f6"}', '{"primary":"#60a5fa","secondary":"#a78bfa","accent":"#22d3ee","background":"#0f172a","surface":"#1e293b","text":"#f1f5f9","textSecondary":"#94a3b8","border":"#334155","error":"#f87171","warning":"#fbbf24","success":"#34d399","info":"#60a5fa"}'),
+('Ocean Blue', 'Calming ocean-inspired theme', 1, 0, '{"primary":"#0ea5e9","secondary":"#06b6d4","accent":"#14b8a6","background":"#ffffff","surface":"#f0f9ff","text":"#164e63","textSecondary":"#155e75","border":"#bae6fd","error":"#dc2626","warning":"#f59e0b","success":"#059669","info":"#0284c7"}', '{"primary":"#38bdf8","secondary":"#22d3ee","accent":"#2dd4bf","background":"#0c4a6e","surface":"#075985","text":"#e0f2fe","textSecondary":"#7dd3fc","border":"#0369a1","error":"#ef4444","warning":"#fbbf24","success":"#10b981","info":"#38bdf8"}'),
+('Forest Green', 'Fresh and natural forest theme', 1, 0, '{"primary":"#22c55e","secondary":"#84cc16","accent":"#eab308","background":"#ffffff","surface":"#f0fdf4","text":"#14532d","textSecondary":"#166534","border":"#bbf7d0","error":"#dc2626","warning":"#f59e0b","success":"#16a34a","info":"#3b82f6"}', '{"primary":"#4ade80","secondary":"#a3e635","accent":"#facc15","background":"#14532d","surface":"#166534","text":"#f0fdf4","textSecondary":"#86efac","border":"#15803d","error":"#ef4444","warning":"#fbbf24","success":"#22c55e","info":"#60a5fa"}'),
+('Sunset Purple', 'Warm and vibrant sunset theme', 1, 0, '{"primary":"#a855f7","secondary":"#ec4899","accent":"#f97316","background":"#ffffff","surface":"#faf5ff","text":"#581c87","textSecondary":"#7e22ce","border":"#e9d5ff","error":"#dc2626","warning":"#f59e0b","success":"#10b981","info":"#3b82f6"}', '{"primary":"#c084fc","secondary":"#f472b6","accent":"#fb923c","background":"#581c87","surface":"#6b21a8","text":"#faf5ff","textSecondary":"#d8b4fe","border":"#7e22ce","error":"#ef4444","warning":"#fbbf24","success":"#34d399","info":"#60a5fa"}'),
+('Monochrome', 'Classic black and white theme', 1, 0, '{"primary":"#18181b","secondary":"#52525b","accent":"#a1a1aa","background":"#ffffff","surface":"#fafafa","text":"#09090b","textSecondary":"#71717a","border":"#e4e4e7","error":"#dc2626","warning":"#f59e0b","success":"#10b981","info":"#3b82f6"}', '{"primary":"#e4e4e7","secondary":"#a1a1aa","accent":"#52525b","background":"#09090b","surface":"#18181b","text":"#fafafa","textSecondary":"#d4d4d8","border":"#3f3f46","error":"#ef4444","warning":"#fbbf24","success":"#34d399","info":"#60a5fa"}');

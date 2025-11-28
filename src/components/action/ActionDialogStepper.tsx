@@ -42,6 +42,7 @@ import { showToast } from "@/libs/toast";
 import type { Action } from "@/models/action.model";
 import type { Tool as ToolModel } from "@/models/tool.model";
 import { useActionStore } from "@/store/action";
+import { useGlobalVariableStore } from "@/store/globalVariable";
 import { useToolStore } from "@/store/tool";
 import { useVariableStore } from "@/store/variable";
 import type {
@@ -90,6 +91,7 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 	const [actionStore, actionActions] = useActionStore();
 	const [toolStore, toolActions] = useToolStore();
 	const [variableStore, variableActions] = useVariableStore();
+	const [globalVariableStore] = useGlobalVariableStore();
 
 	const stepper = useStepper({ initialStep: "basic" });
 
@@ -201,11 +203,17 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 		return parsePlaceholderDefinitions(tool.placeholders);
 	});
 
-	const availableVariables = createMemo(() =>
-		variableStore.variables
+	const availableVariables = createMemo(() => {
+		const workspaceVars = variableStore.variables
 			.filter((variable) => variable.enabled)
-			.map((variable) => variable.key),
-	);
+			.map((variable) => variable.key);
+
+		const globalVars = globalVariableStore.variables
+			.filter((variable) => variable.enabled)
+			.map((variable) => variable.key);
+
+		return [...workspaceVars, ...globalVars];
+	});
 
 	const customCommandPreview = createMemo(() => {
 		if (toolMode() !== "custom") {

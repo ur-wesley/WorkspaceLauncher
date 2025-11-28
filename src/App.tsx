@@ -1,6 +1,7 @@
 import { ColorModeProvider, ColorModeScript } from "@kobalte/core";
 import { MetaProvider } from "@solidjs/meta";
 import { Route, Router } from "@solidjs/router";
+import { relaunch } from "@tauri-apps/plugin-process";
 import type { Component } from "solid-js";
 import {
 	createSignal,
@@ -18,6 +19,7 @@ import {
 	initializeDatabase,
 	listAutoLaunchActions,
 	listenToActionEvents,
+	listGlobalVariables,
 	listVariablesByWorkspace,
 } from "@/libs/api";
 import type { ActionCompletedEvent } from "@/libs/api/types";
@@ -79,15 +81,23 @@ const App: Component = () => {
 	onMount(async () => {
 		try {
 			console.log("Starting app initialization...");
-			const dbResult = await initializeDatabase();
+			const result = await initializeDatabase();
 
-			if (dbResult.isErr()) {
-				console.error("Database initialization failed:", dbResult.error);
-				setError(`Failed to initialize database: ${dbResult.error.message}`);
-				return;
+			if (result.isOk()) {
+				console.log("Database initialized successfully");
+			} else {
+				console.error("Database initialization failed:", result.error);
+				if (result.error.code === "DB_RESET_SCHEDULED") {
+					console.log(
+						"Database corruption detected. Self-healing scheduled. Restarting application...",
+					);
+					await relaunch();
+				} else {
+					console.error("Database initialization failed:", result.error);
+					setError(`Failed to initialize database: ${result.error.message}`);
+					return;
+				}
 			}
-
-			console.log("Database initialized successfully");
 
 			const schemaResult = await checkDatabaseSchema();
 			if (schemaResult.isErr()) {
@@ -118,10 +128,8 @@ const App: Component = () => {
 						`Auto-launching ${autoActionsResult.value.length} actions...`,
 					);
 
-					// Launch each auto-start action using the same TypeScript launcher as normal launching
 					for (const action of autoActionsResult.value) {
 						try {
-							// Check if action is already running (same logic as normal launching)
 							const runningActions = runningActionsService.getByWorkspace(
 								action.workspace_id,
 							);
@@ -136,7 +144,6 @@ const App: Component = () => {
 								continue;
 							}
 
-							// Get variables for the workspace
 							const variablesResult = await listVariablesByWorkspace(
 								action.workspace_id,
 							);
@@ -144,14 +151,17 @@ const App: Component = () => {
 								? variablesResult.value
 								: [];
 
-							// Prepare variables and context exactly like normal launching
-							const variableMap = prepareVariables(variables);
+							const globalVariablesResult = await listGlobalVariables();
+							const globalVariables = globalVariablesResult.isOk()
+								? globalVariablesResult.value
+								: [];
+
+							const variableMap = prepareVariables(variables, globalVariables);
 							const context = {
 								workspaceId: action.workspace_id,
 								variables: variableMap,
 							};
 
-							// Launch the action using the same TypeScript launcher
 							const result = await launchActionTS(action, context);
 
 							if (result.success) {
