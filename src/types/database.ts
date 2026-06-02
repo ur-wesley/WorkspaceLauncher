@@ -155,6 +155,9 @@ export interface RunningAction {
 	process_id: number;
 	run_id?: number;
 	started_at: string;
+	working_directory?: string;
+	launched_at_secs?: number;
+	resolution_retries?: number;
 }
 
 export interface Log {

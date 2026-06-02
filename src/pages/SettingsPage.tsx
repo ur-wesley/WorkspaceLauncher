@@ -34,46 +34,44 @@ export const SettingsPage: Component = () => {
 	});
 
 	return (
-		<div class="container mx-auto py-6">
-			<div class="max-w-4xl">
-				<div class="mb-6">
-					<h1 class="text-3xl font-bold">Settings</h1>
-					<p class="text-muted-foreground">
-						Manage your application preferences and configuration
-					</p>
-				</div>
-
-				<Tabs value={activeTab()} onChange={setActiveTab} class="w-full">
-					<TabsList class="grid w-full grid-cols-5">
-						<TabsTrigger value="general">General</TabsTrigger>
-						<TabsTrigger value="appearance">Appearance</TabsTrigger>
-						<TabsTrigger value="themes">Themes</TabsTrigger>
-						<TabsTrigger value="tools">Tools</TabsTrigger>
-						<TabsTrigger value="variables">Global Variables</TabsTrigger>
-						<TabsIndicator />
-					</TabsList>
-
-					<TabsContent value="general" class="space-y-4">
-						<GeneralSettings />
-					</TabsContent>
-
-					<TabsContent value="appearance" class="space-y-4">
-						<AppearanceSettings />
-					</TabsContent>
-
-					<TabsContent value="themes" class="space-y-4">
-						<ThemesSettings />
-					</TabsContent>
-
-					<TabsContent value="tools" class="space-y-4">
-						<ToolsSettings />
-					</TabsContent>
-
-					<TabsContent value="variables" class="space-y-4">
-						<GlobalVariablesSettings />
-					</TabsContent>
-				</Tabs>
+		<div class="mx-auto max-w-4xl px-4 sm:px-6 py-6">
+			<div class="mb-6">
+				<h1 class="text-3xl font-bold">Settings</h1>
+				<p class="text-muted-foreground">
+					Manage your application preferences and configuration
+				</p>
 			</div>
+
+			<Tabs value={activeTab()} onChange={setActiveTab} class="w-full">
+				<TabsList class="grid w-full grid-cols-5">
+					<TabsTrigger value="general">General</TabsTrigger>
+					<TabsTrigger value="appearance">Appearance</TabsTrigger>
+					<TabsTrigger value="themes">Themes</TabsTrigger>
+					<TabsTrigger value="tools">Tools</TabsTrigger>
+					<TabsTrigger value="variables">Global Variables</TabsTrigger>
+					<TabsIndicator />
+				</TabsList>
+
+				<TabsContent value="general" class="space-y-4">
+					<GeneralSettings />
+				</TabsContent>
+
+				<TabsContent value="appearance" class="space-y-4">
+					<AppearanceSettings />
+				</TabsContent>
+
+				<TabsContent value="themes" class="space-y-4">
+					<ThemesSettings />
+				</TabsContent>
+
+				<TabsContent value="tools" class="space-y-4">
+					<ToolsSettings />
+				</TabsContent>
+
+				<TabsContent value="variables" class="space-y-4">
+					<GlobalVariablesSettings />
+				</TabsContent>
+			</Tabs>
 		</div>
 	);
 };

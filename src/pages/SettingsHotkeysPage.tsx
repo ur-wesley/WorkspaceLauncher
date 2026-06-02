@@ -34,7 +34,10 @@ export const SettingsHotkeysPage: Component = () => {
 	const [recording, setRecording] = createSignal<HotkeyId | null>(null);
 	const [comboKeys, setComboKeys] = createSignal<Set<string>>(new Set());
 
+	let currentCombo: string[] = [];
+
 	const startRecording = (id: HotkeyId) => {
+		currentCombo = [];
 		setComboKeys(new Set<string>());
 		setRecording(id);
 	};
@@ -63,25 +66,33 @@ export const SettingsHotkeysPage: Component = () => {
 				if (e.altKey) next.add("Alt");
 				if (e.metaKey) next.add("Meta");
 				if (!["Control", "Shift", "Alt", "Meta"].includes(key)) next.add(key);
+				currentCombo = Array.from(next);
 				return next;
 			});
 		};
 		const handleKeyUp = (e: KeyboardEvent) => {
 			e.preventDefault();
-			const key = normalizeKey(e.key);
 			setComboKeys((prev) => {
 				const next = new Set(prev);
-				next.delete(key);
-				if (next.size === 0) {
-					const combo = Array.from(comboKeys());
-					if (combo.length > 0) {
-						const updated = {
-							...bindings(),
-							[current]: { keys: combo },
-						} as HotkeyMap;
-						setBindings(updated);
-						saveBindings(updated);
-					}
+
+				if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
+					next.clear();
+					if (e.ctrlKey) next.add("Control");
+					if (e.shiftKey) next.add("Shift");
+					if (e.altKey) next.add("Alt");
+					if (e.metaKey) next.add("Meta");
+				} else {
+					next.delete(e.key);
+				}
+
+				if (next.size === 0 && currentCombo.length > 0) {
+					const updated = {
+						...bindings(),
+						[current]: { keys: currentCombo },
+					} as HotkeyMap;
+					setBindings(updated);
+					saveBindings(updated);
+					currentCombo = [];
 					stopRecording();
 				}
 				return next;

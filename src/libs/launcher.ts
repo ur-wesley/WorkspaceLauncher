@@ -78,6 +78,7 @@ export interface LaunchResult {
 	message: string;
 	processId?: number;
 	runId?: number;
+	workingDirectory?: string;
 }
 
 function trackRunningAction(
@@ -85,6 +86,7 @@ function trackRunningAction(
 	processId: number,
 	context: LaunchContext,
 	runId?: number,
+	workingDirectory?: string,
 ): void {
 	const runningAction = {
 		id: `${action.id}-${Date.now()}`,
@@ -94,6 +96,8 @@ function trackRunningAction(
 		process_id: processId,
 		run_id: runId,
 		started_at: new Date().toISOString(),
+		working_directory: workingDirectory,
+		launched_at_secs: Math.floor(Date.now() / 1000),
 	};
 
 	runningActionsService.add(runningAction);
@@ -202,7 +206,7 @@ export async function launchAction(
 		}
 
 		if (result.success && result.processId && action.track_process) {
-			trackRunningAction(action, result.processId, context, result.runId);
+			trackRunningAction(action, result.processId, context, result.runId, result.workingDirectory);
 		}
 
 		return result;
@@ -362,12 +366,11 @@ function createCliCommand(
 
 	if (!isDetached && isWindows()) {
 		const fullCommand = `${processedCommand} ${processedArgs.join(" ")}`;
+		const escaped = fullCommand.replace(/'/g, "''");
+		const psScript = `$proc = Start-Process powershell -ArgumentList '-NoExit','-Command','${escaped}' -PassThru; Write-Output $proc.Id`;
 		return Command.create(
 			"powershell",
-			[
-				"-Command",
-				`Start-Process powershell -ArgumentList '-NoExit','-Command','${fullCommand.replace(/'/g, "''")}'`,
-			],
+			["-NoProfile", "-OutputFormat", "Text", "-Command", psScript],
 			{ cwd: workingDir },
 		);
 	}
@@ -510,6 +513,7 @@ async function launchCustomTool(
 			message: result?.message || `${config.tool_name} launched (detached)`,
 			processId: result?.process_id,
 			runId: result?.run_id,
+			workingDirectory: workingDir,
 		};
 	}
 
@@ -542,7 +546,7 @@ async function launchCustomTool(
 		cmd = createBinaryCommand(processedBinaryPath, processedArgs, workingDir);
 	}
 
-	if (hasCommand && isDetached && isWindows()) {
+	if (hasCommand && isWindows()) {
 		try {
 			const output = await cmd.execute();
 			const actualPid = Number.parseInt(output.stdout.trim(), 10);
@@ -554,18 +558,18 @@ async function launchCustomTool(
 			}
 			console.log(`Custom tool launched with actual PID: ${actualPid}`);
 
-			return {
-				success: true,
-				message: `${config.tool_name} launched successfully`,
-				processId: actualPid,
-			};
-		} catch (error) {
-			console.error("Error launching detached command:", error);
-			throw error;
-		}
+		return {
+			success: true,
+			message: `${config.tool_name} launched successfully`,
+			processId: actualPid,
+			workingDirectory: workingDir,
+		};
+	} catch (error) {
+		console.error("Error launching command:", error);
+		throw error;
+	}
 	} else if (hasCommand) {
 		let resolvedPid: number | undefined;
-		let parentPidForResolve: number | undefined;
 		if (isDetached && !isWindows()) {
 			const output = await cmd.execute();
 			const parsed = Number.parseInt(output.stdout.trim(), 10);
@@ -573,67 +577,15 @@ async function launchCustomTool(
 			console.log(`Custom tool launched with PID: ${resolvedPid}`);
 		} else {
 			const child = await cmd.spawn();
-			parentPidForResolve = (child as { pid: number }).pid;
-			resolvedPid = parentPidForResolve;
+			resolvedPid = (child as { pid: number }).pid;
 			console.log(`Custom tool launched with PID: ${resolvedPid}`);
-		}
-
-		if (!isDetached && isWindows() && parentPidForResolve) {
-			try {
-				const { invoke } = await import("@tauri-apps/api/core");
-				let expectedName: string | undefined;
-				const firstArg = processedArgs[0];
-				if (
-					firstArg &&
-					(firstArg.endsWith(".exe") ||
-						firstArg.includes("\\") ||
-						firstArg.includes("/"))
-				) {
-					expectedName = firstArg.split(/[/\\]/).pop();
-				} else {
-					const cmdCandidate = (config.command || "").trim();
-					const localProcessed = cmdCandidate
-						? replaceVariables(cmdCandidate, context.variables)
-						: "";
-					const lowered = localProcessed.toLowerCase();
-					if (lowered && lowered !== "powershell" && lowered !== "cmd") {
-						expectedName = localProcessed.split(/[/\\]/).pop();
-					}
-				}
-				const exclude = [
-					"powershell",
-					"cmd",
-					"conhost",
-					"sh",
-					"bash",
-					"x-terminal-emulator",
-					"npm",
-					"npx",
-					"yarn",
-					"pnpm",
-					"bun",
-				];
-				const result = (await invoke("resolve_descendant_pid", {
-					req: {
-						parent_pid: parentPidForResolve,
-						expected_name: expectedName,
-						exclude_names: exclude,
-						max_wait_ms: 2000,
-					},
-				})) as number | null;
-				if (typeof result === "number" && result > 0) {
-					resolvedPid = result;
-					console.log(`Resolved descendant PID: ${resolvedPid}`);
-				}
-			} catch (e) {
-				console.warn("Failed to resolve descendant PID, using wrapper PID", e);
-			}
 		}
 
 		return {
 			success: true,
 			message: `${config.tool_name} launched successfully`,
 			processId: resolvedPid,
+			workingDirectory: workingDir,
 		};
 	} else if (isWindows()) {
 		const output = await cmd.execute();
@@ -644,6 +596,7 @@ async function launchCustomTool(
 			success: true,
 			message: `${config.tool_name} launched successfully`,
 			processId: actualPid,
+			workingDirectory: workingDir,
 		};
 	} else {
 		const output = await cmd.execute();
@@ -654,6 +607,7 @@ async function launchCustomTool(
 			success: true,
 			message: `${config.tool_name} launched successfully`,
 			processId: actualPid,
+			workingDirectory: workingDir,
 		};
 	}
 }

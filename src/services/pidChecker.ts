@@ -4,11 +4,22 @@ import type { NewRun } from "@/types/database";
 import { runningActionsService } from "./runningActions";
 
 const CHECK_INTERVAL = 5000;
+const MAX_RESOLUTION_RETRIES = 3;
+
+const WRAPPER_EXCLUDE = [
+	"powershell",
+	"cmd",
+	"conhost",
+	"bash",
+	"sh",
+	"npm",
+	"npx",
+	"yarn",
+	"pnpm",
+];
+
 let intervalId: number | null = null;
 
-/**
- * Check if a process is still running
- */
 async function isProcessRunning(pid: number): Promise<boolean> {
 	try {
 		return await invoke<boolean>("is_process_running", { pid });
@@ -18,9 +29,25 @@ async function isProcessRunning(pid: number): Promise<boolean> {
 	}
 }
 
-/**
- * Create a completed run record in the database and cleanup old runs
- */
+async function findServerProcess(
+	workingDirectory: string,
+	startedAfterSecs: number,
+): Promise<number | null> {
+	try {
+		const pid = await invoke<number | null>("find_server_process", {
+			req: {
+				working_directory: workingDirectory,
+				started_after_secs: startedAfterSecs,
+				exclude_names: WRAPPER_EXCLUDE,
+			},
+		});
+		return pid ?? null;
+	} catch (error) {
+		console.error("Failed to find server process:", error);
+		return null;
+	}
+}
+
 async function createCompletedRun(
 	workspaceId: number,
 	actionId: number,
@@ -55,9 +82,6 @@ async function createCompletedRun(
 	}
 }
 
-/**
- * Check all running actions and update their status
- */
 async function checkRunningActions(): Promise<void> {
 	const runningActions = runningActionsService.getAll();
 
@@ -65,6 +89,38 @@ async function checkRunningActions(): Promise<void> {
 		const isRunning = await isProcessRunning(action.process_id);
 
 		if (!isRunning) {
+			const retries = action.resolution_retries ?? 0;
+
+			if (
+				action.working_directory &&
+				action.launched_at_secs &&
+				retries < MAX_RESOLUTION_RETRIES
+			) {
+				const newPid = await findServerProcess(
+					action.working_directory,
+					action.launched_at_secs,
+				);
+
+				if (newPid) {
+					runningActionsService.update(action.id, {
+						process_id: newPid,
+						resolution_retries: 0,
+					});
+					console.log(
+						`Re-resolved PID for "${action.action_name}": ${newPid}`,
+					);
+					continue;
+				}
+
+				runningActionsService.update(action.id, {
+					resolution_retries: retries + 1,
+				});
+
+				if (retries + 1 < MAX_RESOLUTION_RETRIES) {
+					continue;
+				}
+			}
+
 			await createCompletedRun(
 				action.workspace_id,
 				action.action_id,
@@ -72,15 +128,11 @@ async function checkRunningActions(): Promise<void> {
 				null,
 				null,
 			);
-
 			runningActionsService.remove(action.id);
 		}
 	}
 }
 
-/**
- * Start the periodic PID checker
- */
 export function startPidChecker(): void {
 	if (intervalId !== null) {
 		console.warn("PID checker is already running");
@@ -96,9 +148,6 @@ export function startPidChecker(): void {
 	console.log("PID checker started");
 }
 
-/**
- * Stop the periodic PID checker
- */
 export function stopPidChecker(): void {
 	if (intervalId !== null) {
 		window.clearInterval(intervalId);
@@ -107,9 +156,6 @@ export function stopPidChecker(): void {
 	}
 }
 
-/**
- * Check if the PID checker is running
- */
 export function isPidCheckerRunning(): boolean {
 	return intervalId !== null;
 }
