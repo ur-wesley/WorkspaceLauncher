@@ -19,9 +19,6 @@
         "noUnusedImports": "error",
         "noUnusedVariables": "error"
       },
-      "nursery": {
-        "noDeprecatedImports": "error"
-      },
       "style": {
         "useImportType": "error",
         "useExportType": "error"
