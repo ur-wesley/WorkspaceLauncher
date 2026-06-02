@@ -512,7 +512,7 @@ export default function WorkspaceDetailPage() {
 								</div>
 							</div>
 							<Show when={workspace().description}>
-								<Card class="bg-muted/80 shadow-md">
+								<Card class="bg-elevated-1 shadow-md">
 									<CardContent class="p-5">
 										<p
 											class={cn(
@@ -625,7 +625,7 @@ export default function WorkspaceDetailPage() {
 												ref={(el) => {
 													filterActionsRef = el;
 												}}
-												class="flex h-9 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring border-ring)"
+												class="flex h-9 w-full rounded-md bg-elevated-1 px-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring)"
 												onInput={(e) => setActionsQuery(e.currentTarget.value)}
 											/>
 										</div>

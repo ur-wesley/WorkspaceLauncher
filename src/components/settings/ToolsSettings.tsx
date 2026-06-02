@@ -147,7 +147,7 @@ export const ToolsSettings: Component = () => {
 													onOpenChange={() => toggleTool(tool.id)}
 												>
 													<CollapsibleTrigger as="div">
-														<div class="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer">
+														<div class="flex items-center justify-between p-3 bg-elevated-2 rounded-lg hover:bg-elevated-3 cursor-pointer">
 															<div class="flex items-center gap-3">
 																<div
 																	class={`w-2 h-2 rounded-full ${getToolTypeColor(tool.tool_type)}`}
@@ -172,7 +172,7 @@ export const ToolsSettings: Component = () => {
 														</div>
 													</CollapsibleTrigger>
 													<CollapsibleContent>
-														<div class="p-3 border-t bg-muted/30">
+														<div class="p-3 bg-elevated-1">
 															<div class="flex items-center justify-between">
 																<div class="flex items-center gap-2">
 																	<Switch

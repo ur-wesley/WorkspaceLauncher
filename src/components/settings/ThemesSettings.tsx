@@ -79,10 +79,10 @@ export const ThemesSettings: Component = () => {
 									onOpenChange={() => toggleTheme(theme.id)}
 								>
 									<CollapsibleTrigger as="div">
-										<div class="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer">
+										<div class="flex items-center justify-between p-3 bg-elevated-2 rounded-lg hover:bg-elevated-3 cursor-pointer">
 											<div class="flex items-center gap-3">
 												<div
-													class="w-4 h-4 rounded-full border"
+													class="w-4 h-4 rounded-full bg-elevated-3"
 													style={{
 														"background-color": getThemeColor(theme, false),
 													}}
@@ -106,7 +106,7 @@ export const ThemesSettings: Component = () => {
 										</div>
 									</CollapsibleTrigger>
 									<CollapsibleContent>
-										<div class="p-3 border-t bg-muted/30">
+										<div class="p-3 bg-elevated-1">
 											<div class="flex items-center gap-2">
 												<Button
 													size="sm"

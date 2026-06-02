@@ -147,7 +147,7 @@ export const WorkspacesListPage: Component = () => {
 			<Card
 				class={cn(
 					"group hover:shadow-lg transition-all duration-200 cursor-pointer",
-					props.isPinned && "border-primary/50 bg-primary/5",
+					props.isPinned && "bg-elevated-3",
 				)}
 			>
 				<CardHeader class="flex flex-row items-start justify-between space-y-0 pb-3">
@@ -260,7 +260,7 @@ export const WorkspacesListPage: Component = () => {
 								searchInputRef = el;
 							}}
 							onInput={(e) => setSearchQuery(e.currentTarget.value)}
-							class="flex h-11 w-full rounded-lg border border-input bg-card px-4 py-2 pl-10 pr-10 text-sm shadow-md placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring border-ring) disabled:(cursor-not-allowed opacity-50) transition-all"
+							class="flex h-11 w-full rounded-lg bg-elevated-2 px-4 py-2 pl-10 pr-10 text-sm shadow-md placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring) disabled:(cursor-not-allowed opacity-50) transition-all"
 						/>
 						<Show when={searchQuery()}>
 							<button
