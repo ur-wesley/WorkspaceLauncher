@@ -68,6 +68,11 @@ export default defineConfig({
     DEFAULT: "hsl(var(--card))",
     foreground: "hsl(var(--card-foreground))",
    },
+   elevated: {
+    1: "hsl(var(--elevated-1))",
+    2: "hsl(var(--elevated-2))",
+    3: "hsl(var(--elevated-3))",
+   },
   },
   borderRadius: {
    lg: "var(--radius)",

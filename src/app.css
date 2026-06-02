@@ -29,6 +29,10 @@
 	--ring: 240 5.9% 10%;
 
 	--radius: 0.5rem;
+
+	--elevated-1: 0 0% 96%;
+	--elevated-2: 0 0% 91%;
+	--elevated-3: 0 0% 85%;
 }
 
 [data-kb-theme="dark"] {
@@ -59,6 +63,10 @@
 	--border: 240 3.7% 15.9%;
 	--input: 240 3.7% 15.9%;
 	--ring: 240 4.9% 83.9%;
+
+	--elevated-1: 240 5% 6%;
+	--elevated-2: 240 5% 10%;
+	--elevated-3: 240 5% 15%;
 }
 
 * {
