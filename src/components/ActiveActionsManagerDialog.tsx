@@ -115,7 +115,7 @@ export const ActiveActionsManagerDialog: Component<
 					</Button>
 				</div>
 
-				<div class="flex-1 overflow-y-auto border rounded-md">
+				<div class="flex-1 overflow-y-auto bg-elevated-2 rounded-md">
 					<Table>
 						<TableHeader>
 							<TableRow>

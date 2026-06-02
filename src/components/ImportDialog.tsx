@@ -1,4 +1,4 @@
-﻿import { type Component, createMemo, createSignal, For, Show } from "solid-js";
+import { type Component, createMemo, createSignal, For, Show } from "solid-js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -444,7 +444,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 											</div>
 										</div>
 
-										<div class="space-y-2 border rounded-md p-4">
+										<div class="space-y-2 bg-elevated-2 rounded-md p-4">
 											<For each={importData()?.workspaces || []}>
 												{(workspace) => {
 													const isSelected = () =>
@@ -464,10 +464,10 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 															<div
 																class="flex items-center gap-2 p-2 rounded transition-colors"
 																classList={{
-																	"bg-accent/50 border border-accent":
+																	"bg-elevated-2":
 																		isSelected(),
 																	"hover:bg-muted/50": !isSelected(),
-																	"border-destructive border-2":
+																	"bg-destructive/20":
 																		hasDuplicate() && isSelected(),
 																}}
 															>
@@ -534,7 +534,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 																						type="button"
 																						class="flex items-center gap-2 p-2 rounded transition-colors"
 																						classList={{
-																							"bg-accent/30 border border-accent":
+																							"bg-elevated-2":
 																								isActionSelected(),
 																							"hover:bg-muted/50":
 																								!isActionSelected(),
@@ -615,7 +615,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 											</div>
 										</div>
 
-										<div class="space-y-2 border rounded-md p-4">
+										<div class="space-y-2 bg-elevated-2 rounded-md p-4">
 											<For each={importData()?.tools || []}>
 												{(tool) => {
 													const isSelected = () => selectedTools().has(tool.id);
@@ -625,7 +625,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 															type="button"
 															class="flex items-center gap-2 p-2 rounded transition-colors"
 															classList={{
-																"bg-accent/50 border border-accent":
+																"bg-elevated-2":
 																	isSelected(),
 																"hover:bg-muted/50": !isSelected(),
 															}}
@@ -677,7 +677,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 											</div>
 										</div>
 
-										<div class="space-y-2 border rounded-md p-4">
+										<div class="space-y-2 bg-elevated-2 rounded-md p-4">
 											<For each={importData()?.themes || []}>
 												{(theme) => {
 													const isSelected = () =>
@@ -688,7 +688,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 															type="button"
 															class="flex items-center gap-2 p-2 rounded transition-colors"
 															classList={{
-																"bg-accent/50 border border-accent":
+																"bg-elevated-2":
 																	isSelected(),
 																"hover:bg-muted/50": !isSelected(),
 															}}
@@ -707,7 +707,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 																</Show>
 															</span>
 															<Show when={theme.is_predefined}>
-																<span class="text-[10px] uppercase text-muted-foreground border rounded px-2 py-0.5">
+																<span class="text-[10px] uppercase text-muted-foreground bg-elevated-2 rounded px-2 py-0.5">
 																	Built-in
 																</span>
 															</Show>

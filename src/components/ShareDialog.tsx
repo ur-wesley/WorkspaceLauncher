@@ -256,7 +256,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 								</Button>
 							</div>
 						</div>
-						<div class="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
+						<div class="space-y-2 max-h-60 overflow-y-auto bg-elevated-2 rounded-lg p-3">
 							<Show
 								when={filteredWorkspaces().length > 0}
 								fallback={
@@ -274,7 +274,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
 													isSelected()
-														? "bg-accent/50 border border-accent"
+														? "bg-elevated-2"
 														: ""
 												}`}
 												onClick={() => toggleWorkspace(workspace.id)}
@@ -322,7 +322,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 								</Button>
 							</div>
 						</div>
-						<div class="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
+						<div class="space-y-2 max-h-60 overflow-y-auto bg-elevated-2 rounded-lg p-3">
 							<Show
 								when={filteredTools().length > 0}
 								fallback={
@@ -339,7 +339,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
 													isSelected()
-														? "bg-accent/50 border border-accent"
+														? "bg-elevated-2"
 														: ""
 												}`}
 												onClick={() => toggleTool(tool.id)}
@@ -387,7 +387,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 								</Button>
 							</div>
 						</div>
-						<div class="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
+						<div class="space-y-2 max-h-60 overflow-y-auto bg-elevated-2 rounded-lg p-3">
 							<Show
 								when={filteredThemes().length > 0}
 								fallback={
@@ -404,7 +404,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
 													isSelected()
-														? "bg-accent/50 border border-accent"
+														? "bg-elevated-2"
 														: ""
 												}`}
 												onClick={() => toggleTheme(theme.id)}
@@ -419,7 +419,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 													</Show>
 												</div>
 												<Show when={theme.is_predefined}>
-													<span class="text-[10px] uppercase text-muted-foreground border rounded px-2 py-0.5">
+													<span class="text-[10px] uppercase text-muted-foreground bg-elevated-2 rounded px-2 py-0.5">
 														Built-in
 													</span>
 												</Show>
@@ -432,7 +432,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 					</div>
 				</div>
 
-				<div class="flex justify-between pt-4 border-t">
+				<div class="flex justify-between pt-4">
 					<div class="text-sm text-muted-foreground">
 						Selected: {selectedWorkspaces().size} workspaces,{" "}
 						{selectedTools().size} tools, {selectedThemes().size} themes

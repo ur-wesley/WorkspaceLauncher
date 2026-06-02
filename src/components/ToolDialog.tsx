@@ -421,7 +421,7 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 							</TextFieldRoot>
 						</div>
 
-						<div class="flex justify-end gap-3 pt-4 border-t">
+						<div class="flex justify-end gap-3 pt-4">
 							<Button
 								type="button"
 								variant="outline"

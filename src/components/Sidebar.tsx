@@ -9,7 +9,6 @@ import {
 	Show,
 } from "solid-js";
 import { Button } from "@/components/ui/button";
-import { Image, ImageFallback, ImageRoot } from "@/components/ui/image.tsx";
 import { TextField, TextFieldRoot } from "@/components/ui/textfield";
 import { WorkspaceCreateDialog } from "@/components/WorkspaceCreateDialog";
 import { cn } from "@/libs/cn";
@@ -24,7 +23,6 @@ import type { NewWorkspace } from "@/types/database";
 
 interface SidebarProps {
 	collapsed?: boolean;
-	onToggle?: () => void;
 }
 
 export const Sidebar: Component<SidebarProps> = (props) => {
@@ -146,67 +144,42 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 	return (
 		<div
 			class={cn(
-				"flex flex-col h-full bg-card shadow-md transition-all duration-200",
-				props.collapsed ? "w-16" : "w-64",
+				"flex flex-col h-full bg-card shadow-md overflow-hidden transition-all duration-200 shrink-0",
+				props.collapsed ? "w-0" : "w-64",
 			)}
 		>
-			<div class="bg-muted/30 shadow-sm">
-				<A
-					href="/"
-					class={cn(
-						"flex items-center p-4 hover:bg-muted/50 transition-colors",
-						props.collapsed ? "justify-center" : "gap-3",
-					)}
-				>
-					<ImageRoot>
-						<Image src="/icon.png" />
-						<ImageFallback>WSL</ImageFallback>
-					</ImageRoot>
-					<div
-						class={cn(
-							"transition-opacity duration-200",
-							props.collapsed ? "opacity-0 hidden" : "opacity-100",
-						)}
-					>
-						<h1 class="text-lg font-semibold">Workspace Launcher</h1>
-					</div>
-				</A>
-			</div>
-
 			<div class="flex-1 flex flex-col min-h-0">
-				<div class={cn("flex-1 p-2 overflow-hidden flex flex-col")}>
-					<Show when={!props.collapsed}>
-						<div class="flex items-center justify-between px-2 py-1 mb-2">
-							<div class="flex items-center gap-2">
-								<div class="i-mdi-folder-multiple w-4 h-4 text-muted-foreground" />
-								<span class="text-sm font-medium text-muted-foreground">
-									Workspaces
-								</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<Button
-									size="sm"
-									variant="ghost"
-									class="h-6 w-6 p-0"
-									onclick={toggleSearch}
-									title="Search workspaces"
-								>
-									<div class="w-3 h-3 i-mdi-magnify" />
-								</Button>
-								<Button
-									size="sm"
-									variant="ghost"
-									class="h-6 w-6 p-0"
-									onclick={() => setCreateDialogOpen(true)}
-									title="Create new workspace"
-								>
-									<div class="w-3 h-3 i-mdi-plus" />
-								</Button>
-							</div>
+				<div class="flex-1 p-2 overflow-hidden flex flex-col">
+					<div class="flex items-center justify-between px-2 py-1 mb-2">
+						<div class="flex items-center gap-2">
+							<div class="i-mdi-folder-multiple w-4 h-4 text-muted-foreground" />
+							<span class="text-sm font-medium text-muted-foreground">
+								Workspaces
+							</span>
 						</div>
-					</Show>
+						<div class="flex items-center gap-1">
+							<Button
+								size="sm"
+								variant="ghost"
+								class="h-6 w-6 p-0"
+								onclick={toggleSearch}
+								title="Search workspaces"
+							>
+								<div class="w-3 h-3 i-mdi-magnify" />
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								class="h-6 w-6 p-0"
+								onclick={() => setCreateDialogOpen(true)}
+								title="Create new workspace"
+							>
+								<div class="w-3 h-3 i-mdi-plus" />
+							</Button>
+						</div>
+					</div>
 
-					<Show when={showSearch() && !props.collapsed}>
+					<Show when={showSearch()}>
 						<div class="px-2 mb-2">
 							<TextFieldRoot>
 								<TextField
@@ -286,102 +259,75 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 												: "bg-card text-muted-foreground",
 										)}
 									>
-										{props.collapsed ? (
+										<div class="flex items-center gap-1.5 flex-1 min-w-0">
+											<Button
+												size="icon"
+												variant="ghost"
+												class={cn(
+													"h-6 w-6 flex-shrink-0 rounded-full transition-colors",
+													"bg-card text-muted-foreground",
+													"group-hover:bg-accent group-hover:text-accent-foreground",
+													isWorkspaceActive(workspace.id) &&
+														"bg-accent text-accent-foreground",
+												)}
+												onclick={handleRunWorkspace}
+												disabled={isLaunching()}
+												title={
+													hasRunningActions()
+														? "Stop running actions"
+														: "Run all actions"
+												}
+											>
+												<Show
+													when={hasRunningActions()}
+													fallback={
+														<div class="i-mdi-play w-4 h-4 text-green-600" />
+													}
+												>
+													<div class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+												</Show>
+											</Button>
+
 											<A
 												href={`/w/${workspace.id}`}
-												class="relative flex items-center justify-center w-9 h-9"
-												title={workspace.name}
+												class="flex items-center gap-1.5 flex-1 min-w-0"
 											>
 												<span
 													class={cn(
-														"iconify w-6 h-6",
-														workspace.icon ? "" : "text-muted-foreground",
+														"iconify w-5 h-5 flex-shrink-0",
+														!workspace.icon && "text-muted-foreground",
 													)}
 													data-icon={`mdi:${(workspace.icon ?? "folder").replace(/^i-mdi-/, "")}`}
 												/>
-												<Show when={isPinned()}>
-													<span class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-card shadow">
-														<div class="i-mdi-pin w-2 h-2 text-primary" />
-													</span>
-												</Show>
-												<Show when={hasRunningActions()}>
-													<span class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-green-500 animate-pulse ring-1 ring-card" />
-												</Show>
+												<span class="truncate">{workspace.name}</span>
 											</A>
-										) : (
-											<>
-												<div class="flex items-center gap-1.5 flex-1 min-w-0">
-													<Button
-														size="icon"
-														variant="ghost"
-														class={cn(
-															"h-6 w-6 flex-shrink-0 rounded-full transition-colors",
-															"bg-card text-muted-foreground",
-															"group-hover:bg-accent group-hover:text-accent-foreground",
-															isWorkspaceActive(workspace.id) &&
-																"bg-accent text-accent-foreground",
-														)}
-														onclick={handleRunWorkspace}
-														disabled={isLaunching()}
-														title={
-															hasRunningActions()
-																? "Stop running actions"
-																: "Run all actions"
-														}
-													>
-														<Show
-															when={hasRunningActions()}
-															fallback={
-																<div class="i-mdi-play w-4 h-4 text-green-600" />
-															}
-														>
-															<div class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-														</Show>
-													</Button>
+										</div>
 
-													<A
-														href={`/w/${workspace.id}`}
-														class="flex items-center gap-1.5 flex-1 min-w-0"
-														title={props.collapsed ? workspace.name : undefined}
-													>
-														<span
-															class={cn(
-																"iconify w-5 h-5 flex-shrink-0",
-																!workspace.icon && "text-muted-foreground",
-															)}
-															data-icon={`mdi:${(workspace.icon ?? "folder").replace(/^i-mdi-/, "")}`}
-														/>
-														<span class="truncate">{workspace.name}</span>
-													</A>
-												</div>
-
-												<Button
-													size="icon"
-													variant="ghost"
-													class={cn(
-														"h-6 w-6 rounded-full transition-colors",
-														isPinned()
-															? "opacity-100 bg-card text-primary"
-															: "opacity-0 bg-card text-muted-foreground group-hover:opacity-100 group-hover:bg-accent group-hover:text-accent-foreground",
-													)}
-													onclick={(e) => {
-														e.preventDefault();
-														e.stopPropagation();
-														actions.togglePinWorkspace(workspace.id);
-													}}
-													title={
-														isPinned() ? "Unpin workspace" : "Pin workspace"
-													}
-												>
-													<div
-														class={cn(
-															"w-3 h-3",
-															isPinned() ? "i-mdi-pin" : "i-mdi-pin-outline",
-														)}
-													/>
-												</Button>
-											</>
-										)}
+										<Button
+											size="icon"
+											variant="ghost"
+											class={cn(
+												"h-6 w-6 rounded-full transition-colors",
+												isPinned()
+													? "opacity-100 bg-card text-primary"
+													: "opacity-0 bg-card text-muted-foreground group-hover:opacity-100 group-hover:bg-accent group-hover:text-accent-foreground",
+											)}
+											onclick={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												actions.togglePinWorkspace(workspace.id);
+											}}
+											title={
+												isPinned() ? "Unpin workspace" : "Pin workspace"
+											}
+										>
+											<div
+												class={cn(
+													"w-3 h-3",
+													isPinned() ? "i-mdi-pin" : "i-mdi-pin-outline",
+												)}
+											/>
+										</Button>
 									</div>
 								);
 							}}
@@ -402,7 +348,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 				</div>
 			</div>
 
-			<div class="p-2 border-t border-border space-y-1">
+			<div class="p-2 space-y-1">
 				<Button
 					variant="ghost"
 					class={cn(
@@ -412,15 +358,8 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 					onclick={() => ui.actions.openActiveActionsManager()}
 				>
 					<div class="i-mdi-application-cog w-5 h-5 flex-shrink-0" />
-					<span
-						class={cn(
-							"transition-opacity duration-200 flex-1 text-left",
-							props.collapsed ? "opacity-0 hidden" : "opacity-100",
-						)}
-					>
-						Active Actions
-					</span>
-					<Show when={!props.collapsed && totalRunningActions() > 0}>
+					<span class="flex-1 text-left">Active Actions</span>
+					<Show when={totalRunningActions() > 0}>
 						<span class="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-5 text-center">
 							{totalRunningActions()}
 						</span>
@@ -438,37 +377,8 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 					)}
 				>
 					<div class="i-mdi-cog w-5 h-5 flex-shrink-0" />
-					<span
-						class={cn(
-							"transition-opacity duration-200",
-							props.collapsed ? "opacity-0 hidden" : "opacity-100",
-						)}
-					>
-						Settings
-					</span>
+					<span>Settings</span>
 				</A>
-
-				<Button
-					variant="ghost"
-					size="sm"
-					class="w-full justify-start gap-3"
-					onclick={props.onToggle}
-				>
-					<div
-						class={cn(
-							"w-5 h-5 transition-transform",
-							props.collapsed ? "i-mdi-chevron-right" : "i-mdi-chevron-left",
-						)}
-					/>
-					<span
-						class={cn(
-							"transition-opacity duration-200",
-							props.collapsed ? "opacity-0 hidden" : "opacity-100",
-						)}
-					>
-						Collapse
-					</span>
-				</Button>
 			</div>
 
 			<WorkspaceCreateDialog

@@ -44,7 +44,7 @@ export const LogViewer = (props: LogViewerProps) => {
 	});
 
 	return (
-		<div class="flex flex-col h-full bg-[#1e1e1e] rounded-md overflow-hidden border border-border">
+		<div class="flex flex-col h-full bg-[#1e1e1e] rounded-md overflow-hidden shadow-md">
 			<div
 				class="flex-1 overflow-y-auto p-4 font-mono text-xs md:text-sm"
 				ref={containerRef}

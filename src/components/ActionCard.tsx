@@ -1,5 +1,6 @@
+import { openPath } from "@tauri-apps/plugin-opener";
 import type { Component } from "solid-js";
-import { createSignal, Show } from "solid-js";
+import { createMemo, createSignal, Show } from "solid-js";
 import { ActionRunHistory } from "@/components/ActionRunHistory";
 import { ActionDialogStepper as ActionDialog } from "@/components/action/ActionDialogStepper";
 import { DeleteActionDialog } from "@/components/DeleteActionDialog";
@@ -36,6 +37,22 @@ interface ActionCardProps {
 
 export const ActionCard: Component<ActionCardProps> = (props) => {
 	const config = () => parseActionConfig(props.action.config);
+
+	const workingDir = createMemo(() => {
+		try {
+			const parsed = JSON.parse(props.action.config) as Record<string, unknown>;
+			return (parsed.working_directory as string | undefined) || null;
+		} catch {
+			return null;
+		}
+	});
+
+	const workingDirLabel = createMemo(() => {
+		const dir = workingDir();
+		if (!dir) return null;
+		const parts = dir.replace(/\\/g, "/").split("/").filter(Boolean);
+		return parts[parts.length - 1] ?? dir;
+	});
 	const [state] = useRunStore();
 	const [showLogs, setShowLogs] = createSignal(false);
 	const [isLaunching, setIsLaunching] = createSignal(false);
@@ -88,26 +105,28 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 	};
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: Cannot use <button> element because the card contains interactive button children, which would create invalid nested buttons
 		<div
-			role="button"
-			tabIndex={0}
 			class={cn(
 				"group rounded-md transition-all duration-200",
-				"bg-card border border-border hover:border-primary/50",
-				"shadow-sm hover:shadow cursor-pointer",
+				"bg-elevated-2 hover:bg-elevated-3",
+				"shadow-sm hover:shadow-md",
 			)}
-			onClick={handleCardClick}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					handleCardClick(e as unknown as MouseEvent);
-				}
-			}}
 		>
 			<div class="p-3">
 				<div class="flex items-center justify-between gap-2 mb-2">
-					<div class="flex items-center gap-2 flex-1 min-w-0">
+					{/* biome-ignore lint/a11y/useSemanticElements: Cannot use button because it would nest inside interactive children */}
+					<div
+						role="button"
+						tabIndex={0}
+						class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+						onClick={handleCardClick}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.preventDefault();
+								handleCardClick(e as unknown as MouseEvent);
+							}
+						}}
+					>
 						<div class="flex items-center justify-center w-7 h-7 rounded bg-primary text-primary-foreground font-bold text-xs shrink-0">
 							{props.action.order_index + 1}
 						</div>
@@ -179,18 +198,14 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 							>
 								<div class="i-mdi-dots-vertical w-4 h-4" />
 							</DropdownMenuTrigger>
-							<DropdownMenuContent class="w-48">
-								<ActionDialog
-									workspaceId={props.workspaceId.toString()}
-									action={props.action}
-									trigger={EditActionTrigger}
-								/>
-								<DropdownMenuSeparator />
-								<DeleteActionDialog
-									action={props.action}
-									trigger={DeleteActionTrigger}
-								/>
-							</DropdownMenuContent>
+						<DropdownMenuContent class="w-48">
+							<EditActionTrigger onClick={() => setShowEditDialog(true)} />
+							<DropdownMenuSeparator />
+							<DeleteActionDialog
+								action={props.action}
+								trigger={DeleteActionTrigger}
+							/>
+						</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
 				</div>
@@ -239,11 +254,39 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 							{props.action.timeout_seconds}s
 						</Badge>
 					</Show>
-					<Show when={config().commandPreview}>
-						<code class="bg-muted/80 px-1.5 py-0.5 rounded font-mono text-muted-foreground truncate flex-1 min-w-0">
-							{config().commandPreview}
-						</code>
-					</Show>
+				<Show when={config().commandPreview}>
+					<code class="bg-muted/80 px-1.5 py-0.5 rounded font-mono text-muted-foreground truncate flex-1 min-w-0">
+						{config().commandPreview}
+					</code>
+				</Show>
+				<Show when={workingDir()}>
+					<div class="inline-flex items-center h-5 rounded border border-border bg-muted/50 text-muted-foreground font-mono text-xs shrink-0 max-w-[200px] overflow-hidden">
+						<button
+							type="button"
+							title={`Open in file manager: ${workingDir()}`}
+							onClick={(e) => {
+								e.stopPropagation();
+								openPath(workingDir()!);
+							}}
+							class="inline-flex items-center gap-0.5 h-full px-1.5 hover:text-foreground hover:bg-muted transition-colors cursor-pointer min-w-0"
+						>
+							<div class="i-mdi-folder-outline w-3 h-3 shrink-0" />
+							<span class="truncate">{workingDirLabel()}</span>
+						</button>
+						<div class="w-px h-3 bg-border shrink-0" />
+						<button
+							type="button"
+							title={`Copy path: ${workingDir()}`}
+							onClick={(e) => {
+								e.stopPropagation();
+								navigator.clipboard.writeText(workingDir()!);
+							}}
+							class="inline-flex items-center justify-center h-full px-1 hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
+						>
+							<div class="i-mdi-content-copy w-3 h-3" />
+						</button>
+					</div>
+				</Show>
 				</div>
 			</div>
 

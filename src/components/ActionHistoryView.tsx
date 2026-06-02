@@ -177,7 +177,7 @@ export const ActionHistoryView: Component<ActionHistoryViewProps> = (props) => {
 											</div>
 
 											<Show when={run.error_message}>
-												<div class="mt-2 p-2 bg-destructive/10 rounded-md border border-destructive/20">
+												<div class="mt-2 p-2 bg-destructive/10 rounded-md">
 													<div class="text-xs font-medium text-destructive mb-1">
 														Error:
 													</div>

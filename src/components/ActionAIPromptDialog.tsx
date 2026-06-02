@@ -446,7 +446,7 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
 						<textarea
 							value={userDescription()}
 							onInput={(e) => setUserDescription(e.currentTarget.value)}
-							class="min-h-[100px] font-sans text-sm resize-none w-full p-3 rounded-md border border-input bg-background"
+							class="min-h-[100px] font-sans text-sm resize-none w-full p-3 rounded-md bg-elevated-2"
 							placeholder="Example: I want to launch FiveM and connect to a specific server..."
 						/>
 						<div class="text-xs text-muted-foreground">
@@ -480,7 +480,7 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
 							value={jsonInput()}
 							onInput={(e) => setJsonInput(e.currentTarget.value)}
 							onPaste={handlePaste}
-							class="min-h-[250px] font-mono text-xs resize-none w-full p-3 rounded-md border border-input bg-background"
+							class="min-h-[250px] font-mono text-xs resize-none w-full p-3 rounded-md bg-elevated-2"
 							placeholder='Paste JSON here (single object or array): { "name": "..." } or [{ "name": "..." }, ...]'
 						/>
 						<div class="text-xs text-muted-foreground">

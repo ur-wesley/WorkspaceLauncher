@@ -28,8 +28,8 @@ export const VariableCard: Component<VariableCardProps> = (props) => {
 		<div
 			class={cn(
 				"group rounded-md transition-all duration-200",
-				"bg-card border border-border hover:border-primary/50",
-				"shadow-sm hover:shadow",
+				"bg-elevated-2 hover:bg-elevated-3",
+				"shadow-sm hover:shadow-md",
 			)}
 		>
 			<div class="p-3">

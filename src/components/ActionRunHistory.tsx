@@ -196,7 +196,7 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 											</div>
 
 											<Show when={run.error_message}>
-												<div class="p-2 bg-destructive/10 rounded border border-destructive/20">
+												<div class="p-2 bg-destructive/10 rounded">
 													<div class="text-xs font-medium text-destructive mb-1">
 														Error:
 													</div>

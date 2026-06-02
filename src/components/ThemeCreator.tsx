@@ -238,7 +238,7 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 						onInput={(e) => setDescription(e.currentTarget.value)}
 						placeholder="A beautiful theme with custom colors"
 						rows={2}
-						class="flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+						class="flex min-h-20 w-full rounded-md bg-elevated-2 px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 					/>
 				</div>
 			</div>
@@ -321,7 +321,7 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 					</div>
 
 					<div
-						class="rounded-2xl border border-border/60 shadow-sm"
+						class="rounded-2xl bg-elevated-1 shadow-sm"
 						data-kb-theme={previewMode() === "dark" ? "dark" : undefined}
 						style={{
 							...Object.fromEntries(
@@ -423,11 +423,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 										Secondary
 									</span>
 									<span
-										class="px-3 py-1 text-xs font-semibold rounded-md border"
+										class="px-3 py-1 text-xs font-semibold rounded-md bg-elevated-2"
 										style={{
-											"border-color": "var(--border)",
 											color: "var(--foreground)",
-											background: "var(--background)",
 										}}
 									>
 										Outline
@@ -545,11 +543,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 								</div>
 								<div class="flex flex-col gap-3">
 									<div
-										class="p-4 rounded-md border"
+										class="p-4 rounded-md bg-elevated-2"
 										style={{
-											background: "var(--card)",
 											color: "var(--card-foreground)",
-											"border-color": "var(--border)",
 										}}
 									>
 										<div class="font-medium mb-1">Card Surface</div>
@@ -579,11 +575,9 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 										Accent surface with accent text
 									</div>
 									<div
-										class="p-4 rounded-md border"
+										class="p-4 rounded-md bg-elevated-3"
 										style={{
-											background: "var(--popover)",
 											color: "var(--popover-foreground)",
-											"border-color": "var(--border)",
 										}}
 									>
 										<div class="font-medium mb-1">Popover Surface</div>
@@ -606,31 +600,29 @@ export const ThemeCreator: Component<ThemeCreatorProps> = (props) => {
 								</div>
 								<div class="flex flex-col gap-3">
 									<div
-										class="p-3 rounded-md border-2"
+										class="p-3 rounded-md bg-elevated-2"
 										style={{
-											"border-color": "var(--border)",
 											background: "var(--background)",
 											color: "var(--foreground)",
 										}}
 									>
-										Border example
+										Elevation level 2 example
 									</div>
 									<div
-										class="p-3 rounded-md border-2 focus-within:ring-2"
+										class="p-3 rounded-md bg-elevated-3 focus-within:ring-2"
 										style={{
-											"border-color": "var(--ring)",
 											background: "var(--background)",
 											color: "var(--foreground)",
 										}}
 									>
-										Focus ring example
+										Elevation level 3 with focus ring
 									</div>
 								</div>
 							</div>
 						</div>
 					</div>
 
-					<div class="flex justify-end gap-2 pt-4 border-t">
+					<div class="flex justify-end gap-2 pt-4">
 						<Button variant="outline" onClick={props.onCancel}>
 							Cancel
 						</Button>

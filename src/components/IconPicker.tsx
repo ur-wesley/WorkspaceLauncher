@@ -124,7 +124,7 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
 			/>
 			<PopoverContent class="w-[420px] p-0">
 				<div class="flex flex-col max-h-[400px]">
-					<div class="p-3 border-b border-border">
+					<div class="p-3 bg-elevated-2">
 						<TextFieldRoot>
 							<TextField
 								type="text"
@@ -180,7 +180,7 @@ export const IconPicker: Component<IconPickerProps> = (props) => {
 							</div>
 						</Show>
 					</div>
-					<div class="border-t border-border p-2 bg-muted/30">
+					<div class="p-2 bg-elevated-1">
 						<Show when={!loading() && searchQuery()}>
 							<div class="text-xs text-muted-foreground text-center">
 								{filteredIcons().length} result
