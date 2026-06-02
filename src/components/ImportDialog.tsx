@@ -464,8 +464,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 															<div
 																class="flex items-center gap-2 p-2 rounded transition-colors"
 																classList={{
-																	"bg-elevated-2":
-																		isSelected(),
+																	"bg-elevated-2": isSelected(),
 																	"hover:bg-muted/50": !isSelected(),
 																	"bg-destructive/20":
 																		hasDuplicate() && isSelected(),
@@ -625,8 +624,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 															type="button"
 															class="flex items-center gap-2 p-2 rounded transition-colors"
 															classList={{
-																"bg-elevated-2":
-																	isSelected(),
+																"bg-elevated-2": isSelected(),
 																"hover:bg-muted/50": !isSelected(),
 															}}
 															onClick={() => toggleTool(tool.id)}
@@ -688,8 +686,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 															type="button"
 															class="flex items-center gap-2 p-2 rounded transition-colors"
 															classList={{
-																"bg-elevated-2":
-																	isSelected(),
+																"bg-elevated-2": isSelected(),
 																"hover:bg-muted/50": !isSelected(),
 															}}
 															onClick={() => toggleTheme(theme.id)}

@@ -19,6 +19,9 @@
         "noUnusedImports": "error",
         "noUnusedVariables": "error"
       },
+      "a11y": {
+        "noSvgWithoutTitle": "off"
+      },
       "style": {
         "useImportType": "error",
         "useExportType": "error"

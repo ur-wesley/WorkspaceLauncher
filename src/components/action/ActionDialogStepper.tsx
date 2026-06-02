@@ -357,12 +357,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 			source: "custom",
 			tool_name: name().trim(),
 			tool_type: customToolType(),
-			command:
-				customToolType() === "cli" ? customCommand().trim() : undefined,
+			command: customToolType() === "cli" ? customCommand().trim() : undefined,
 			binary_path:
-				customToolType() === "binary"
-					? customBinaryPath().trim()
-					: undefined,
+				customToolType() === "binary" ? customBinaryPath().trim() : undefined,
 			args: args.length > 0 ? args : undefined,
 			working_directory: workingDir.length > 0 ? workingDir : null,
 		};
@@ -662,7 +659,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 											<option value="">Choose a tool...</option>
 											<For each={allowedTools()}>
 												{(tool) => (
-													<option value={tool.id.toString()}>{tool.name}</option>
+													<option value={tool.id.toString()}>
+														{tool.name}
+													</option>
 												)}
 											</For>
 										</select>
@@ -842,7 +841,7 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 													(e.currentTarget as HTMLTextAreaElement).value,
 												)
 											}
-											placeholder={"--flag\n--path ${workspace_path}"}
+											placeholder={"--flag\n--path $" + "{workspace_path}"}
 											class="font-mono text-sm resize-none"
 										/>
 									</TextFieldRoot>
@@ -1018,7 +1017,9 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 							<div class="rounded-md bg-accent/50 px-3 py-2.5 flex items-start gap-2">
 								<div class="i-mdi-information-outline w-4 h-4 text-primary shrink-0 mt-0.5" />
 								<p class="text-sm">
-									<span class="font-medium">New variables will be created: </span>
+									<span class="font-medium">
+										New variables will be created:{" "}
+									</span>
 									<span class="font-mono text-xs">
 										{missingVariables().join(", ")}
 									</span>
@@ -1035,10 +1036,7 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 						>
 							Cancel
 						</Button>
-						<Button
-							onClick={handleSubmit}
-							disabled={!canSubmit() || loading()}
-						>
+						<Button onClick={handleSubmit} disabled={!canSubmit() || loading()}>
 							<Show when={loading()}>
 								<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
 							</Show>

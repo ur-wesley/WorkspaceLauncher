@@ -106,9 +106,7 @@ async function checkRunningActions(): Promise<void> {
 						process_id: newPid,
 						resolution_retries: 0,
 					});
-					console.log(
-						`Re-resolved PID for "${action.action_name}": ${newPid}`,
-					);
+					console.log(`Re-resolved PID for "${action.action_name}": ${newPid}`);
 					continue;
 				}
 

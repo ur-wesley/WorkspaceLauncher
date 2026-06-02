@@ -206,7 +206,13 @@ export async function launchAction(
 		}
 
 		if (result.success && result.processId && action.track_process) {
-			trackRunningAction(action, result.processId, context, result.runId, result.workingDirectory);
+			trackRunningAction(
+				action,
+				result.processId,
+				context,
+				result.runId,
+				result.workingDirectory,
+			);
 		}
 
 		return result;
@@ -558,16 +564,16 @@ async function launchCustomTool(
 			}
 			console.log(`Custom tool launched with actual PID: ${actualPid}`);
 
-		return {
-			success: true,
-			message: `${config.tool_name} launched successfully`,
-			processId: actualPid,
-			workingDirectory: workingDir,
-		};
-	} catch (error) {
-		console.error("Error launching command:", error);
-		throw error;
-	}
+			return {
+				success: true,
+				message: `${config.tool_name} launched successfully`,
+				processId: actualPid,
+				workingDirectory: workingDir,
+			};
+		} catch (error) {
+			console.error("Error launching command:", error);
+			throw error;
+		}
 	} else if (hasCommand) {
 		let resolvedPid: number | undefined;
 		if (isDetached && !isWindows()) {

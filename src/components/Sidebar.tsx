@@ -317,9 +317,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 												e.stopPropagation();
 												actions.togglePinWorkspace(workspace.id);
 											}}
-											title={
-												isPinned() ? "Unpin workspace" : "Pin workspace"
-											}
+											title={isPinned() ? "Unpin workspace" : "Pin workspace"}
 										>
 											<div
 												class={cn(

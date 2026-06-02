@@ -273,9 +273,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 											<button
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
-													isSelected()
-														? "bg-elevated-2"
-														: ""
+													isSelected() ? "bg-elevated-2" : ""
 												}`}
 												onClick={() => toggleWorkspace(workspace.id)}
 											>
@@ -338,9 +336,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 											<button
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
-													isSelected()
-														? "bg-elevated-2"
-														: ""
+													isSelected() ? "bg-elevated-2" : ""
 												}`}
 												onClick={() => toggleTool(tool.id)}
 											>
@@ -403,9 +399,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 											<button
 												type="button"
 												class={`flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer ${
-													isSelected()
-														? "bg-elevated-2"
-														: ""
+													isSelected() ? "bg-elevated-2" : ""
 												}`}
 												onClick={() => toggleTheme(theme.id)}
 											>
