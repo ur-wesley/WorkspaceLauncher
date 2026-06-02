@@ -96,7 +96,7 @@ pub async fn spawn_attached_with_logs(
     }
 
     if req.track_process {
-        let resolved = resolve_pid_for_tracking(pid, &req.command, &req.args).await;
+        let resolved = resolve_pid_for_tracking(pid, &req.command, &req.args, req.working_directory.as_deref()).await;
         Ok(resolved.unwrap_or(pid))
     } else {
         Ok(pid)
@@ -118,11 +118,22 @@ fn get_wrapper_exclude_list() -> Vec<String> {
     ]
 }
 
-async fn resolve_pid_for_tracking(parent_pid: u32, command: &str, args: &[String]) -> Option<u32> {
+async fn resolve_pid_for_tracking(
+    parent_pid: u32,
+    command: &str,
+    args: &[String],
+    working_directory: Option<&str>,
+) -> Option<u32> {
     println!(
         "DEBUG: resolve_pid_for_tracking parent={} cmd={}",
         parent_pid, command
     );
+
+    let started_after_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
     let expected_name = args
         .get(0)
         .filter(|s| s.ends_with(".exe") || s.contains('/') || s.contains('\\'))
@@ -133,7 +144,9 @@ async fn resolve_pid_for_tracking(parent_pid: u32, command: &str, args: &[String
         parent_pid,
         expected_name,
         exclude_names: Some(get_wrapper_exclude_list()),
-        max_wait_ms: Some(2000),
+        max_wait_ms: Some(3000),
+        working_directory: working_directory.map(|s| s.to_string()),
+        started_after_secs: Some(started_after_secs),
     })
     .await
     .ok()
@@ -214,7 +227,7 @@ pub async fn spawn_detached(app: &AppHandle, req: DetachedSpawnRequest) -> Resul
     }
 
     if req.track_process {
-        let resolved = resolve_pid_for_tracking(pid, &req.command, &req.args).await;
+        let resolved = resolve_pid_for_tracking(pid, &req.command, &req.args, req.working_directory.as_deref()).await;
         Ok(resolved.unwrap_or(pid))
     } else {
         Ok(pid)

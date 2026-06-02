@@ -140,44 +140,129 @@ pub struct ResolvePidRequest {
     pub expected_name: Option<String>,
     pub exclude_names: Option<Vec<String>>,
     pub max_wait_ms: Option<u64>,
+    pub working_directory: Option<String>,
+    pub started_after_secs: Option<u64>,
+}
+
+fn collect_filtered_descendants<'a>(
+    system: &'a System,
+    root: Pid,
+    exclude: &[String],
+) -> Vec<&'a Process> {
+    let mut descendants = Vec::new();
+    let mut frontier = vec![root];
+    while let Some(p) = frontier.pop() {
+        for (pid, proc_info) in system.processes() {
+            if proc_info.parent() == Some(p) {
+                let name_lc = proc_info.name().to_string_lossy().to_lowercase();
+                if !exclude.iter().any(|e| name_lc.contains(e)) {
+                    descendants.push(proc_info);
+                }
+                frontier.push(*pid);
+            }
+        }
+    }
+    descendants
+}
+
+async fn find_server_after_build(
+    req: &ResolvePidRequest,
+    build_pids: &[u32],
+    exclude: &[String],
+) -> Result<Option<u32>, String> {
+    println!("DEBUG: Phase 4 — all initial processes exited (build phase). Searching for server.");
+
+    // Give the server a moment to finish starting up.
+    sleep(Duration::from_millis(1500)).await;
+
+    let mut system = System::new_all();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+
+    let build_set: std::collections::HashSet<u32> = build_pids.iter().copied().collect();
+    let threshold = req.started_after_secs.unwrap_or(0);
+
+    let wdir_normalized = req.working_directory.as_deref().map(|w| {
+        w.to_lowercase().replace('\\', "/").trim_end_matches('/').to_string()
+    });
+
+    let mut candidates: Vec<(u32, u64)> = Vec::new();
+    for (pid, proc_info) in system.processes() {
+        let pid_u32 = pid.as_u32();
+        if build_set.contains(&pid_u32) {
+            continue;
+        }
+        if proc_info.start_time() <= threshold {
+            continue;
+        }
+        let name_lc = proc_info.name().to_string_lossy().to_lowercase();
+        if exclude.iter().any(|e| name_lc.contains(e)) {
+            continue;
+        }
+
+        // When a working directory is provided, filter by cwd if the OS returns it.
+        // If cwd() is unavailable (None), keep the candidate — don't discard it.
+        if let Some(ref wdir) = wdir_normalized {
+            if let Some(cwd) = proc_info.cwd() {
+                let cwd_norm = cwd
+                    .to_string_lossy()
+                    .to_lowercase()
+                    .replace('\\', "/")
+                    .trim_end_matches('/')
+                    .to_string();
+                if !cwd_norm.starts_with(wdir.as_str()) {
+                    continue;
+                }
+            }
+            // cwd() returned None — keep candidate; we can't verify but won't discard
+        }
+
+        candidates.push((pid_u32, proc_info.start_time()));
+    }
+
+    if candidates.is_empty() {
+        println!("DEBUG: Phase 4 — no server process found");
+        return Ok(None);
+    }
+
+    // Pick the most recently started candidate (just-launched server)
+    candidates.sort_by_key(|&(_, t)| std::cmp::Reverse(t));
+    let best_pid = candidates[0].0;
+    if let Some(proc_info) = system.process(Pid::from_u32(best_pid)) {
+        println!(
+            "DEBUG: Phase 4 — selected server PID: {} ({:?})",
+            best_pid,
+            proc_info.name()
+        );
+    }
+    Ok(Some(best_pid))
 }
 
 #[tauri::command]
 pub async fn resolve_descendant_pid(req: ResolvePidRequest) -> Result<Option<u32>, String> {
-    let total_wait = req.max_wait_ms.unwrap_or(2000);
-    let mut attempts: u32 = (total_wait / 100).max(1) as u32;
+    let poll_budget_ms = req.max_wait_ms.unwrap_or(3000).min(1000);
+    let stabilize_ms = 2000u64;
+    let mut poll_attempts = (poll_budget_ms / 100).max(1) as u32;
     let exclude: Vec<String> = req
         .exclude_names
+        .clone()
         .unwrap_or_default()
         .into_iter()
         .map(|s| s.to_lowercase())
         .collect();
+
+    // Phase 1: poll until at least one descendant appears (tree is being built)
+    let mut initial_pids: Vec<u32> = Vec::new();
     loop {
         let mut system = System::new_all();
         system.refresh_processes(ProcessesToUpdate::All, true);
         let parent = Pid::from_u32(req.parent_pid);
+        let descendants = collect_filtered_descendants(&system, parent, &exclude);
+
         println!(
-            "DEBUG: resolving descendants for parent: {}",
-            req.parent_pid
+            "DEBUG: resolving descendants for parent: {} — found {}",
+            req.parent_pid,
+            descendants.len()
         );
-
-        let mut descendants: Vec<&Process> = Vec::new();
-        let mut frontier: Vec<Pid> = vec![parent];
-        while let Some(p) = frontier.pop() {
-            for (pid, proc_info) in system.processes() {
-                if let Some(par) = proc_info.parent() {
-                    if par == p {
-                        let name_lc = proc_info.name().to_string_lossy().to_lowercase();
-                        if !exclude.iter().any(|e| name_lc.contains(e)) {
-                            descendants.push(proc_info);
-                        }
-                        frontier.push(*pid);
-                    }
-                }
-            }
-        }
-
-        println!("DEBUG: found {} descendants", descendants.len());
         for d in &descendants {
             println!(
                 "DEBUG: descendant: {} ({:?}) parent: {:?}",
@@ -187,54 +272,159 @@ pub async fn resolve_descendant_pid(req: ResolvePidRequest) -> Result<Option<u32
             );
         }
 
-        if descendants.is_empty() {
-            if attempts == 0 {
-                return Ok(None);
-            }
-        } else {
-            if let Some(ref name) = req.expected_name {
-                let needle = name.to_lowercase();
-                if let Some(p) = descendants
-                    .iter()
-                    .find(|pr| pr.name().to_string_lossy().to_lowercase().contains(&needle))
-                {
-                    return Ok(Some(p.pid().as_u32()));
-                }
-            }
-            use std::collections::HashSet;
-            let descendant_pids: HashSet<Pid> = descendants.iter().map(|p| p.pid()).collect();
-            let mut root_candidates: Vec<&Process> = descendants
-                .iter()
-                .copied()
-                .filter(|pr| match pr.parent() {
-                    Some(par) => !descendant_pids.contains(&par),
-                    None => true,
-                })
-                .collect();
-
-            root_candidates.sort_by_key(|pr| pr.start_time());
-
-            if let Some(p) = root_candidates.first() {
-                println!("DEBUG: selected root PID: {} ({:?})", p.pid(), p.name());
-                return Ok(Some(p.pid().as_u32()));
-            }
-
-            if let Some(p) = descendants.iter().min_by_key(|pr| pr.start_time()) {
-                println!(
-                    "DEBUG: fallback selected earliest PID: {} ({:?})",
-                    p.pid(),
-                    p.name()
-                );
-                return Ok(Some(p.pid().as_u32()));
-            }
+        if !descendants.is_empty() {
+            initial_pids = descendants.iter().map(|p| p.pid().as_u32()).collect();
+            break;
         }
 
-        if attempts == 0 {
-            return Ok(None);
+        if poll_attempts == 0 {
+            break;
         }
-        attempts -= 1;
+        poll_attempts -= 1;
         sleep(Duration::from_millis(100)).await;
     }
+
+    if initial_pids.is_empty() {
+        return Ok(None);
+    }
+
+    // Phase 2: wait for the tree to stabilize so short-lived launchers can exit
+    sleep(Duration::from_millis(stabilize_ms)).await;
+
+    // Phase 3: of the originally captured descendants, keep only those still alive
+    let mut system = System::new_all();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+
+    let alive_pids: Vec<u32> = initial_pids
+        .iter()
+        .copied()
+        .filter(|&pid| system.process(Pid::from_u32(pid)).is_some())
+        .collect();
+
+    println!(
+        "DEBUG: after {}ms stabilization: {}/{} descendants still alive",
+        stabilize_ms,
+        alive_pids.len(),
+        initial_pids.len()
+    );
+
+    if alive_pids.is_empty() {
+        // Phase 4: the entire initial tree was a build/setup phase that exited.
+        // Wait for the actual server process to start, then find it.
+        return find_server_after_build(&req, &initial_pids, &exclude).await;
+    }
+
+    // Match by expected name first
+    if let Some(ref name) = req.expected_name {
+        let needle = name.to_lowercase();
+        for &pid in &alive_pids {
+            if let Some(proc_info) = system.process(Pid::from_u32(pid)) {
+                if proc_info
+                    .name()
+                    .to_string_lossy()
+                    .to_lowercase()
+                    .contains(&needle)
+                {
+                    println!(
+                        "DEBUG: matched expected_name PID: {} ({:?})",
+                        pid,
+                        proc_info.name()
+                    );
+                    return Ok(Some(pid));
+                }
+            }
+        }
+    }
+
+    // Prefer leaf: an alive process with no alive children
+    for &pid in &alive_pids {
+        let has_alive_child = alive_pids.iter().any(|&other| {
+            system
+                .process(Pid::from_u32(other))
+                .and_then(|p| p.parent())
+                .map(|par| par.as_u32() == pid)
+                .unwrap_or(false)
+        });
+        if !has_alive_child {
+            if let Some(proc_info) = system.process(Pid::from_u32(pid)) {
+                println!(
+                    "DEBUG: selected alive leaf PID: {} ({:?})",
+                    pid,
+                    proc_info.name()
+                );
+            }
+            return Ok(Some(pid));
+        }
+    }
+
+    Ok(alive_pids.first().copied())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FindServerRequest {
+    pub working_directory: Option<String>,
+    pub started_after_secs: Option<u64>,
+    pub exclude_names: Option<Vec<String>>,
+}
+
+#[tauri::command]
+pub async fn find_server_process(req: FindServerRequest) -> Result<Option<u32>, String> {
+    let exclude: Vec<String> = req
+        .exclude_names
+        .unwrap_or_default()
+        .into_iter()
+        .map(|s| s.to_lowercase())
+        .collect();
+
+    let mut system = System::new_all();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+
+    let threshold = req.started_after_secs.unwrap_or(0);
+    let wdir_normalized = req.working_directory.as_deref().map(|w| {
+        w.to_lowercase()
+            .replace('\\', "/")
+            .trim_end_matches('/')
+            .to_string()
+    });
+
+    let mut candidates: Vec<(u32, u64)> = Vec::new();
+    for (pid, proc_info) in system.processes() {
+        let pid_u32 = pid.as_u32();
+        if proc_info.start_time() <= threshold {
+            continue;
+        }
+        let name_lc = proc_info.name().to_string_lossy().to_lowercase();
+        if exclude.iter().any(|e| name_lc.contains(e)) {
+            continue;
+        }
+        if let Some(ref wdir) = wdir_normalized {
+            if let Some(cwd) = proc_info.cwd() {
+                let cwd_norm = cwd
+                    .to_string_lossy()
+                    .to_lowercase()
+                    .replace('\\', "/")
+                    .trim_end_matches('/')
+                    .to_string();
+                if !cwd_norm.starts_with(wdir.as_str()) {
+                    continue;
+                }
+            }
+        }
+        candidates.push((pid_u32, proc_info.start_time()));
+    }
+
+    candidates.sort_by_key(|&(_, t)| std::cmp::Reverse(t));
+    let result = candidates.first().map(|&(pid, _)| pid);
+    if let Some(pid) = result {
+        if let Some(proc_info) = system.process(Pid::from_u32(pid)) {
+            println!(
+                "DEBUG: find_server_process found PID: {} ({:?})",
+                pid,
+                proc_info.name()
+            );
+        }
+    }
+    Ok(result)
 }
 
 #[cfg(test)]

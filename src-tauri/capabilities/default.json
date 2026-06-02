@@ -7,6 +7,11 @@
   ],
   "permissions": [
     "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-is-maximized",
     "core:window:allow-set-title",
     "opener:default",
     "sql:default",
@@ -84,9 +89,9 @@
     {
       "identifier": "opener:allow-open-path",
       "allow": [
-        {
-          "path": "$APPDATA"
-        }
+        { "path": "$APPDATA" },
+        { "path": "$APPDATA/**" },
+        { "path": "**" }
       ]
     }
   ]

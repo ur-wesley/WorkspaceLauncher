@@ -7,10 +7,12 @@ mod monitor;
 mod process;
 mod recovery;
 
+pub mod test_helpers;
+
 use generic_launcher::{auto_launch_actions, spawn_process};
 use launcher::{launch_action, launch_workspace};
 use monitor::get_system_metrics;
-use process::{is_process_running, kill_process, resolve_descendant_pid};
+use process::{find_server_process, is_process_running, kill_process, resolve_descendant_pid};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -196,6 +198,7 @@ pub fn run() {
             kill_process,
             is_process_running,
             resolve_descendant_pid,
+            find_server_process,
             get_system_metrics,
             get_system_metrics,
             schedule_db_reset,

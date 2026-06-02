@@ -5,7 +5,7 @@
   "identifier": "io.w4y.workspacelauncher",
   "build": {
     "beforeDevCommand": "bun run dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:1421",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist",
     "removeUnusedCommands": true
@@ -14,10 +14,11 @@
     "windows": [
       {
         "title": "WorkspaceLauncher",
+        "decorations": false,
         "width": 1000,
         "height": 800,
-        "minWidth": 800,
-        "minHeight": 600
+        "minWidth": 640,
+        "minHeight": 480
       }
     ],
     "security": {
