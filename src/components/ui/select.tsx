@@ -32,7 +32,7 @@ export const SelectTrigger = <T extends ValidComponent = "button">(
 	return (
 		<SelectPrimitive.Trigger
 			class={cn(
-				"flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus-visible:(ring-1.5 ring-ring) disabled:(cursor-not-allowed opacity-50) transition-shadow",
+				"flex h-9 w-full items-center justify-between rounded-md bg-elevated-2 px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus-visible:(ring-1.5 ring-ring) disabled:(cursor-not-allowed opacity-50) transition-shadow",
 				local.class,
 			)}
 			{...rest}
@@ -73,7 +73,7 @@ export const SelectContent = <T extends ValidComponent = "div">(
 		<SelectPrimitive.Portal>
 			<SelectPrimitive.Content
 				class={cn(
-					"relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95)",
+					"relative z-50 min-w-[8rem] overflow-hidden rounded-md bg-elevated-3 text-popover-foreground shadow-lg data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95)",
 					local.class,
 				)}
 				{...rest}

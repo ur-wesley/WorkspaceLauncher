@@ -50,7 +50,7 @@ export const DialogContent = <T extends ValidComponent = "div">(
 			/>
 			<DialogPrimitive.Content
 				class={cn(
-					"fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[expanded]:(animate-in fade-in-0 zoom-in-95 duration-200) data-[closed]:(animate-out fade-out-0 zoom-out-95 duration-200) md:w-full sm:rounded-lg",
+					"fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 bg-elevated-1 p-6 shadow-xl duration-200 data-[expanded]:(animate-in fade-in-0 zoom-in-95 duration-200) data-[closed]:(animate-out fade-out-0 zoom-out-95 duration-200) md:w-full sm:rounded-lg",
 					local.class,
 				)}
 				{...rest}
@@ -119,7 +119,7 @@ export const DialogHeader = (props: ComponentProps<"div">) => {
 	return (
 		<div
 			class={cn(
-				"flex flex-col space-y-2 text-center sm:text-left",
+				"flex flex-col space-y-1 text-center sm:text-left bg-elevated-2 px-6 pt-4 pb-3",
 				local.class,
 			)}
 			{...rest}
@@ -133,7 +133,7 @@ export const DialogFooter = (props: ComponentProps<"div">) => {
 	return (
 		<div
 			class={cn(
-				"flex flex-col-reverse sm:(flex-row justify-end space-x-2)",
+				"flex flex-col-reverse sm:(flex-row justify-end space-x-2) bg-elevated-2 px-6 py-3",
 				local.class,
 			)}
 			{...rest}

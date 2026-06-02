@@ -32,7 +32,7 @@ export const Menubar = <T extends ValidComponent = "div">(
 	return (
 		<MenubarPrimitive
 			class={cn(
-				"flex h-9 items-center space-x-1 rounded-md border bg-background p-1 shadow-sm",
+				"flex h-9 items-center space-x-1 rounded-md bg-elevated-1 p-1 shadow-sm",
 				local.class,
 			)}
 			{...rest}
@@ -139,7 +139,7 @@ export const MenubarSubContent = <T extends ValidComponent = "div">(
 		<MenubarPrimitive.Portal>
 			<MenubarPrimitive.SubContent
 				class={cn(
-					"z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) outline-none origin-[--kb-menu-content-transform-origin]",
+					"z-50 min-w-[8rem] overflow-hidden rounded-md bg-elevated-3 p-1 text-popover-foreground shadow-lg data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) outline-none origin-[--kb-menu-content-transform-origin]",
 					local.class,
 				)}
 				{...rest}
@@ -168,7 +168,7 @@ export const MenubarContent = <T extends ValidComponent = "div">(
 		<MenubarPrimitive.Portal>
 			<MenubarPrimitive.Content
 				class={cn(
-					"z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) outline-none origin-[--kb-menu-content-transform-origin]",
+					"z-50 min-w-[12rem] overflow-hidden rounded-md bg-elevated-3 p-1 text-popover-foreground shadow-lg data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) outline-none origin-[--kb-menu-content-transform-origin]",
 					local.class,
 				)}
 				{...rest}

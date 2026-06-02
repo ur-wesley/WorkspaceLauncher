@@ -45,7 +45,7 @@ export const CommandInput = (props: VoidProps<CommandInputProps>) => {
 	const [local, rest] = splitProps(props, ["class"]);
 
 	return (
-		<div class="flex items-center border-b px-3" cmdk-input-wrapper="">
+		<div class="flex items-center bg-elevated-2 px-3" cmdk-input-wrapper="">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 24 24"

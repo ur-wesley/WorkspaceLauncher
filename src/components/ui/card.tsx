@@ -8,7 +8,7 @@ export const Card = (props: ComponentProps<"div">) => {
 	return (
 		<div
 			class={cn(
-				"rounded-xl border bg-card text-card-foreground shadow",
+				"rounded-xl bg-elevated-2 text-card-foreground shadow-md",
 				local.class,
 			)}
 			{...rest}
