@@ -230,7 +230,7 @@ export const ActionHistoryView: Component<ActionHistoryViewProps> = (props) => {
 					<DialogHeader>
 						<DialogTitle>Action Logs</DialogTitle>
 					</DialogHeader>
-					<div class="flex-1 min-h-0">
+					<div class="min-h-0 flex-1 px-4 py-4">
 						<Show when={selectedRunId()} fallback={<div>No run selected</div>}>
 							{(runId) => (
 								<LogViewer logs={state.logs[runId().toString()] || []} />

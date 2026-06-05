@@ -33,6 +33,20 @@ function formatDuration(startedAt: string): string {
 	return `${seconds}s`;
 }
 
+function statusBadge(action: { status?: string }): {
+	label: string;
+	className: string;
+} {
+	switch (action.status) {
+		case "unreachable":
+			return { label: "Unreachable", className: "bg-amber-600" };
+		case "exited":
+			return { label: "Exited", className: "bg-muted-foreground" };
+		default:
+			return { label: "Running", className: "bg-blue-500" };
+	}
+}
+
 export const RunningActionsPanel: Component<RunningActionsPanelProps> = (
 	props,
 ) => {
@@ -42,20 +56,12 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (
 	let intervalId: number | undefined;
 
 	createEffect(() => {
-		if (props.workspaceId) {
-			actions.loadRunningActions(props.workspaceId);
-		} else {
-			actions.loadRunningActions();
-		}
+		void actions.reconcileAndRefresh(props.workspaceId);
 
 		intervalId = window.setInterval(() => {
-			if (props.workspaceId) {
-				actions.loadRunningActions(props.workspaceId);
-			} else {
-				actions.loadRunningActions();
-			}
+			void actions.reconcileAndRefresh(props.workspaceId);
 			setTick((t) => t + 1);
-		}, 5000);
+		}, 3000);
 	});
 
 	onCleanup(() => {
@@ -71,7 +77,7 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (
 				<Button
 					variant="ghost"
 					size="sm"
-					onClick={() => actions.loadRunningActions(props.workspaceId)}
+					onClick={() => actions.reconcileAndRefresh(props.workspaceId)}
 				>
 					Refresh
 				</Button>
@@ -98,41 +104,73 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (
 			>
 				<div class="space-y-2">
 					<For each={state.runningActions}>
-						{(action) => (
-							<Card class="p-3 bg-muted/30 hover:bg-muted/50 shadow-sm hover:shadow-md transition-all">
-								<div class="flex items-center justify-between gap-3">
-									<div class="flex-1 min-w-0">
-										<div class="flex items-center gap-2">
-											<Badge variant="default" class="bg-blue-500">
-												Running
-											</Badge>
-											<span class="text-sm font-medium truncate">
-												{action.action_name}
-											</span>
+						{(action) => {
+							const badge = () => statusBadge(action);
+							return (
+								<Card class="p-3 bg-muted/30 hover:bg-muted/50 shadow-sm hover:shadow-md transition-all">
+									<div class="flex items-center justify-between gap-3">
+										<div class="flex-1 min-w-0">
+											<div class="flex items-center gap-2">
+												<Badge variant="default" class={badge().className}>
+													{badge().label}
+												</Badge>
+												<span class="text-sm font-medium truncate">
+													{action.action_name}
+												</span>
+											</div>
+											<div class="mt-1 space-y-0.5">
+												<p class="text-xs text-muted-foreground">
+													PID: {action.process_id}
+												</p>
+												<p class="text-xs text-muted-foreground">
+													Duration: {formatDuration(action.started_at)}
+												</p>
+												<p class="text-xs text-muted-foreground">
+													Started:{" "}
+													{new Date(action.started_at).toLocaleTimeString()}
+												</p>
+												<Show when={action.last_verified_at}>
+													<p class="text-xs text-muted-foreground">
+														Verified:{" "}
+														{new Date(
+															action.last_verified_at!,
+														).toLocaleTimeString()}
+													</p>
+												</Show>
+												<Show when={action.stop_error}>
+													<p class="text-xs text-amber-600 dark:text-amber-400">
+														{action.stop_error}
+													</p>
+												</Show>
+											</div>
 										</div>
-										<div class="mt-1 space-y-0.5">
-											<p class="text-xs text-muted-foreground">
-												PID: {action.process_id}
-											</p>
-											<p class="text-xs text-muted-foreground">
-												Duration: {formatDuration(action.started_at)}
-											</p>
-											<p class="text-xs text-muted-foreground">
-												Started:{" "}
-												{new Date(action.started_at).toLocaleTimeString()}
-											</p>
+										<div class="flex flex-col gap-1.5 shrink-0">
+											<Button
+												variant="destructive"
+												size="sm"
+												onClick={() => actions.stopAction(action)}
+											>
+												Stop
+											</Button>
+											<Show
+												when={
+													action.status === "unreachable" ||
+													action.status === "exited"
+												}
+											>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => actions.dismissAction(action)}
+												>
+													Dismiss
+												</Button>
+											</Show>
 										</div>
 									</div>
-									<Button
-										variant="destructive"
-										size="sm"
-										onClick={() => actions.stopAction(action)}
-									>
-										Stop
-									</Button>
-								</div>
-							</Card>
-						)}
+								</Card>
+							);
+						}}
 					</For>
 				</div>
 			</Show>

@@ -12,6 +12,7 @@ import {
 	Switch,
 } from "solid-js";
 import { Layout } from "@/components/Layout";
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import {
 	checkDatabaseSchema,
@@ -21,6 +22,7 @@ import {
 	listenToActionEvents,
 	listGlobalVariables,
 	listVariablesByWorkspace,
+	repairDatabase,
 } from "@/libs/api";
 import type { ActionCompletedEvent } from "@/libs/api/types";
 import {
@@ -34,13 +36,36 @@ import { SettingsThemeCreatorPage } from "@/pages/SettingsThemeCreatorPage";
 import WorkspaceDetailPage from "@/pages/WorkspaceDetailPage";
 import { WorkspacesListPage } from "@/pages/WorkspacesListPage";
 import { startPidChecker, stopPidChecker } from "@/services/pidChecker";
-import { runningActionsService } from "@/services/runningActions";
+import {
+	isActionTrackedAndAlive,
+	reconcileRunningActions,
+} from "@/services/processTracking";
 import { StoreProvider } from "@/store";
 import type { NewRun } from "@/types/database";
 
 const App: Component = () => {
 	const [initialized, setInitialized] = createSignal(false);
 	const [error, setError] = createSignal<string | null>(null);
+	const [migrationRepairNeeded, setMigrationRepairNeeded] = createSignal(false);
+	const [repairing, setRepairing] = createSignal(false);
+
+	const handleRepairDatabase = async () => {
+		setRepairing(true);
+		try {
+			const result = await repairDatabase();
+			if (result.isErr()) {
+				setError(result.error.message);
+				return;
+			}
+			await relaunch();
+		} catch (err) {
+			setError(
+				err instanceof Error ? err.message : "Failed to repair database",
+			);
+		} finally {
+			setRepairing(false);
+		}
+	};
 
 	const handleActionCompleted = (event: CustomEvent<ActionCompletedEvent>) => {
 		const { action_id, workspace_id, exit_code, success } = event.detail;
@@ -87,16 +112,13 @@ const App: Component = () => {
 				console.log("Database initialized successfully");
 			} else {
 				console.error("Database initialization failed:", result.error);
-				if (result.error.code === "DB_RESET_SCHEDULED") {
-					console.log(
-						"Database corruption detected. Self-healing scheduled. Restarting application...",
-					);
-					await relaunch();
-				} else {
-					console.error("Database initialization failed:", result.error);
-					setError(`Failed to initialize database: ${result.error.message}`);
+				if (result.error.code === "DB_MIGRATION_REPAIR_NEEDED") {
+					setMigrationRepairNeeded(true);
+					setError(result.error.message);
 					return;
 				}
+				setError(`Failed to initialize database: ${result.error.message}`);
+				return;
 			}
 
 			const schemaResult = await checkDatabaseSchema();
@@ -115,6 +137,7 @@ const App: Component = () => {
 				handleActionCompleted as EventListener,
 			);
 
+			await reconcileRunningActions();
 			startPidChecker();
 
 			checkForUpdatesOnStartup().catch((err) => {
@@ -130,11 +153,9 @@ const App: Component = () => {
 
 					for (const action of autoActionsResult.value) {
 						try {
-							const runningActions = runningActionsService.getByWorkspace(
+							const isAlreadyRunning = await isActionTrackedAndAlive(
 								action.workspace_id,
-							);
-							const isAlreadyRunning = runningActions.some(
-								(ra) => ra.action_id === action.id,
+								action.id,
 							);
 
 							if (isAlreadyRunning) {
@@ -203,11 +224,22 @@ const App: Component = () => {
 		<Switch>
 			<Match when={error()}>
 				<div class="flex items-center justify-center h-screen bg-destructive/10">
-					<div class="bg-card rounded-lg shadow-md p-4 max-w-md">
-						<h1 class="text-2xl font-bold text-destructive mb-2">
-							Initialization Error
+					<div class="bg-card rounded-lg shadow-md p-4 max-w-md space-y-4">
+						<h1 class="text-2xl font-bold text-destructive">
+							{migrationRepairNeeded()
+								? "Database Repair Required"
+								: "Initialization Error"}
 						</h1>
 						<p class="text-muted-foreground">{error()}</p>
+						<Match when={migrationRepairNeeded()}>
+							<Button
+								class="w-full"
+								disabled={repairing()}
+								onClick={handleRepairDatabase}
+							>
+								{repairing() ? "Repairing..." : "Repair Database"}
+							</Button>
+						</Match>
 					</div>
 				</div>
 			</Match>

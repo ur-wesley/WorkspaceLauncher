@@ -151,7 +151,7 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 						</div>
 					}
 				>
-					<div class="space-y-2">
+					<div class="space-y-2 px-4 pb-4">
 						<For each={runs()}>
 							{(run) => {
 								const duration = formatDuration(
@@ -220,7 +220,7 @@ export const ActionRunHistory: Component<ActionRunHistoryProps> = (props) => {
 				</Show>
 
 				<Show when={error()}>
-					<Card class="p-3 bg-destructive/10">
+					<Card class="mx-4 mb-4 p-3 bg-destructive/10">
 						<p class="text-sm text-destructive">{error()}</p>
 					</Card>
 				</Show>

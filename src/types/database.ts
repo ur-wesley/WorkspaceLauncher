@@ -147,6 +147,8 @@ export interface NewRun {
 	error_message?: string;
 }
 
+export type RunningActionStatus = "running" | "exited" | "unreachable";
+
 export interface RunningAction {
 	id: string;
 	workspace_id: number;
@@ -158,6 +160,10 @@ export interface RunningAction {
 	working_directory?: string;
 	launched_at_secs?: number;
 	resolution_retries?: number;
+	status?: RunningActionStatus;
+	last_verified_at?: string;
+	stop_error?: string;
+	expected_process_name?: string;
 }
 
 export interface Log {
@@ -310,6 +316,7 @@ export const SETTING_KEYS = {
 	DEFAULT_SHELL_MACOS: "default_shell_macos",
 	DEFAULT_SHELL_LINUX: "default_shell_linux",
 	LOG_RETENTION_DAYS: "log_retention_days",
+	EXTRA_PATH_DIRECTORIES: "extra_path_directories",
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

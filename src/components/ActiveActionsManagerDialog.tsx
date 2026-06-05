@@ -64,12 +64,12 @@ export const ActiveActionsManagerDialog: Component<
 
 	createEffect(() => {
 		if (props.open) {
-			actions.loadRunningActions();
+			void actions.reconcileAndRefresh();
 			setNow(Date.now());
 
 			refreshInterval = window.setInterval(() => {
-				actions.loadRunningActions();
-			}, 5000);
+				void actions.reconcileAndRefresh();
+			}, 3000);
 		} else if (refreshInterval) {
 			window.clearInterval(refreshInterval);
 		}
@@ -98,7 +98,7 @@ export const ActiveActionsManagerDialog: Component<
 					</DialogDescription>
 				</DialogHeader>
 
-				<div class="flex items-center justify-between mb-4">
+				<div class="mb-4 flex items-center justify-between px-4">
 					<div class="flex items-center gap-2">
 						<Badge variant="default" class="bg-blue-500">
 							{totalActionsCount()} Active
@@ -108,14 +108,14 @@ export const ActiveActionsManagerDialog: Component<
 						variant="ghost"
 						size="sm"
 						onClick={() => {
-							actions.loadRunningActions();
+							void actions.reconcileAndRefresh();
 						}}
 					>
 						Refresh
 					</Button>
 				</div>
 
-				<div class="flex-1 overflow-y-auto bg-elevated-2 rounded-md">
+				<div class="mx-4 mb-4 flex-1 overflow-y-auto rounded-md bg-elevated-2">
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -161,6 +161,11 @@ export const ActiveActionsManagerDialog: Component<
 											</TableCell>
 											<TableCell class="font-mono text-xs">
 												{action.process_id}
+												<Show when={action.status === "unreachable"}>
+													<span class="ml-1 text-amber-600 text-[10px]">
+														(unreachable)
+													</span>
+												</Show>
 											</TableCell>
 											<TableCell class="font-mono tabular-nums">
 												{formatDuration(action.started_at, now())}
@@ -169,14 +174,31 @@ export const ActiveActionsManagerDialog: Component<
 												{new Date(action.started_at).toLocaleTimeString()}
 											</TableCell>
 											<TableCell class="text-right">
-												<Button
-													variant="destructive"
-													size="sm"
-													class="h-7 px-2"
-													onClick={() => actions.stopAction(action)}
-												>
-													Stop
-												</Button>
+												<div class="flex justify-end gap-1">
+													<Button
+														variant="destructive"
+														size="sm"
+														class="h-7 px-2"
+														onClick={() => actions.stopAction(action)}
+													>
+														Stop
+													</Button>
+													<Show
+														when={
+															action.status === "unreachable" ||
+															action.status === "exited"
+														}
+													>
+														<Button
+															variant="outline"
+															size="sm"
+															class="h-7 px-2"
+															onClick={() => actions.dismissAction(action)}
+														>
+															Dismiss
+														</Button>
+													</Show>
+												</div>
 											</TableCell>
 										</TableRow>
 									)}

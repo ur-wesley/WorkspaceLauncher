@@ -1,14 +1,14 @@
 import { createContext, type JSX, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
-import {
-	cleanupOldRuns,
-	createRun,
-	listRunsByWorkspace,
-	stopProcess,
-} from "@/libs/api";
+import { listRunsByWorkspace } from "@/libs/api";
 import { showToast } from "@/libs/toast";
+import {
+	dismissRunningAction,
+	reconcileRunningActions,
+	stopRunningAction,
+} from "@/services/processTracking";
 import { runningActionsService } from "@/services/runningActions";
-import type { NewRun, Run, RunningAction } from "@/types/database";
+import type { Run, RunningAction } from "@/types/database";
 
 interface RunStoreState {
 	runs: Run[];
@@ -24,6 +24,8 @@ interface RunStoreActions {
 	stopAction: (action: RunningAction) => Promise<void>;
 	clearRuns: () => void;
 	refreshRunningActions: () => void;
+	reconcileAndRefresh: (workspaceId?: number) => Promise<void>;
+	dismissAction: (action: RunningAction) => Promise<void>;
 	appendLog: (runId: number, message: string) => void;
 }
 
@@ -71,46 +73,39 @@ export function RunStoreProvider(props: { readonly children: JSX.Element }) {
 			actions.loadRunningActions(currentWorkspaceId);
 		},
 
+		async reconcileAndRefresh(workspaceId?: number) {
+			await reconcileRunningActions();
+			actions.loadRunningActions(workspaceId);
+		},
+
 		async stopAction(action: RunningAction) {
-			try {
-				const result = await stopProcess(action.process_id);
-				if (result.isOk()) {
-					runningActionsService.remove(action.id);
+			const result = await stopRunningAction(action);
+			actions.loadRunningActions(action.workspace_id);
 
-					const newRun: NewRun = {
-						workspace_id: action.workspace_id,
-						action_id: action.action_id,
-						status: "cancelled",
-						started_at: action.started_at,
-						completed_at: new Date().toISOString(),
-					};
-					const createResult = await createRun(newRun);
-
-					if (createResult.isOk()) {
-						await cleanupOldRuns(action.action_id, 20);
-					}
-
-					actions.loadRunningActions(action.workspace_id);
-
-					showToast({
-						title: "Action stopped",
-						description: `${action.action_name} terminated successfully`,
-						variant: "success",
-					});
-				} else {
-					showToast({
-						title: "Failed to stop action",
-						description: result.error,
-						variant: "destructive",
-					});
-				}
-			} catch (error) {
+			if (result.ok) {
 				showToast({
-					title: "Failed to stop action",
-					description: `${error}`,
-					variant: "destructive",
+					title: "Action stopped",
+					description: `${action.action_name}: ${result.message}`,
+					variant: "success",
 				});
+				return;
 			}
+
+			showToast({
+				title: result.denied ? "Cannot stop process" : "Failed to stop action",
+				description: result.message,
+				variant: "destructive",
+			});
+		},
+
+		async dismissAction(action: RunningAction) {
+			await dismissRunningAction(action.id);
+			actions.loadRunningActions(action.workspace_id);
+			showToast({
+				title: "Removed from tracking",
+				description: `${action.action_name} is no longer listed as running`,
+				variant: "default",
+			});
 		},
 
 		clearRuns() {

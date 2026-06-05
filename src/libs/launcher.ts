@@ -1,5 +1,6 @@
 import { openPath } from "@tauri-apps/plugin-opener";
 import { Command } from "@tauri-apps/plugin-shell";
+import { getSetting } from "@/libs/api";
 import type { Action } from "@/models/action.model";
 import type { Variable } from "@/models/variable.model";
 import { runningActionsService } from "@/services/runningActions";
@@ -10,6 +11,7 @@ import type {
 	ToolActionConfig,
 	URLActionConfig,
 } from "@/types/database";
+import { SETTING_KEYS } from "@/types/database";
 
 export interface LaunchContext {
 	workspaceId: number;
@@ -81,12 +83,53 @@ export interface LaunchResult {
 	workingDirectory?: string;
 }
 
+async function getExtraPathDirectories(): Promise<string | undefined> {
+	const result = await getSetting(SETTING_KEYS.EXTRA_PATH_DIRECTORIES);
+	if (result.isOk() && result.value?.value?.trim()) {
+		return result.value.value.trim();
+	}
+	return undefined;
+}
+
+function basenameFromPath(path: string): string {
+	const parts = path.replace(/\\/g, "/").split("/");
+	const name = parts[parts.length - 1] || path;
+	return name.replace(/\.exe$/i, "");
+}
+
+function extractExpectedProcessName(
+	config: ActionConfig,
+	normalizedType: string,
+): string | undefined {
+	if (normalizedType === "command" && "command" in config) {
+		const cmd = (config as CommandActionConfig).command;
+		const first = (config as CommandActionConfig).args?.[0];
+		if (first && (first.includes("/") || first.includes("\\"))) {
+			return basenameFromPath(first);
+		}
+		return basenameFromPath(cmd.split(/\s+/)[0] || cmd);
+	}
+	if (normalizedType === "tool" && "source" in config) {
+		const tool = config as ToolActionConfig;
+		if (tool.source === "custom") {
+			if (tool.binary_path?.trim()) {
+				return basenameFromPath(tool.binary_path);
+			}
+			if (tool.command?.trim()) {
+				return basenameFromPath(tool.command.split(/\s+/)[0] || tool.command);
+			}
+		}
+	}
+	return undefined;
+}
+
 function trackRunningAction(
 	action: Action,
 	processId: number,
 	context: LaunchContext,
 	runId?: number,
 	workingDirectory?: string,
+	expectedProcessName?: string,
 ): void {
 	const runningAction = {
 		id: `${action.id}-${Date.now()}`,
@@ -98,6 +141,9 @@ function trackRunningAction(
 		started_at: new Date().toISOString(),
 		working_directory: workingDirectory,
 		launched_at_secs: Math.floor(Date.now() / 1000),
+		status: "running" as const,
+		last_verified_at: new Date().toISOString(),
+		expected_process_name: expectedProcessName,
 	};
 
 	runningActionsService.add(runningAction);
@@ -212,6 +258,7 @@ export async function launchAction(
 				context,
 				result.runId,
 				result.workingDirectory,
+				extractExpectedProcessName(normalized.config, normalized.type),
 			);
 		}
 
@@ -261,17 +308,20 @@ async function launchCommandAction(
 	const args =
 		config.args?.map((arg) => replaceVariables(arg, context.variables)) || [];
 	const detached = config.detached === true;
-
-	console.log(
-		`Executing command: ${commandStr} ${args.join(" ")} (detached: ${detached})`,
-	);
-
-	if (detached) {
-		const { invoke } = await import("@tauri-apps/api/core");
-		const workingDir =
-			context.variables.TEMP ||
+	const trackProcess = config.track_process === true;
+	const workingDir = config.working_directory
+		? replaceVariables(config.working_directory, context.variables)
+		: context.variables.TEMP ||
 			context.variables.TMP ||
 			(isWindows() ? "C:\\Windows\\Temp" : "/tmp");
+
+	console.log(
+		`Executing command: ${commandStr} ${args.join(" ")} (detached: ${detached}, track: ${trackProcess})`,
+	);
+
+	if (trackProcess || detached) {
+		const { invoke } = await import("@tauri-apps/api/core");
+		const extraPathDirectories = await getExtraPathDirectories();
 		const result = (await invoke("launch_action", {
 			request: {
 				action_id: actionId ?? 0,
@@ -280,9 +330,12 @@ async function launchCommandAction(
 				config: {
 					command: commandStr,
 					args,
-					detached: true,
+					detached,
 					working_directory: workingDir,
-					track_process: config.track_process,
+					track_process: trackProcess,
+					...(extraPathDirectories
+						? { extra_path_directories: extraPathDirectories }
+						: {}),
 				},
 				variables: context.variables,
 			},
@@ -294,9 +347,12 @@ async function launchCommandAction(
 		};
 		return {
 			success: Boolean(result?.success),
-			message: result?.message || `Command launched (detached): ${commandStr}`,
+			message:
+				result?.message ||
+				`Command launched${detached ? " (detached)" : ""}: ${commandStr}`,
 			processId: result?.process_id,
 			runId: result?.run_id,
+			workingDirectory: workingDir,
 		};
 	}
 
@@ -482,13 +538,20 @@ async function launchCustomTool(
 			context.variables.TMP ||
 			(isWindows() ? "C:\\Windows\\Temp" : "/tmp");
 
-	if (isDetached) {
+	const trackProcess = config.track_process === true;
+	const useBackend = trackProcess || isDetached;
+
+	if (useBackend) {
 		const { invoke } = await import("@tauri-apps/api/core");
+		const extraPathDirectories = await getExtraPathDirectories();
 		const cfg: Record<string, unknown> = {
 			tool_type: hasCommand ? "cli" : "binary",
-			detached: true,
+			detached: isDetached,
 			working_directory: workingDir,
-			track_process: config.track_process,
+			track_process: trackProcess,
+			...(extraPathDirectories
+				? { extra_path_directories: extraPathDirectories }
+				: {}),
 		};
 		if (hasCommand) {
 			cfg.command = replaceVariables(config.command || "", context.variables);
@@ -516,7 +579,9 @@ async function launchCustomTool(
 		};
 		return {
 			success: Boolean(result?.success),
-			message: result?.message || `${config.tool_name} launched (detached)`,
+			message:
+				result?.message ||
+				`${config.tool_name} launched${isDetached ? " (detached)" : ""}`,
 			processId: result?.process_id,
 			runId: result?.run_id,
 			workingDirectory: workingDir,
@@ -628,6 +693,7 @@ async function launchSavedTool(
 	);
 
 	const { invoke } = await import("@tauri-apps/api/core");
+	const extraPathDirectories = await getExtraPathDirectories();
 
 	const result = await invoke("launch_action", {
 		request: {
@@ -638,6 +704,10 @@ async function launchSavedTool(
 				tool_id: config.tool_id,
 				placeholder_values: config.placeholder_values,
 				...(config.detached === true ? { detached: true } : {}),
+				...(config.track_process ? { track_process: true } : {}),
+				...(extraPathDirectories
+					? { extra_path_directories: extraPathDirectories }
+					: {}),
 			},
 			variables: context.variables,
 		},
