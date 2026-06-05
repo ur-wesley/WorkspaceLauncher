@@ -9,6 +9,7 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import { HotkeyHint } from "@/components/HotkeyHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -241,11 +242,15 @@ export const WorkspacesListPage: Component = () => {
 					</div>
 					<Button
 						onclick={() => setCreateDialogOpen(true)}
-						class="whitespace-nowrap"
+						class="gap-2 whitespace-nowrap"
 					>
-						<div class="i-mdi-plus w-4 h-4 mr-2" />
+						<div class="i-mdi-plus w-4 h-4" />
 						<span class="hidden sm:inline">New Workspace</span>
 						<span class="sm:hidden">New</span>
+						<HotkeyHint
+							id="createWorkspace"
+							class="ml-auto hidden sm:inline-flex"
+						/>
 					</Button>
 				</div>
 

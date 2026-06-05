@@ -62,8 +62,36 @@ export function loadBindings(): HotkeyMap {
 	}
 }
 
+const [hotkeyBindings, setHotkeyBindings] = createSignal<HotkeyMap>(
+	loadBindings(),
+);
+
+export function useHotkeyBindings() {
+	return hotkeyBindings;
+}
+
+export function formatHotkeyKey(key: string): string {
+	if (key === "Control") return "Ctrl";
+	if (key === "Meta") return "Cmd";
+	if (key.length === 1) return key.toUpperCase();
+	return key;
+}
+
+export function formatHotkeyShortcut(id: HotkeyId, map?: HotkeyMap): string {
+	const bindings = map ?? hotkeyBindings();
+	const keys = bindings[id]?.keys;
+	if (!keys?.length) return "";
+	return keys.map(formatHotkeyKey).join("+");
+}
+
+export function hotkeyTitle(label: string, id: HotkeyId): string {
+	const shortcut = formatHotkeyShortcut(id);
+	return shortcut ? `${label} (${shortcut})` : label;
+}
+
 export function saveBindings(bindings: HotkeyMap) {
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(bindings));
+	setHotkeyBindings(bindings);
 }
 
 function normalizeKeyName(key: string): string {

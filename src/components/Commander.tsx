@@ -11,7 +11,7 @@ import {
 	CommandSeparator,
 	CommandShortcut,
 } from "@/components/ui/command";
-import { type HotkeyId, loadBindings } from "@/libs/hotkeys";
+import { formatHotkeyShortcut, type HotkeyId } from "@/libs/hotkeys";
 import { useUI } from "@/store/ui";
 import { useWorkspaceStore } from "@/store/workspace";
 
@@ -23,15 +23,7 @@ export function Commander() {
 
 	const inWorkspaceDetail = createMemo(() => /^\/w\//.test(location.pathname));
 
-	const bindings = () => loadBindings();
-	const formatKey = (k: string) => {
-		if (k === "Control") return "Ctrl";
-		if (k === "Meta") return "Cmd";
-		if (k.length === 1) return k.toUpperCase();
-		return k;
-	};
-	const shortcut = (id: HotkeyId) =>
-		bindings()[id]?.keys.map(formatKey).join("+") || "";
+	const shortcut = (id: HotkeyId) => formatHotkeyShortcut(id);
 
 	const workspaces = () => workspaceCtx.store.workspaces;
 

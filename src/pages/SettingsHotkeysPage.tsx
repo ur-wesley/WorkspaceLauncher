@@ -162,6 +162,7 @@ export const SettingsHotkeysPage: Component = () => {
 								onClick={() => {
 									const loaded = loadBindings();
 									setBindings(loaded);
+									saveBindings(loaded);
 								}}
 							>
 								Restore From Storage
