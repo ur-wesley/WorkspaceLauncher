@@ -1,4 +1,5 @@
 import { type Component, createSignal, Show } from "solid-js";
+import { ExecutableDiscoveryButton } from "@/components/ExecutableDiscoveryButton";
 import { IconPicker } from "@/components/IconPicker";
 import { Button } from "@/components/ui/button";
 import {
@@ -189,7 +190,7 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 						</DialogDescription>
 					</DialogHeader>
 
-					<form onSubmit={handleSubmit} class="space-y-6">
+					<form onSubmit={handleSubmit} class="space-y-6 px-4 py-4">
 						<div class="space-y-4">
 							<h3 class="text-lg font-medium">Basic Information</h3>
 
@@ -370,6 +371,17 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 										? "Path to the executable file. Use placeholders in {} for dynamic values."
 										: "Use placeholders in {} brackets. Examples: code {workspace_path}, chrome {url}"}
 								</div>
+								<div class="mt-2">
+									<ExecutableDiscoveryButton
+										command={() => {
+											const t = template().trim();
+											if (toolType() === "binary") {
+												return t.split(/\s+/)[0] ?? t;
+											}
+											return t.split(/\s+/)[0]?.replace(/\{[^}]*\}/g, "") ?? t;
+										}}
+									/>
+								</div>
 							</TextFieldRoot>
 						</div>
 
@@ -421,7 +433,7 @@ export const ToolDialog: Component<ToolDialogProps> = (props) => {
 							</TextFieldRoot>
 						</div>
 
-						<div class="flex justify-end gap-3 pt-4">
+						<div class="flex items-center justify-end gap-2 pt-4">
 							<Button
 								type="button"
 								variant="outline"

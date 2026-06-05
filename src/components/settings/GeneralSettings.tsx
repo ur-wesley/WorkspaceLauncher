@@ -14,18 +14,25 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
+import {
+	TextField,
+	TextFieldLabel,
+	TextFieldRoot,
+} from "@/components/ui/textfield";
 import * as api from "@/libs/api";
 import { autostartHandler } from "@/libs/autostart";
 import { showToast } from "@/libs/toast";
 import { checkForUpdates } from "@/libs/updater";
 import { useThemeStore } from "@/store/theme";
 import { useToolStore } from "@/store/tool";
+import { SETTING_KEYS } from "@/types/database";
 import { version } from "../../../package.json" with { type: "json" };
 
 export const GeneralSettings: Component = () => {
 	const [, toolActions] = useToolStore();
 	const [, themeActions] = useThemeStore();
 	const [autoLaunch, setAutoLaunch] = createSignal(false);
+	const [extraPathDirectories, setExtraPathDirectories] = createSignal("");
 	const [resetDialogOpen, setResetDialogOpen] = createSignal(false);
 	const [backupDialogOpen, setBackupDialogOpen] = createSignal(false);
 	const openDataLocation = async () => {
@@ -48,7 +55,27 @@ export const GeneralSettings: Component = () => {
 		autostartHandler.isEnabled().then((enabled) => {
 			setAutoLaunch(enabled);
 		});
+		api.getSetting(SETTING_KEYS.EXTRA_PATH_DIRECTORIES).then((result) => {
+			if (result.isOk() && result.value?.value) {
+				setExtraPathDirectories(result.value.value);
+			}
+		});
 	});
+
+	const saveExtraPathDirectories = async (value: string) => {
+		setExtraPathDirectories(value);
+		const result = await api.setSetting(
+			SETTING_KEYS.EXTRA_PATH_DIRECTORIES,
+			value,
+		);
+		if (result.isErr()) {
+			showToast({
+				title: "Failed to save",
+				description: result.error.message,
+				variant: "destructive",
+			});
+		}
+	};
 
 	const toggleAutoLaunch = async (enabled: boolean) => {
 		try {
@@ -167,6 +194,29 @@ export const GeneralSettings: Component = () => {
 							Open Folder
 						</Button>
 					</div>
+
+					<Separator />
+
+					<TextFieldRoot>
+						<TextFieldLabel for="extra-paths">
+							Extra PATH directories
+						</TextFieldLabel>
+						<TextField
+							id="extra-paths"
+							value={extraPathDirectories()}
+							onInput={(e: InputEvent) =>
+								setExtraPathDirectories(
+									(e.currentTarget as HTMLInputElement).value,
+								)
+							}
+							onBlur={() => saveExtraPathDirectories(extraPathDirectories())}
+							placeholder="C:\Tools\bin;C:\Program Files\nodejs"
+							class="font-mono text-sm"
+						/>
+						<p class="text-xs text-muted-foreground mt-1">
+							Semicolon-separated folders searched when resolving CLI tools
+						</p>
+					</TextFieldRoot>
 
 					<Separator />
 
@@ -326,7 +376,7 @@ export const GeneralSettings: Component = () => {
 			<Card>
 				<CardHeader>
 					<CardTitle class="flex items-center gap-2">
-						<span class="iconify w-5 h-5" data-icon="mdi:database-backup" />
+						<span class="iconify w-5 h-5" data-icon="mdi:backup-restore" />
 						Backup & Reset Database
 					</CardTitle>
 					<CardDescription>
@@ -345,7 +395,7 @@ export const GeneralSettings: Component = () => {
 						<Button variant="outline" onClick={() => setBackupDialogOpen(true)}>
 							<span
 								class="iconify w-4 h-4 mr-2"
-								data-icon="mdi:database-backup"
+								data-icon="mdi:backup-restore"
 							/>
 							Backup & Reset
 						</Button>

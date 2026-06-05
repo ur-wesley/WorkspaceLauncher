@@ -8,6 +8,7 @@ import {
 	Show,
 } from "solid-js";
 import * as v from "valibot";
+import { ExecutableDiscoveryButton } from "@/components/ExecutableDiscoveryButton";
 import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
@@ -589,14 +590,14 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 				}}
 			/>
 			<Dialog open={isOpen()} onOpenChange={handleOpenChange}>
-				<DialogContent class="max-w-lg flex flex-col gap-0 p-0 max-h-[90vh] overflow-hidden">
-					<DialogHeader class="shrink-0">
+				<DialogContent class="max-h-[90vh] max-w-lg overflow-hidden">
+					<DialogHeader>
 						<DialogTitle>
 							{props.action ? "Edit Action" : "New Action"}
 						</DialogTitle>
 					</DialogHeader>
 
-					<div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+					<div class="flex-1 overflow-y-auto space-y-5 px-4 py-4">
 						<TextFieldRoot>
 							<TextFieldLabel for="action-name">Name</TextFieldLabel>
 							<TextField
@@ -754,6 +755,16 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 												placeholder="e.g. bun, node, python"
 												class="font-mono"
 											/>
+											<div class="mt-2">
+												<ExecutableDiscoveryButton
+													command={() =>
+														customCommand().trim().split(/\s+/)[0] ?? ""
+													}
+													workingDirectory={() =>
+														customWorkingDirectory().trim() || undefined
+													}
+												/>
+											</div>
 										</TextFieldRoot>
 
 										<Show when={commandSuggestion()}>
@@ -821,6 +832,14 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 												>
 													<div class="i-mdi-folder-open w-4 h-4" />
 												</Button>
+											</div>
+											<div class="mt-2">
+												<ExecutableDiscoveryButton
+													command={() => customBinaryPath().trim()}
+													workingDirectory={() =>
+														customWorkingDirectory().trim() || undefined
+													}
+												/>
 											</div>
 										</TextFieldRoot>
 									</Show>
@@ -1028,7 +1047,7 @@ export const ActionDialogStepper: Component<ActionDialogStepperProps> = (
 						</Show>
 					</div>
 
-					<DialogFooter class="shrink-0 flex justify-end gap-2">
+					<DialogFooter class="justify-end">
 						<Button
 							variant="outline"
 							onClick={() => handleOpenChange(false)}
