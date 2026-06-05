@@ -57,9 +57,51 @@ pub struct ActionLogEvent {
     pub message: String,
 }
 
+use crate::executable::build_executable_candidates;
 use crate::launcher_core::{
     spawn_attached_with_logs, spawn_detached, AttachedSpawnRequest, DetachedSpawnRequest,
 };
+
+fn extra_paths_from_config(config: &Value) -> Option<Vec<String>> {
+    config
+        .get("extra_paths")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .map(|s| s.to_string())
+                .collect()
+        })
+        .or_else(|| {
+            config
+                .get("extra_path_directories")
+                .and_then(|v| v.as_str())
+                .map(|s| {
+                    s.split(';')
+                        .map(|p| p.trim().to_string())
+                        .filter(|p| !p.is_empty())
+                        .collect()
+                })
+        })
+}
+
+fn expand_candidates(
+    seeds: &[String],
+    working_directory: Option<&str>,
+    extra_paths: Option<&[String]>,
+) -> Vec<String> {
+    let mut expanded = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for seed in seeds {
+        for candidate in build_executable_candidates(seed, working_directory, extra_paths) {
+            let key = candidate.to_lowercase();
+            if seen.insert(key) {
+                expanded.push(candidate);
+            }
+        }
+    }
+    expanded
+}
 
 async fn spawn_with_candidates(
     app: &AppHandle,
@@ -91,7 +133,18 @@ async fn spawn_with_candidates(
         .and_then(|v| v.as_str())
         .map(|s| replace_variables(s, &request.variables));
 
-    for program in candidates {
+    let extra_paths = extra_paths_from_config(&request.config);
+    let expanded =
+        expand_candidates(candidates, working_directory.as_deref(), extra_paths.as_deref());
+
+    if expanded.is_empty() {
+        return Err(format!(
+            "\"{}\" not found on PATH. Use Test discovery or set the full path to the executable.",
+            candidates.first().unwrap_or(&tool_name.to_string())
+        ));
+    }
+
+    for program in &expanded {
         if detached {
             match spawn_detached(
                 app,
@@ -155,12 +208,17 @@ async fn spawn_with_candidates(
         }
     }
 
-    Err(last_error.unwrap_or_else(|| {
-        format!(
-            "Failed to launch {}: no command candidates succeeded",
-            tool_name
-        )
-    }))
+    let primary = candidates
+        .first()
+        .cloned()
+        .unwrap_or_else(|| tool_name.to_string());
+    Err(match last_error {
+        Some(err) => err,
+        None => format!(
+            "\"{}\" not found on PATH or could not be launched. Use Test discovery or set the full path.",
+            primary
+        ),
+    })
 }
 
 #[tauri::command]
@@ -267,6 +325,60 @@ async fn launch_command_action(
         .get("detached")
         .and_then(|value| value.as_bool())
         .unwrap_or(false);
+
+    let track_process = config
+        .get("track_process")
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false);
+
+    if track_process && !keep_terminal_open {
+        let (program_used, process_id) = spawn_with_candidates(
+            &app,
+            request,
+            run_id,
+            &command_str,
+            &[command_str.clone()],
+            &args,
+        )
+        .await?;
+
+        emit_log(
+            &app,
+            request.action_id,
+            request.workspace_id,
+            run_id,
+            "info",
+            &format!("Command launched via {} with args {:?}", program_used, args),
+        );
+
+        let _ = app.emit(
+            "action-started",
+            ActionStartedEvent {
+                action_id: request.action_id,
+                workspace_id: request.workspace_id,
+                run_id,
+                process_id: Some(process_id),
+            },
+        );
+
+        if detached_cfg {
+            emit_completed(
+                &app,
+                request.action_id,
+                request.workspace_id,
+                run_id,
+                Some(0),
+                true,
+            );
+        }
+
+        return Ok(LaunchResult {
+            success: true,
+            message: format!("Command launched successfully: {}", command_str),
+            process_id: Some(process_id),
+            run_id: Some(run_id),
+        });
+    }
 
     let process_id = if keep_terminal_open {
         let mut full_command = command_str.clone();

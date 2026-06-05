@@ -37,6 +37,10 @@ pub async fn rescue_data(db_path: &Path) -> Result<AllData, String> {
     .map_err(|e| format!("Failed to fetch table names: {}", e))?;
 
     for (table_name,) in tables {
+        if table_name == "_sqlx_migrations" || table_name == "sqlite_sequence" {
+            continue;
+        }
+
         let query = format!("SELECT * FROM {}", table_name);
         let rows = match sqlx::query(&query).fetch_all(&pool).await {
             Ok(rows) => rows,

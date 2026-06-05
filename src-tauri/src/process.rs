@@ -12,6 +12,8 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 pub struct KillProcessResult {
     pub success: bool,
     pub message: String,
+    #[serde(default)]
+    pub denied: bool,
 }
 
 #[tauri::command]
@@ -20,6 +22,7 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
         return Ok(KillProcessResult {
             success: true,
             message: format!("Process {} already terminated", pid),
+            denied: false,
         });
     }
 
@@ -43,6 +46,7 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
             Ok(output) if output.status.success() => Ok(KillProcessResult {
                 success: true,
                 message: format!("Process {} terminated", pid),
+                denied: false,
             }),
             Ok(output) => {
                 let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -50,6 +54,7 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
                     Ok(force_output) if force_output.status.success() => Ok(KillProcessResult {
                         success: true,
                         message: format!("Process {} killed forcefully", pid),
+                        denied: false,
                     }),
                     Ok(force_output) => {
                         let mut combined =
@@ -61,7 +66,15 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
                         if lowered.contains("access is denied")
                             || lowered.contains("zugriff verweigert")
                         {
-                            Err(format!("Failed to kill process {}: {}. Try running WorkspaceLauncher as Administrator or close it from its parent app.", pid, combined.trim()))
+                            Ok(KillProcessResult {
+                                success: false,
+                                denied: true,
+                                message: format!(
+                                    "Failed to kill process {}: {}. Try running WorkspaceLauncher as Administrator or close it from its parent app.",
+                                    pid,
+                                    combined.trim()
+                                ),
+                            })
                         } else {
                             Err(format!(
                                 "Failed to kill process {}: {}",
@@ -115,9 +128,17 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
             Ok(KillProcessResult {
                 success: true,
                 message: format!("Process {} terminated", pid),
+                denied: false,
             })
         } else {
-            Err(format!("Failed to kill process {}", pid))
+            Ok(KillProcessResult {
+                success: false,
+                denied: true,
+                message: format!(
+                    "Failed to kill process {}. The process may require elevated permissions.",
+                    pid
+                ),
+            })
         }
     }
 }

@@ -31,6 +31,7 @@ tauri-plugin-shell = "2"
 sqlx = { version = "0.8", features = ["sqlite"] }
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1", features = ["full"] }
+futures-core = "0.3"
 sysinfo = "0.37.2"
 
 [target.'cfg(unix)'.dependencies]

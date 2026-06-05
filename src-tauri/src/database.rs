@@ -213,3 +213,93 @@ pub struct NewGlobalVariable {
 }
 
 include!(concat!(env!("OUT_DIR"), "/migrations.rs"));
+
+use futures_core::future::BoxFuture;
+use sqlx::error::BoxDynError;
+use sqlx::migrate::{
+    MigrateDatabase, Migration as SqlxMigration, MigrationSource, MigrationType, Migrator,
+};
+use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::Sqlite;
+use std::path::Path;
+use tauri_plugin_sql::{Migration, MigrationKind};
+
+#[derive(Debug)]
+struct EmbeddedMigrations(Vec<Migration>);
+
+impl MigrationSource<'static> for EmbeddedMigrations {
+    fn resolve(self) -> BoxFuture<'static, std::result::Result<Vec<SqlxMigration>, BoxDynError>> {
+        Box::pin(async move {
+            let mut migrations = Vec::new();
+            for migration in self.0 {
+                if matches!(migration.kind, MigrationKind::Up) {
+                    migrations.push(SqlxMigration::new(
+                        migration.version,
+                        migration.description.into(),
+                        MigrationType::ReversibleUp,
+                        migration.sql.into(),
+                        false,
+                    ));
+                }
+            }
+            Ok(migrations)
+        })
+    }
+}
+
+pub async fn run_migrations(db_path: &Path) -> Result<(), String> {
+    let conn_str = format!("sqlite://{}", db_path.to_string_lossy());
+
+    if !Sqlite::database_exists(&conn_str).await.unwrap_or(false) {
+        Sqlite::create_database(&conn_str)
+            .await
+            .map_err(|e| format!("Failed to create database: {}", e))?;
+    }
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&conn_str)
+        .await
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let migrations = get_migrations();
+    let migrator = Migrator::new(EmbeddedMigrations(migrations))
+        .await
+        .map_err(|e| format!("Failed to create migrator: {}", e))?;
+
+    migrator
+        .run(&pool)
+        .await
+        .map_err(|e| format!("{e}"))?;
+
+    pool.close().await;
+    Ok(())
+}
+
+pub async fn has_user_data(db_path: &Path) -> Result<bool, String> {
+    if !db_path.exists() {
+        return Ok(false);
+    }
+
+    let conn_str = format!("sqlite://{}", db_path.to_string_lossy());
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&conn_str)
+        .await
+        .map_err(|e| format!("{e}"))?;
+
+    let count: Result<(i64,), _> = sqlx::query_as("SELECT COUNT(*) FROM workspaces")
+        .fetch_one(&pool)
+        .await;
+
+    pool.close().await;
+
+    match count {
+        Ok((n,)) => Ok(n > 0),
+        Err(_) => Ok(false),
+    }
+}
+
+pub fn is_migration_checksum_error(err: &str) -> bool {
+    err.contains("migration") && err.contains("has been modified")
+}
