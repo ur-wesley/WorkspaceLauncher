@@ -50,13 +50,13 @@ export const DialogContent = <T extends ValidComponent = "div">(
 			/>
 			<DialogPrimitive.Content
 				class={cn(
-					"fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 bg-elevated-1 p-6 shadow-xl duration-200 data-[expanded]:(animate-in fade-in-0 zoom-in-95 duration-200) data-[closed]:(animate-out fade-out-0 zoom-out-95 duration-200) md:w-full sm:rounded-lg",
+					"fixed left-[50%] top-[50%] z-50 flex w-full max-w-lg translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden bg-elevated-1 p-0 shadow-xl duration-200 data-[expanded]:(animate-in fade-in-0 zoom-in-95 duration-200) data-[closed]:(animate-out fade-out-0 zoom-out-95 duration-200) md:w-full sm:rounded-lg",
 					local.class,
 				)}
 				{...rest}
 			>
 				{local.children}
-				<DialogPrimitive.CloseButton class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:(outline-none ring-1.5 ring-ring ring-offset-2) disabled:pointer-events-none bg-inherit transition-property-[opacity,box-shadow]">
+				<DialogPrimitive.CloseButton class="absolute right-3 top-2.5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:(outline-none ring-1.5 ring-ring ring-offset-2) disabled:pointer-events-none bg-inherit transition-property-[opacity,box-shadow]">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
@@ -89,7 +89,7 @@ export const DialogTitle = <T extends ValidComponent = "h2">(
 
 	return (
 		<DialogPrimitive.Title
-			class={cn("text-lg font-semibold text-foreground", local.class)}
+			class={cn("text-base font-semibold text-foreground", local.class)}
 			{...rest}
 		/>
 	);
@@ -119,7 +119,7 @@ export const DialogHeader = (props: ComponentProps<"div">) => {
 	return (
 		<div
 			class={cn(
-				"flex flex-col space-y-1 text-center sm:text-left bg-elevated-2 px-6 pt-4 pb-3",
+				"flex shrink-0 flex-col gap-0.5 border-b border-border bg-elevated-2 py-2 pl-4 pr-10 text-center sm:text-left",
 				local.class,
 			)}
 			{...rest}
@@ -133,7 +133,7 @@ export const DialogFooter = (props: ComponentProps<"div">) => {
 	return (
 		<div
 			class={cn(
-				"flex flex-col-reverse sm:(flex-row justify-end space-x-2) bg-elevated-2 px-6 py-3",
+				"flex shrink-0 flex-col-reverse items-center gap-2 border-t border-border bg-elevated-2 px-4 py-2 sm:(flex-row justify-end)",
 				local.class,
 			)}
 			{...rest}

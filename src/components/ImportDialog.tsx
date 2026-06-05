@@ -395,7 +395,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 						</DialogDescription>
 					</DialogHeader>
 
-					<div class="space-y-4">
+					<div class="space-y-4 px-4 py-4">
 						<div class="flex gap-2">
 							<Button
 								variant="outline"
@@ -746,7 +746,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 								</span>
 							</Show>
 						</div>
-						<div class="flex gap-2">
+						<div class="flex items-center gap-2">
 							<Button variant="outline" onClick={() => setOpen(false)}>
 								Cancel
 							</Button>

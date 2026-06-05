@@ -413,8 +413,8 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
 		<Dialog open={open()} onOpenChange={setOpen}>
 			<DialogTrigger
 				as={(props: { onClick?: () => void }) => (
-					<Button variant="outline" size="sm" {...props}>
-						<div class="i-mdi-robot w-4 h-4 mr-2" />
+					<Button variant="outline" class="gap-2" {...props}>
+						<div class="i-mdi-robot w-4 h-4" />
 						AI Assistant
 					</Button>
 				)}
@@ -432,7 +432,7 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
 					</DialogDescription>
 				</DialogHeader>
 
-				<div class="flex-1 overflow-auto space-y-4 p-1">
+				<div class="flex-1 overflow-auto space-y-4 px-4 py-4">
 					<div class="space-y-2">
 						<div class="flex items-center justify-between">
 							<div class="text-sm font-medium">
@@ -490,16 +490,16 @@ export const ActionAIPromptDialog: Component<ActionAIPromptDialogProps> = (
 					</div>
 				</div>
 
-				<DialogFooter class="flex gap-2">
+				<DialogFooter>
 					<Button variant="outline" onClick={() => setOpen(false)}>
 						Close
 					</Button>
 					<Button
 						onClick={handleImport}
 						disabled={!isValidJSON()}
-						variant="default"
+						class="gap-2"
 					>
-						<div class="i-mdi-import w-4 h-4 mr-2" />
+						<div class="i-mdi-import w-4 h-4" />
 						Import Action
 					</Button>
 				</DialogFooter>

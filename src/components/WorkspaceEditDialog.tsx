@@ -117,7 +117,7 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
 						</DialogDescription>
 					</DialogHeader>
 
-					<div class="space-y-4">
+					<div class="space-y-4 px-4 py-4">
 						<TextFieldRoot>
 							<TextFieldLabel for="workspace-name">Name *</TextFieldLabel>
 							<TextField
@@ -159,8 +159,8 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
 						</TextFieldRoot>
 					</div>
 
-					<DialogFooter class="flex justify-between">
-						<div class="flex gap-2">
+					<DialogFooter class="sm:justify-between">
+						<div class="flex items-center gap-2">
 							<Button
 								variant="outline"
 								onClick={() => setOpen(false)}
@@ -183,16 +183,15 @@ export const WorkspaceEditDialog: Component<WorkspaceEditDialogProps> = (
 							open={deleteDialogOpen()}
 							onOpenChange={setDeleteDialogOpen}
 						>
-							<AlertDialogTrigger>
-								<Button
-									variant="destructive"
-									disabled={loading() || deleting()}
-								>
-									<Show when={deleting()}>
-										<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-									</Show>
-									Delete
-								</Button>
+							<AlertDialogTrigger
+								as={Button}
+								variant="destructive"
+								disabled={loading() || deleting()}
+							>
+								<Show when={deleting()}>
+									<div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+								</Show>
+								Delete
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>

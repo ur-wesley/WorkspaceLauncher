@@ -219,7 +219,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 					</DialogDescription>
 				</DialogHeader>
 
-				<div class="flex-1 overflow-y-auto space-y-4">
+				<div class="flex-1 overflow-y-auto space-y-4 px-4 py-4">
 					<TextFieldRoot>
 						<TextField
 							type="text"
@@ -431,7 +431,7 @@ export const ShareDialog: Component<ShareDialogProps> = (props) => {
 						Selected: {selectedWorkspaces().size} workspaces,{" "}
 						{selectedTools().size} tools, {selectedThemes().size} themes
 					</div>
-					<div class="flex gap-2">
+					<div class="flex items-center gap-2">
 						<Button variant="outline" onClick={() => handleExport(true)}>
 							<span class="iconify w-4 h-4 mr-2" data-icon="mdi:content-copy" />{" "}
 							Copy to Clipboard

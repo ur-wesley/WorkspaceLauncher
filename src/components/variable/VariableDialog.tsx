@@ -167,7 +167,7 @@ export const VariableDialog: Component<VariableDialogProps> = (props) => {
 						</DialogDescription>
 					</DialogHeader>
 
-					<div class="space-y-4">
+					<div class="space-y-4 px-4 py-4">
 						<TextFieldRoot>
 							<TextFieldLabel for="variable-key">Key *</TextFieldLabel>
 							<TextField

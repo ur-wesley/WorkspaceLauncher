@@ -28,7 +28,7 @@ export const DatabaseResetDialog: Component<DatabaseResetDialogProps> = (
 					<DialogTitle>{props.title}</DialogTitle>
 					<DialogDescription>{props.description}</DialogDescription>
 				</DialogHeader>
-				<div class="flex justify-end gap-2 pt-4">
+				<div class="flex justify-end gap-2 px-4 py-4">
 					<Button variant="outline" onClick={props.onClose}>
 						Cancel
 					</Button>

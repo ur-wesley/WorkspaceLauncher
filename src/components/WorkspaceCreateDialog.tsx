@@ -79,7 +79,7 @@ export const WorkspaceCreateDialog: Component<WorkspaceCreateDialogProps> = (
 						</DialogDescription>
 					</DialogHeader>
 
-					<div class="grid gap-4 py-4">
+					<div class="grid gap-4 px-4 py-4">
 						<TextFieldRoot class="grid grid-cols-4 items-center gap-4">
 							<TextFieldLabel for="name" class="text-right">
 								Name

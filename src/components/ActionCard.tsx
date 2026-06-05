@@ -167,10 +167,9 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 						</Show>
 						<Button
 							variant={props.isRunning ? "destructive" : "default"}
-							size="sm"
 							onClick={handleLaunch}
 							disabled={isLaunching()}
-							class="h-7 px-2 gap-1"
+							class="h-7 px-2 gap-1 shrink-0"
 						>
 							<Show
 								when={!isLaunching()}
@@ -261,32 +260,32 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 					</Show>
 					<Show when={workingDir()}>
 						{(dir) => (
-						<div class="inline-flex items-center h-5 rounded border border-border bg-muted/50 text-muted-foreground font-mono text-xs shrink-0 max-w-[200px] overflow-hidden">
-							<button
-								type="button"
-								title={`Open in file manager: ${dir()}`}
-								onClick={(e) => {
-									e.stopPropagation();
-									openPath(dir());
-								}}
-								class="inline-flex items-center gap-0.5 h-full px-1.5 hover:text-foreground hover:bg-muted transition-colors cursor-pointer min-w-0"
-							>
-								<div class="i-mdi-folder-outline w-3 h-3 shrink-0" />
-								<span class="truncate">{workingDirLabel()}</span>
-							</button>
-							<div class="w-px h-3 bg-border shrink-0" />
-							<button
-								type="button"
-								title={`Copy path: ${dir()}`}
-								onClick={(e) => {
-									e.stopPropagation();
-									navigator.clipboard.writeText(dir());
-								}}
-								class="inline-flex items-center justify-center h-full px-1 hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
-							>
-								<div class="i-mdi-content-copy w-3 h-3" />
-							</button>
-						</div>
+							<div class="inline-flex items-center h-5 rounded border border-border bg-muted/50 text-muted-foreground font-mono text-xs shrink-0 max-w-[200px] overflow-hidden">
+								<button
+									type="button"
+									title={`Open in file manager: ${dir()}`}
+									onClick={(e) => {
+										e.stopPropagation();
+										openPath(dir());
+									}}
+									class="inline-flex items-center gap-0.5 h-full px-1.5 hover:text-foreground hover:bg-muted transition-colors cursor-pointer min-w-0"
+								>
+									<div class="i-mdi-folder-outline w-3 h-3 shrink-0" />
+									<span class="truncate">{workingDirLabel()}</span>
+								</button>
+								<div class="w-px h-3 bg-border shrink-0" />
+								<button
+									type="button"
+									title={`Copy path: ${dir()}`}
+									onClick={(e) => {
+										e.stopPropagation();
+										navigator.clipboard.writeText(dir());
+									}}
+									class="inline-flex items-center justify-center h-full px-1 hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
+								>
+									<div class="i-mdi-content-copy w-3 h-3" />
+								</button>
+							</div>
 						)}
 					</Show>
 				</div>
@@ -306,7 +305,7 @@ export const ActionCard: Component<ActionCardProps> = (props) => {
 					<DialogHeader>
 						<DialogTitle>Action Logs: {props.action.name}</DialogTitle>
 					</DialogHeader>
-					<div class="flex-1 min-h-0">
+					<div class="min-h-0 flex-1 px-4 py-4">
 						<Show
 							when={runningAction()?.run_id}
 							fallback={<div>No active run logs</div>}

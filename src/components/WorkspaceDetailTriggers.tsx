@@ -1,5 +1,6 @@
 import type { Component } from "solid-js";
 import { Button } from "@/components/ui/button";
+import { hotkeyTitle } from "@/libs/hotkeys";
 
 interface TriggerProps {
 	readonly onClick?: () => void;
@@ -36,15 +37,24 @@ export const DeleteActionTrigger: Component<TriggerProps> = (props) => (
 );
 
 export const AddVariableTrigger: Component<TriggerProps> = (props) => (
-	<Button onClick={props.onClick}>
-		<div class="i-mdi-plus w-4 h-4 mr-2" />
+	<Button
+		onClick={props.onClick}
+		class="gap-2"
+		title={hotkeyTitle("Add Variable", "createVariable")}
+	>
+		<div class="i-mdi-plus w-4 h-4" />
 		Add Variable
 	</Button>
 );
 
 export const AddActionTrigger: Component<TriggerProps> = (props) => (
-	<Button onClick={props.onClick}>
-		<div class="i-mdi-plus w-4 h-4 mr-2" />
+	<Button
+		variant="outline"
+		onClick={props.onClick}
+		class="gap-2"
+		title={hotkeyTitle("Add Action", "createAction")}
+	>
+		<div class="i-mdi-plus w-4 h-4" />
 		Add Action
 	</Button>
 );
@@ -80,7 +90,12 @@ export const DeleteVariableTrigger: Component<TriggerProps> = (props) => (
 );
 
 export const EditWorkspaceTrigger: Component<TriggerProps> = (props) => (
-	<Button variant="outline" size="icon" onClick={props.onClick}>
+	<Button
+		variant="outline"
+		size="icon"
+		onClick={props.onClick}
+		title="Edit workspace"
+	>
 		<div class="i-mdi-pencil w-4 h-4" />
 	</Button>
 );

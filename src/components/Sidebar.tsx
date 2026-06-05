@@ -10,8 +10,14 @@ import {
 } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { TextField, TextFieldRoot } from "@/components/ui/textfield";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { WorkspaceCreateDialog } from "@/components/WorkspaceCreateDialog";
 import { cn } from "@/libs/cn";
+import { hotkeyTitle } from "@/libs/hotkeys";
 import { launchWorkspace } from "@/libs/launcher";
 import { showToast } from "@/libs/toast";
 import { runningActionsService } from "@/services/runningActions";
@@ -144,7 +150,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 	return (
 		<div
 			class={cn(
-				"flex flex-col h-full bg-card shadow-md overflow-hidden transition-all duration-200 shrink-0",
+				"flex h-full shrink-0 flex-col overflow-hidden border-r border-border bg-elevated-1 transition-all duration-200",
 				props.collapsed ? "w-0" : "w-64",
 			)}
 		>
@@ -172,7 +178,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 								variant="ghost"
 								class="h-6 w-6 p-0"
 								onclick={() => setCreateDialogOpen(true)}
-								title="Create new workspace"
+								title={hotkeyTitle("Create new workspace", "createWorkspace")}
 							>
 								<div class="w-3 h-3 i-mdi-plus" />
 							</Button>
@@ -256,7 +262,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 											"hover:bg-accent hover:text-accent-foreground",
 											isWorkspaceActive(workspace.id)
 												? "bg-accent text-accent-foreground"
-												: "bg-card text-muted-foreground",
+												: "bg-background text-muted-foreground",
 										)}
 									>
 										<div class="flex items-center gap-1.5 flex-1 min-w-0">
@@ -265,7 +271,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 												variant="ghost"
 												class={cn(
 													"h-6 w-6 flex-shrink-0 rounded-full transition-colors",
-													"bg-card text-muted-foreground",
+													"bg-elevated-2 text-muted-foreground",
 													"group-hover:bg-accent group-hover:text-accent-foreground",
 													isWorkspaceActive(workspace.id) &&
 														"bg-accent text-accent-foreground",
@@ -309,8 +315,8 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 											class={cn(
 												"h-6 w-6 rounded-full transition-colors",
 												isPinned()
-													? "opacity-100 bg-card text-primary"
-													: "opacity-0 bg-card text-muted-foreground group-hover:opacity-100 group-hover:bg-accent group-hover:text-accent-foreground",
+													? "opacity-100 bg-elevated-2 text-primary"
+													: "opacity-0 bg-elevated-2 text-muted-foreground group-hover:opacity-100 group-hover:bg-accent group-hover:text-accent-foreground",
 											)}
 											onclick={(e) => {
 												e.preventDefault();
@@ -346,37 +352,49 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 				</div>
 			</div>
 
-			<div class="p-2 space-y-1">
-				<Button
-					variant="ghost"
-					class={cn(
-						"w-full justify-start gap-3 px-3 py-2 text-sm font-medium",
-						"hover:bg-accent hover:text-accent-foreground text-muted-foreground",
-					)}
-					onclick={() => ui.actions.openActiveActionsManager()}
-				>
-					<div class="i-mdi-application-cog w-5 h-5 flex-shrink-0" />
-					<span class="flex-1 text-left">Active Actions</span>
-					<Show when={totalRunningActions() > 0}>
-						<span class="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-5 text-center">
-							{totalRunningActions()}
-						</span>
-					</Show>
-				</Button>
+			<div class="space-y-1 border-t border-border bg-elevated-2 p-2">
+				<Tooltip>
+					<TooltipTrigger
+						as={Button}
+						variant="ghost"
+						class={cn(
+							"w-full justify-start gap-3 px-3 py-2 text-sm font-medium",
+							"hover:bg-accent hover:text-accent-foreground text-muted-foreground",
+						)}
+						onclick={() => ui.actions.openActiveActionsManager()}
+					>
+						<div class="i-mdi-application-cog w-5 h-5 flex-shrink-0" />
+						<span class="flex-1 text-left">Active Actions</span>
+						<Show when={totalRunningActions() > 0}>
+							<span class="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-5 text-center">
+								{totalRunningActions()}
+							</span>
+						</Show>
+					</TooltipTrigger>
+					<TooltipContent>
+						{hotkeyTitle("Active Actions", "openActiveActionsManager")}
+					</TooltipContent>
+				</Tooltip>
 
-				<A
-					href="/settings"
-					class={cn(
-						"flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-						"hover:bg-accent hover:text-accent-foreground",
-						isActive("/settings")
-							? "bg-accent text-accent-foreground"
-							: "text-muted-foreground",
-					)}
-				>
-					<div class="i-mdi-cog w-5 h-5 flex-shrink-0" />
-					<span>Settings</span>
-				</A>
+				<Tooltip>
+					<TooltipTrigger
+						as={A}
+						href="/settings"
+						class={cn(
+							"flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+							"hover:bg-accent hover:text-accent-foreground",
+							isActive("/settings")
+								? "bg-accent text-accent-foreground"
+								: "text-muted-foreground",
+						)}
+					>
+						<div class="i-mdi-cog w-5 h-5 flex-shrink-0" />
+						<span class="flex-1">Settings</span>
+					</TooltipTrigger>
+					<TooltipContent>
+						{hotkeyTitle("Settings", "navigateSettings")}
+					</TooltipContent>
+				</Tooltip>
 			</div>
 
 			<WorkspaceCreateDialog
