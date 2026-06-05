@@ -1,5 +1,6 @@
-import { useNavigate } from "@solidjs/router";
+import { useLocation, useNavigate } from "@solidjs/router";
 import type { JSX, ParentComponent } from "solid-js";
+import { createMemo } from "solid-js";
 import { ActiveActionsManagerDialog } from "@/components/ActiveActionsManagerDialog";
 import { ActionDialogStepper as ActionDialog } from "@/components/action/ActionDialogStepper";
 import { Commander } from "@/components/Commander";
@@ -18,6 +19,16 @@ interface LayoutProps {
 const LayoutContent: ParentComponent<LayoutProps> = (props) => {
 	const ui = useUI();
 	const workspaceStore = useWorkspaceStore();
+	const location = useLocation();
+
+	const workspaceTitle = createMemo(() => {
+		const match = location.pathname.match(/^\/w\/(\d+)/);
+		if (!match) return null;
+		const id = Number(match[1]);
+		return (
+			workspaceStore.store.workspaces.find((w) => w.id === id)?.name ?? null
+		);
+	});
 
 	const navigate = useNavigate();
 	useHotkeys("global", {
@@ -34,6 +45,7 @@ const LayoutContent: ParentComponent<LayoutProps> = (props) => {
 			<WindowHeader
 				sidebarCollapsed={ui.store.sidebarCollapsed}
 				onToggleSidebar={ui.actions.toggleSidebar}
+				centerTitle={workspaceTitle() ?? undefined}
 			/>
 
 			<div class="flex flex-1 min-h-0">

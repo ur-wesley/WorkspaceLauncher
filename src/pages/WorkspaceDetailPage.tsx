@@ -35,9 +35,8 @@ import {
 	EditWorkspaceTrigger,
 } from "@/components/WorkspaceDetailTriggers";
 import { WorkspaceEditDialog } from "@/components/WorkspaceEditDialog";
-import { stopProcess } from "@/libs/api";
 import { cn } from "@/libs/cn";
-import { useHotkeys } from "@/libs/hotkeys";
+import { hotkeyTitle, useHotkeys } from "@/libs/hotkeys";
 import {
 	launchAction as launchActionTS,
 	launchWorkspace as launchWorkspaceTS,
@@ -63,6 +62,7 @@ import {
 	isInteractiveTarget,
 	setStoredTab,
 } from "@/pages/WorkspaceDetailPage.helpers";
+import { stopRunningAction } from "@/services/processTracking";
 import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
 import { useGlobalVariableStore } from "@/store/globalVariable";
@@ -352,15 +352,10 @@ export default function WorkspaceDetailPage() {
 		let failedCount = 0;
 
 		for (const runningAction of runningActions) {
-			try {
-				const result = await stopProcess(runningAction.process_id);
-				if (result.isOk()) {
-					runningActionsService.remove(runningAction.id);
-					stoppedCount++;
-				} else {
-					failedCount++;
-				}
-			} catch {
+			const result = await stopRunningAction(runningAction);
+			if (result.ok) {
+				stoppedCount++;
+			} else {
 				failedCount++;
 			}
 		}
@@ -395,27 +390,18 @@ export default function WorkspaceDetailPage() {
 			.find((ra) => ra.action_id === action.id);
 
 		if (runningAction) {
-			try {
-				const result = await stopProcess(runningAction.process_id);
-				if (result.isOk()) {
-					runningActionsService.remove(runningAction.id);
-					updateRunningActionsCount();
-					showToast({
-						title: "Action Stopped",
-						description: `${action.name} has been stopped`,
-						variant: "default",
-					});
-				} else {
-					showToast({
-						title: "Stop Failed",
-						description: result.error,
-						variant: "destructive",
-					});
-				}
-			} catch (error) {
+			const result = await stopRunningAction(runningAction);
+			updateRunningActionsCount();
+			if (result.ok) {
 				showToast({
-					title: "Stop Error",
-					description: `Failed to stop action: ${error}`,
+					title: "Action Stopped",
+					description: `${action.name}: ${result.message}`,
+					variant: "default",
+				});
+			} else {
+				showToast({
+					title: result.denied ? "Cannot stop process" : "Stop Failed",
+					description: result.message,
 					variant: "destructive",
 				});
 			}
@@ -472,47 +458,45 @@ export default function WorkspaceDetailPage() {
 			>
 				{(workspace) => (
 					<>
-						<div class="w-full flex flex-col gap-2 p-4">
-							<div class="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-								<h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold truncate flex-1 min-w-0">
-									{workspace().name}
-								</h1>
-								<div class="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
-									<Button
-										variant="outline"
-										onClick={handleLaunchWorkspace}
-										disabled={isLaunching() || actionStore.actions.length === 0}
-										class="whitespace-nowrap flex-1 sm:flex-initial"
-									>
-										<div class="i-mdi-play w-4 h-4 mr-2" />
-										<span class="hidden sm:inline">
-											{isLaunching() ? "Launching..." : "Run All Actions"}
-										</span>
-										<span class="sm:hidden">
-											{isLaunching() ? "Launching..." : "Run All"}
-										</span>
-									</Button>
-									<Button
-										variant="outline"
-										onClick={handleGenerateScript}
-										disabled={actionStore.actions.length === 0}
-										class="flex-1 sm:flex-initial whitespace-nowrap"
-									>
-										<div class="i-mdi-file-code-outline w-4 h-4 mr-2" />
-										Generate Script
-									</Button>
-									<Show when={workspace()}>
-										{(ws) => (
-											<WorkspaceEditDialog
-												workspace={ws()}
-												trigger={EditWorkspaceTrigger}
-											/>
-										)}
-									</Show>
-								</div>
+						<div class="w-full flex flex-col gap-1">
+							<div class="flex items-center justify-end gap-1 px-4 pt-2 pb-1">
+								<Button
+									variant="outline"
+									size="icon"
+									onClick={handleLaunchWorkspace}
+									disabled={isLaunching() || actionStore.actions.length === 0}
+									title={hotkeyTitle(
+										isLaunching() ? "Launching..." : "Run All Actions",
+										"runAll",
+									)}
+								>
+									<div class="i-mdi-play w-4 h-4" />
+								</Button>
+								<Button
+									variant="outline"
+									size="icon"
+									onClick={() => void handleStopAllActions()}
+									disabled={runningActionsCount() === 0}
+									title={hotkeyTitle("Stop All Actions", "stopAll")}
+								>
+									<div class="i-mdi-stop w-4 h-4" />
+								</Button>
+								<Button
+									variant="outline"
+									size="icon"
+									onClick={handleGenerateScript}
+									disabled={actionStore.actions.length === 0}
+									title="Generate Script"
+								>
+									<div class="i-mdi-file-code-outline w-4 h-4" />
+								</Button>
+								<WorkspaceEditDialog
+									workspace={workspace()}
+									trigger={EditWorkspaceTrigger}
+								/>
 							</div>
 							<Show when={workspace().description}>
-								<Card class="bg-elevated-1 shadow-md">
+								<Card class="bg-elevated-1 shadow-md mx-4">
 									<CardContent class="p-5">
 										<p
 											class={cn(
@@ -548,7 +532,7 @@ export default function WorkspaceDetailPage() {
 						<Tabs
 							value={activeTab()}
 							onChange={handleTabChange}
-							class="flex-1 flex flex-col w-full px-4 py-4 min-h-0"
+							class="flex-1 flex flex-col w-full px-4 pt-2 pb-4 min-h-0"
 						>
 							<TabsList class="mb-4 w-full sm:w-auto flex-wrap sm:flex-nowrap">
 								<TabsTrigger
@@ -599,7 +583,7 @@ export default function WorkspaceDetailPage() {
 													Tasks and commands to run in this workspace
 												</CardDescription>
 											</div>
-											<div class="flex gap-2">
+											<div class="flex items-center gap-2">
 												<ActionAIPromptDialog
 													workspaceId={workspaceId()}
 													onImportSuccess={() =>
@@ -625,7 +609,7 @@ export default function WorkspaceDetailPage() {
 												ref={(el) => {
 													filterActionsRef = el;
 												}}
-												class="flex h-9 w-full rounded-md bg-elevated-1 px-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:(outline-none ring-2 ring-ring)"
+												class="flex h-9 w-full rounded-md bg-elevated-1 px-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:(outline-none ring-1.5 ring-inset ring-ring)"
 												onInput={(e) => setActionsQuery(e.currentTarget.value)}
 											/>
 										</div>
@@ -696,7 +680,7 @@ export default function WorkspaceDetailPage() {
 							>
 								<Card class="h-full w-full flex flex-col border-0 shadow-none bg-transparent">
 									<CardHeader class="px-0 pt-0">
-										<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+										<div class="flex flex-col sm:flex-row justify-between items-center gap-4">
 											<div>
 												<CardTitle>Environment Variables</CardTitle>
 												<CardDescription>
