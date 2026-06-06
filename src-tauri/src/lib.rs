@@ -129,33 +129,6 @@ async fn get_db_init_error(
     Ok(state.0.lock().await.clone())
 }
 
-#[tauri::command]
-async fn repair_database(
-    app_handle: tauri::AppHandle,
-    state: tauri::State<'_, DbInitState>,
-) -> Result<(), String> {
-    let app_local_data_dir = app_handle
-        .path()
-        .app_local_data_dir()
-        .map_err(|e| e.to_string())?;
-    let db_path = app_local_data_dir.join("workspacelauncher.db");
-
-    let rescued_data = reset_and_rescue(app_local_data_dir.clone(), db_path.clone()).await;
-
-    database::run_migrations(&db_path)
-        .await
-        .map_err(|e| format!("Failed to run migrations after repair: {e}"))?;
-
-    if let Some(data) = rescued_data {
-        recovery::restore_data(&db_path, data)
-            .await
-            .map_err(|e| format!("Failed to restore data after repair: {e}"))?;
-    }
-
-    *state.0.lock().await = None;
-    Ok(())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -208,31 +181,22 @@ pub fn run() {
                         println!("Database migrations applied successfully.");
                     }
                     Err(ref e) if database::is_migration_checksum_error(e) => {
-                        println!("Migration checksum mismatch: {e}");
-                        let has_data = database::has_user_data(&db_path).await.unwrap_or(false);
+                        println!("Migration checksum mismatch: {e}. Performing automatic repair...");
 
-                        if has_data {
-                            *db_init_state.0.lock().await = Some(format!(
-                                "Database needs migration repair after an app update. Your workspaces are preserved. Click Repair Database to fix this. ({e})"
-                            ));
-                        } else {
-                            println!("No user data found; resetting database and retrying migrations.");
-                            rescued_data = reset_and_rescue(
-                                app_local_data_dir.clone(),
-                                db_path.clone(),
-                            )
-                            .await
-                            .or(rescued_data);
-
-                            match database::run_migrations(&db_path).await {
+                        match database::repair_migration_checksums(&db_path).await {
+                            Ok(()) => match database::run_migrations(&db_path).await {
                                 Ok(()) => {
                                     migration_ok = true;
-                                    println!("Database migrations applied after reset.");
+                                    println!("Database migrations applied after automatic repair.");
                                 }
                                 Err(retry_err) => {
                                     eprintln!("Migration retry failed: {retry_err}");
                                     *db_init_state.0.lock().await = Some(retry_err);
                                 }
+                            },
+                            Err(repair_err) => {
+                                eprintln!("Checksum repair failed: {repair_err}");
+                                *db_init_state.0.lock().await = Some(repair_err);
                             }
                         }
                     }
@@ -284,7 +248,6 @@ pub fn run() {
             schedule_db_reset,
             get_db_path,
             get_db_init_error,
-            repair_database,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
