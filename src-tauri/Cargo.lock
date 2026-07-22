@@ -6585,7 +6585,7 @@ dependencies = [
 
 [[package]]
 name = "workspacelauncher"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "chrono",
  "futures-core",
