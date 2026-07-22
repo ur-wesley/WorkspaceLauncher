@@ -36,9 +36,9 @@ const features: Feature[] = [
 	},
 	{
 		icon: "🎨",
-		title: "Customizable Themes",
+		title: "Light & Dark Mode",
 		description:
-			"Personalize your interface with custom themes. Choose from light mode, dark mode, or create your own.",
+			"Switch between warm light and dark appearances to match your workspace preference.",
 	},
 ];
 

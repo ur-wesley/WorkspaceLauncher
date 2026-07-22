@@ -30,9 +30,9 @@ const screenshots: Screenshot[] = [
 		imageUrl: actionsImg,
 	},
 	{
-		title: "Customizable Themes",
-		description: "Switch between light and dark modes, or create your own custom theme with the built-in theme creator",
-		alt: "WorkspaceLauncher theme customization",
+		title: "Light & Dark Mode",
+		description: "Switch between warm light and dark appearances to match your preference",
+		alt: "WorkspaceLauncher light and dark appearance",
 		imageUrl: darkImg,
 		isComparison: true,
 		compareImageUrl: lightImg,
@@ -187,7 +187,7 @@ const Screenshots = () => {
 										>
 											<img
 												src={screenshot.compareImageUrl.src}
-												alt={`${screenshot.alt} - Light theme`}
+												alt={`${screenshot.alt} - Light appearance`}
 												class="absolute inset-0 w-full h-full object-contain p-4"
 											/>
 										</div>
