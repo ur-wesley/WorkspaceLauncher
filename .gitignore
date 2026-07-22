@@ -1,6 +1,7 @@
 node_modules
 dist
 ~/
+graphify-out/
 
 src-tauri/derby.log
 
