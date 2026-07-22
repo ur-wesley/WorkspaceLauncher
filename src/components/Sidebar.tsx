@@ -8,6 +8,7 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import { MdiIcon } from "@/components/MdiIcon";
 import { Button } from "@/components/ui/button";
 import { TextField, TextFieldRoot } from "@/components/ui/textfield";
 import {
@@ -301,12 +302,12 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 												href={`/w/${workspace.id}`}
 												class="flex items-center gap-1.5 flex-1 min-w-0"
 											>
-												<span
+												<MdiIcon
+													icon={workspace.icon}
 													class={cn(
-														"iconify w-5 h-5 flex-shrink-0",
+														"w-5 h-5 flex-shrink-0",
 														!workspace.icon && "text-muted-foreground",
 													)}
-													data-icon={`mdi:${(workspace.icon ?? "folder").replace(/^i-mdi-/, "")}`}
 												/>
 												<span class="truncate">{workspace.name}</span>
 											</A>

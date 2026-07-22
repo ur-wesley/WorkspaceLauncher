@@ -4,10 +4,11 @@ import App from "./App";
 
 import "./app.css";
 import "virtual:uno.css";
-import { addCollection } from "@iconify/iconify";
+import { addCollection, scan } from "@iconify/iconify";
 
 import("@iconify-json/mdi/icons.json").then((data) => {
 	addCollection(data.default);
+	scan();
 });
 
 document.addEventListener("contextmenu", (e) => {
