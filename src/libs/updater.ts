@@ -1,65 +1,62 @@
-import { ask, message } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import type { DownloadEvent } from "@tauri-apps/plugin-updater";
 import { check } from "@tauri-apps/plugin-updater";
+import {
+	promptForUpdate,
+	setDownloadProgress,
+	setInstallingState,
+	showDownloadingDialog,
+	showErrorDialog,
+	showInfoDialog,
+} from "@/libs/updaterDialog";
 
 export async function checkForUpdates(silent = false): Promise<void> {
 	try {
 		const update = await check();
 
 		if (update) {
-			const yes = await ask(
-				`Update to version ${update.version} is available!\n\nRelease notes:\n${update.body}\n\nWould you like to install it now?`,
-				{
-					title: "Update Available",
-					kind: "info",
-					okLabel: "Update",
-					cancelLabel: "Later",
-				},
-			);
+			const install = await promptForUpdate(update.version, update.body);
 
-			if (yes) {
-				console.log("Downloading and installing update...");
-
-				await update.downloadAndInstall((event: DownloadEvent) => {
-					switch (event.event) {
-						case "Started":
-							console.log(
-								`Starting download of ${event.data.contentLength} bytes`,
-							);
-							break;
-						case "Progress":
-							console.log(`Downloaded ${event.data.chunkLength} bytes`);
-							break;
-						case "Finished":
-							console.log("Download finished");
-							break;
-					}
-				});
-
-				console.log("Update installed, restarting app...");
-
-				await relaunch();
+			if (!install) {
+				return;
 			}
-		} else if (!silent) {
-			await message("You are already running the latest version.", {
-				title: "No Updates",
-				kind: "info",
-				buttons: {
-					ok: "OK",
-				},
+
+			showDownloadingDialog();
+
+			let downloadedBytes = 0;
+			let totalBytes: number | null = null;
+
+			await update.downloadAndInstall((event: DownloadEvent) => {
+				switch (event.event) {
+					case "Started":
+						totalBytes = event.data.contentLength ?? null;
+						downloadedBytes = 0;
+						setDownloadProgress(downloadedBytes, totalBytes);
+						break;
+					case "Progress":
+						downloadedBytes += event.data.chunkLength;
+						setDownloadProgress(downloadedBytes, totalBytes);
+						break;
+					case "Finished":
+						setInstallingState();
+						break;
+				}
 			});
+
+			await relaunch();
+		} else if (!silent) {
+			await showInfoDialog(
+				"No Updates",
+				"You are already running the latest version.",
+			);
 		}
 	} catch (error) {
 		console.error("Failed to check for updates:", error);
 		if (!silent) {
-			await message(`Failed to check for updates: ${error}`, {
-				title: "Update Check Failed",
-				kind: "error",
-				buttons: {
-					ok: "OK",
-				},
-			});
+			await showErrorDialog(
+				"Update Check Failed",
+				`Failed to check for updates: ${error}`,
+			);
 		}
 	}
 }

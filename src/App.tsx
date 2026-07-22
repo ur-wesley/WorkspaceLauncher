@@ -11,6 +11,7 @@ import {
 	Switch,
 } from "solid-js";
 import { Layout } from "@/components/Layout";
+import { UpdateDialog } from "@/components/UpdateDialog";
 import { Toaster } from "@/components/ui/sonner";
 import {
 	checkDatabaseSchema,
@@ -204,52 +205,55 @@ const App: Component = () => {
 	});
 
 	return (
-		<Switch>
-			<Match when={error()}>
-				<div class="flex items-center justify-center h-screen bg-destructive/10">
-					<div class="bg-card rounded-lg shadow-md p-4 max-w-md space-y-4">
-						<h1 class="text-2xl font-bold text-destructive">
-							Initialization Error
-						</h1>
-						<p class="text-muted-foreground">{error()}</p>
+		<>
+			<UpdateDialog />
+			<Switch>
+				<Match when={error()}>
+					<div class="flex items-center justify-center h-screen bg-destructive/10">
+						<div class="bg-card rounded-lg shadow-md p-4 max-w-md space-y-4">
+							<h1 class="text-2xl font-bold text-destructive">
+								Initialization Error
+							</h1>
+							<p class="text-muted-foreground">{error()}</p>
+						</div>
 					</div>
-				</div>
-			</Match>
-			<Match when={!initialized()}>
-				<div class="flex items-center justify-center h-screen">
-					<div class="flex flex-col items-center gap-3">
-						<div class="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-						<p class="text-muted-foreground">Initializing...</p>
+				</Match>
+				<Match when={!initialized()}>
+					<div class="flex items-center justify-center h-screen">
+						<div class="flex flex-col items-center gap-3">
+							<div class="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+							<p class="text-muted-foreground">Initializing...</p>
+						</div>
 					</div>
-				</div>
-			</Match>
-			<Match when={initialized()}>
-				<StoreProvider>
-					<ColorModeScript />
-					<ColorModeProvider>
-						<Router>
-							<MetaProvider>
-								<Suspense>
-									<Route component={Layout}>
-										<Route path="/" component={WorkspacesListPage} />
-										<Route
-											path="/w/:workspaceId"
-											component={WorkspaceDetailPage}
-										/>
-										<Route path="/settings" component={SettingsPage} />
-										<Route
-											path="/settings/hotkeys"
-											component={SettingsHotkeysPage}
-										/>
-									</Route>
-								</Suspense>
-							</MetaProvider>
-						</Router>
-						<Toaster />
-					</ColorModeProvider>
-				</StoreProvider>
-			</Match>
-		</Switch>
+				</Match>
+				<Match when={initialized()}>
+					<StoreProvider>
+						<ColorModeScript />
+						<ColorModeProvider>
+							<Router>
+								<MetaProvider>
+									<Suspense>
+										<Route component={Layout}>
+											<Route path="/" component={WorkspacesListPage} />
+											<Route
+												path="/w/:workspaceId"
+												component={WorkspaceDetailPage}
+											/>
+											<Route path="/settings" component={SettingsPage} />
+											<Route
+												path="/settings/hotkeys"
+												component={SettingsHotkeysPage}
+											/>
+										</Route>
+									</Suspense>
+								</MetaProvider>
+							</Router>
+							<Toaster />
+						</ColorModeProvider>
+					</StoreProvider>
+				</Match>
+			</Switch>
+		</>
 	);
 };
 
