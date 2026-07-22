@@ -81,7 +81,7 @@ export async function initializeDatabase(): Promise<Result<void, ApiError>> {
 		if (initError) {
 			return err({
 				message: initError,
-				code: "DB_MIGRATION_REPAIR_NEEDED",
+				code: "DB_INIT_ERROR",
 			});
 		}
 
@@ -100,18 +100,6 @@ export async function initializeDatabase(): Promise<Result<void, ApiError>> {
 		return err({
 			message: `Failed to initialize database: ${error}`,
 			code: "DB_INIT_ERROR",
-		});
-	}
-}
-
-export async function repairDatabase(): Promise<Result<void, ApiError>> {
-	try {
-		await invoke("repair_database");
-		return ok(undefined);
-	} catch (error) {
-		return err({
-			message: `Failed to repair database: ${error}`,
-			code: "DB_REPAIR_ERROR",
 		});
 	}
 }

@@ -197,6 +197,7 @@ use sqlx::migrate::{
 };
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Sqlite;
+use std::collections::HashMap;
 use std::path::Path;
 use tauri_plugin_sql::{Migration, MigrationKind};
 
@@ -252,6 +253,135 @@ pub async fn run_migrations(db_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+pub async fn repair_migration_checksums(db_path: &Path) -> Result<(), String> {
+    let conn_str = format!("sqlite://{}", db_path.to_string_lossy());
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&conn_str)
+        .await
+        .map_err(|e| format!("Failed to connect for checksum repair: {e}"))?;
+
+    let applied: Vec<(i64, Vec<u8>)> = sqlx::query_as(
+        "SELECT version, checksum FROM _sqlx_migrations WHERE success = 1 ORDER BY version",
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| format!("Failed to read applied migrations: {e}"))?;
+
+    let applied_map: HashMap<i64, Vec<u8>> = applied.into_iter().collect();
+
+    let migrations = get_migrations();
+    let migrator = Migrator::new(EmbeddedMigrations(migrations))
+        .await
+        .map_err(|e| format!("Failed to create migrator for checksum repair: {e}"))?;
+
+    for migration in migrator.iter() {
+        let Some(stored_checksum) = applied_map.get(&migration.version) else {
+            continue;
+        };
+
+        if migration.checksum.as_ref() == stored_checksum.as_slice() {
+            continue;
+        }
+
+        println!(
+            "Updating stored checksum for migration {} ({})",
+            migration.version, migration.description
+        );
+
+        sqlx::query(
+            "UPDATE _sqlx_migrations SET checksum = ?, description = ? WHERE version = ?",
+        )
+        .bind(migration.checksum.as_ref() as &[u8])
+        .bind(migration.description.as_ref())
+        .bind(migration.version)
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+            format!(
+                "Failed to update checksum for migration {}: {e}",
+                migration.version
+            )
+        })?;
+    }
+
+    pool.close().await;
+    Ok(())
+}
+
 pub fn is_migration_checksum_error(err: &str) -> bool {
     err.contains("migration") && err.contains("has been modified")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    async fn connect(db_path: &Path) -> sqlx::SqlitePool {
+        let conn_str = format!("sqlite://{}", db_path.to_string_lossy());
+        SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&conn_str)
+            .await
+            .expect("connect")
+    }
+
+    #[test]
+    fn detects_migration_checksum_error() {
+        assert!(is_migration_checksum_error(
+            "migration 1 was previously applied but has been modified"
+        ));
+        assert!(!is_migration_checksum_error("table workspaces already exists"));
+    }
+
+    #[tokio::test]
+    async fn fresh_install_applies_migrations_idempotently() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let db_path = dir.path().join("test.db");
+
+        run_migrations(&db_path).await.expect("first run");
+        run_migrations(&db_path).await.expect("second run");
+    }
+
+    #[tokio::test]
+    async fn checksum_repair_preserves_user_data() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let db_path = dir.path().join("test.db");
+
+        run_migrations(&db_path).await.expect("migrate");
+
+        let pool = connect(&db_path).await;
+        sqlx::query("INSERT INTO workspaces (name, description) VALUES ('test-ws', 'desc')")
+            .execute(&pool)
+            .await
+            .expect("insert workspace");
+        pool.close().await;
+
+        let pool = connect(&db_path).await;
+        sqlx::query("UPDATE _sqlx_migrations SET checksum = X'00' WHERE version = 1")
+            .execute(&pool)
+            .await
+            .expect("corrupt checksum");
+        pool.close().await;
+
+        let err = run_migrations(&db_path).await.unwrap_err();
+        assert!(is_migration_checksum_error(&err));
+
+        repair_migration_checksums(&db_path)
+            .await
+            .expect("repair checksums");
+        run_migrations(&db_path).await.expect("migrate after repair");
+
+        let pool = connect(&db_path).await;
+        let (count,): (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM workspaces WHERE name = 'test-ws'",
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("count workspaces");
+        pool.close().await;
+
+        assert_eq!(count, 1);
+    }
 }
