@@ -23,14 +23,12 @@ import * as api from "@/libs/api";
 import { autostartHandler } from "@/libs/autostart";
 import { showToast } from "@/libs/toast";
 import { checkForUpdates } from "@/libs/updater";
-import { useThemeStore } from "@/store/theme";
 import { useToolStore } from "@/store/tool";
 import { SETTING_KEYS } from "@/types/database";
 import { version } from "../../../package.json" with { type: "json" };
 
 export const GeneralSettings: Component = () => {
 	const [, toolActions] = useToolStore();
-	const [, themeActions] = useThemeStore();
 	const [autoLaunch, setAutoLaunch] = createSignal(false);
 	const [extraPathDirectories, setExtraPathDirectories] = createSignal("");
 	const [resetDialogOpen, setResetDialogOpen] = createSignal(false);
@@ -108,7 +106,6 @@ export const GeneralSettings: Component = () => {
 						"Database has been reset successfully. All data has been cleared.",
 				});
 				toolActions.loadTools();
-				themeActions.loadThemes();
 			} else {
 				showToast({
 					title: "Reset Failed",
@@ -136,7 +133,6 @@ export const GeneralSettings: Component = () => {
 					description: `Database has been backed up and reset. Backup saved to: ${result.value}`,
 				});
 				toolActions.loadTools();
-				themeActions.loadThemes();
 			} else {
 				showToast({
 					title: "Backup & Reset Failed",
@@ -355,8 +351,8 @@ export const GeneralSettings: Component = () => {
 						<div class="flex-1 space-y-1">
 							<p class="text-sm font-medium">Reset Database</p>
 							<p class="text-sm text-muted-foreground">
-								This will permanently delete all workspaces, actions, tools,
-								themes, and settings. This action cannot be undone.
+								This will permanently delete all workspaces, actions, tools, and
+								settings. This action cannot be undone.
 							</p>
 						</div>
 						<Button
@@ -408,7 +404,7 @@ export const GeneralSettings: Component = () => {
 				onClose={() => setResetDialogOpen(false)}
 				onConfirm={handleResetDatabase}
 				title="Reset Database"
-				description="This will permanently delete all workspaces, actions, tools, themes, and settings. This action cannot be undone. Are you sure you want to continue?"
+				description="This will permanently delete all workspaces, actions, tools, and settings. This action cannot be undone. Are you sure you want to continue?"
 				confirmText="Reset Database"
 				variant="destructive"
 			/>

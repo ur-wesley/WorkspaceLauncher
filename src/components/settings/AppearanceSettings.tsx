@@ -7,19 +7,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Switch, SwitchControl, SwitchThumb } from "@/components/ui/switch";
-import { useThemeStore } from "@/store/theme";
 
 export const AppearanceSettings: Component = () => {
-	const [themeStore, themeActions] = useThemeStore();
 	const [darkMode, setDarkMode] = createSignal(false);
 
 	onMount(() => {
@@ -35,13 +25,6 @@ export const AppearanceSettings: Component = () => {
 			"data-kb-theme",
 			newMode ? "dark" : "light",
 		);
-	};
-
-	const handleThemeChange = (value: string | null) => {
-		if (!value) return;
-		const themeId = Number(value);
-		if (Number.isNaN(themeId)) return;
-		themeActions.activateTheme(themeId);
 	};
 
 	return (
@@ -69,44 +52,6 @@ export const AppearanceSettings: Component = () => {
 								<SwitchThumb />
 							</SwitchControl>
 						</Switch>
-					</div>
-
-					<Separator />
-
-					<div class="space-y-2">
-						<label for="active-theme-select" class="text-sm font-medium">
-							Active Theme
-						</label>
-						<Select
-							id="active-theme-select"
-							value={themeStore.activeTheme?.id.toString()}
-							onChange={handleThemeChange}
-							options={themeStore.themes.map((t) => t.id.toString())}
-							placeholder="Select a theme"
-							itemComponent={(props) => (
-								<SelectItem item={props.item}>
-									{
-										themeStore.themes.find(
-											(t) => t.id.toString() === props.item.rawValue,
-										)?.name
-									}
-								</SelectItem>
-							)}
-						>
-							<SelectTrigger>
-								<SelectValue<string>>
-									{(state) =>
-										themeStore.themes.find(
-											(t) => t.id.toString() === state.selectedOption(),
-										)?.name || "Select theme"
-									}
-								</SelectValue>
-							</SelectTrigger>
-							<SelectContent />
-						</Select>
-						<p class="text-xs text-muted-foreground">
-							{themeStore.activeTheme?.description || "No description"}
-						</p>
 					</div>
 				</CardContent>
 			</Card>

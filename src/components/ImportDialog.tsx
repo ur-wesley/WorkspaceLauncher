@@ -27,15 +27,9 @@ import { safeParseExportData } from "@/libs/importSchema";
 import { showToast } from "@/libs/toast";
 import type { ExportData } from "@/models/export.model";
 import { useActionStore } from "@/store/action";
-import { useThemeStore } from "@/store/theme";
 import { useToolStore } from "@/store/tool";
 import { useWorkspaceStore } from "@/store/workspace";
-import type {
-	NewAction,
-	NewTheme,
-	NewTool,
-	NewWorkspace,
-} from "@/types/database";
+import type { NewAction, NewTool, NewWorkspace } from "@/types/database";
 
 interface ImportDialogProps {
 	trigger: Component<{ onClick?: () => void }>;
@@ -45,7 +39,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 	const [open, setOpen] = createSignal(false);
 	const workspaceStore = useWorkspaceStore();
 	const [, actionActions] = useActionStore();
-	const [, themeActions] = useThemeStore();
 	const [, toolActions] = useToolStore();
 
 	const [importData, setImportData] = createSignal<ExportData | null>(null);
@@ -59,9 +52,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 		new Set(),
 	);
 	const [selectedTools, setSelectedTools] = createSignal<Set<number>>(
-		new Set(),
-	);
-	const [selectedThemes, setSelectedThemes] = createSignal<Set<number>>(
 		new Set(),
 	);
 	const [workspaceNames, setWorkspaceNames] = createSignal<Map<number, string>>(
@@ -79,7 +69,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 		setSelectedWorkspaces(new Set<number>());
 		setSelectedActions(new Set<number>());
 		setSelectedTools(new Set<number>());
-		setSelectedThemes(new Set<number>());
 		setWorkspaceNames(new Map<number, string>());
 		setActionNames(new Map<number, string>());
 		setExpandedWorkspaces(new Set<number>());
@@ -96,7 +85,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 			setSelectedWorkspaces(new Set<number>());
 			setSelectedActions(new Set<number>());
 			setSelectedTools(new Set<number>());
-			setSelectedThemes(new Set<number>());
 			setWorkspaceNames(new Map<number, string>());
 			setActionNames(new Map<number, string>());
 			setExpandedWorkspaces(new Set<number>());
@@ -117,7 +105,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 			setSelectedWorkspaces(new Set<number>());
 			setSelectedActions(new Set<number>());
 			setSelectedTools(new Set<number>());
-			setSelectedThemes(new Set<number>());
 			setWorkspaceNames(new Map<number, string>());
 			setActionNames(new Map<number, string>());
 			setExpandedWorkspaces(new Set<number>());
@@ -187,10 +174,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 		setSelectedTools(toggleIdInSet(toolId, selectedTools()));
 	};
 
-	const toggleTheme = (themeId: number) => {
-		setSelectedThemes(toggleIdInSet(themeId, selectedThemes()));
-	};
-
 	const toggleExpanded = (workspaceId: number) => {
 		const newExpanded = new Set(expandedWorkspaces());
 		if (newExpanded.has(workspaceId)) {
@@ -222,15 +205,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 
 	const deselectAllTools = () => {
 		setSelectedTools(new Set<number>());
-	};
-
-	const selectAllThemes = () => {
-		const allThemeIds = (importData()?.themes || []).map((t) => t.id);
-		setSelectedThemes(new Set(allThemeIds));
-	};
-
-	const deselectAllThemes = () => {
-		setSelectedThemes(new Set<number>());
 	};
 
 	const updateWorkspaceName = (workspaceId: number, name: string) => {
@@ -308,7 +282,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 				selectedWorkspaces: selectedWorkspaces(),
 				selectedActions: selectedActions(),
 				selectedTools: selectedTools(),
-				selectedThemes: selectedThemes(),
 				renamedWorkspaces: workspaceNames(),
 				renamedActions: actionNames(),
 			},
@@ -363,7 +336,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 						order_index: d.order_index,
 						auto_launch: d.auto_launch ?? false,
 					} satisfies NewAction),
-				createTheme: (d: NewTheme) => themeActions.createTheme(d),
 			},
 		);
 		if (result.success) {
@@ -649,72 +621,6 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 										</div>
 									</div>
 								</Show>
-
-								<Show when={(importData()?.themes?.length || 0) > 0}>
-									<div class="space-y-2">
-										<div class="flex items-center justify-between">
-											<h3 class="text-lg font-semibold">
-												Themes{" "}
-												<Badge>{importData()?.themes?.length || 0}</Badge>
-											</h3>
-											<div class="flex gap-2">
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={selectAllThemes}
-												>
-													Select All
-												</Button>
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={deselectAllThemes}
-												>
-													Deselect All
-												</Button>
-											</div>
-										</div>
-
-										<div class="space-y-2 bg-elevated-2 rounded-md p-4">
-											<For each={importData()?.themes || []}>
-												{(theme) => {
-													const isSelected = () =>
-														selectedThemes().has(theme.id);
-
-													return (
-														<button
-															type="button"
-															class="flex items-center gap-2 p-2 rounded transition-colors"
-															classList={{
-																"bg-elevated-2": isSelected(),
-																"hover:bg-muted/50": !isSelected(),
-															}}
-															onClick={() => toggleTheme(theme.id)}
-														>
-															<Checkbox
-																checked={isSelected()}
-																onChange={() => toggleTheme(theme.id)}
-															/>
-															<span class="flex-1">
-																{theme.name}
-																<Show when={theme.description}>
-																	<p class="text-xs text-muted-foreground">
-																		{theme.description}
-																	</p>
-																</Show>
-															</span>
-															<Show when={theme.is_predefined}>
-																<span class="text-[10px] uppercase text-muted-foreground bg-elevated-2 rounded px-2 py-0.5">
-																	Built-in
-																</span>
-															</Show>
-														</button>
-													);
-												}}
-											</For>
-										</div>
-									</div>
-								</Show>
 							</div>
 						</Show>
 					</div>
@@ -725,8 +631,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 								when={
 									selectedWorkspaces().size > 0 ||
 									selectedActions().size > 0 ||
-									selectedTools().size > 0 ||
-									selectedThemes().size > 0
+									selectedTools().size > 0
 								}
 							>
 								<span>
@@ -735,9 +640,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 									{selectedActions().size} action
 									{selectedActions().size !== 1 ? "s" : ""},{" "}
 									{selectedTools().size} tool
-									{selectedTools().size !== 1 ? "s" : ""},{" "}
-									{selectedThemes().size} theme
-									{selectedThemes().size !== 1 ? "s" : ""}
+									{selectedTools().size !== 1 ? "s" : ""}
 								</span>
 							</Show>
 							<Show when={hasWorkspaceNameConflict()}>
@@ -756,8 +659,7 @@ export const ImportDialog: Component<ImportDialogProps> = (props) => {
 									!importData() ||
 									(selectedWorkspaces().size === 0 &&
 										selectedActions().size === 0 &&
-										selectedTools().size === 0 &&
-										selectedThemes().size === 0) ||
+										selectedTools().size === 0) ||
 									hasWorkspaceNameConflict()
 								}
 							>

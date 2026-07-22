@@ -169,30 +169,6 @@ pub struct NewTool {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct Theme {
-    pub id: i64,
-    pub name: String,
-    pub description: Option<String>,
-    pub is_predefined: bool,
-    pub is_active: bool,
-    pub light_colors: String,
-    pub dark_colors: String,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct NewTheme {
-    pub name: String,
-    pub description: Option<String>,
-    pub is_predefined: Option<bool>,
-    pub light_colors: String,
-    pub dark_colors: String,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct GlobalVariable {
     pub id: i64,
     pub key: String,
@@ -274,30 +250,6 @@ pub async fn run_migrations(db_path: &Path) -> Result<(), String> {
 
     pool.close().await;
     Ok(())
-}
-
-pub async fn has_user_data(db_path: &Path) -> Result<bool, String> {
-    if !db_path.exists() {
-        return Ok(false);
-    }
-
-    let conn_str = format!("sqlite://{}", db_path.to_string_lossy());
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect(&conn_str)
-        .await
-        .map_err(|e| format!("{e}"))?;
-
-    let count: Result<(i64,), _> = sqlx::query_as("SELECT COUNT(*) FROM workspaces")
-        .fetch_one(&pool)
-        .await;
-
-    pool.close().await;
-
-    match count {
-        Ok((n,)) => Ok(n > 0),
-        Err(_) => Ok(false),
-    }
 }
 
 pub fn is_migration_checksum_error(err: &str) -> bool {

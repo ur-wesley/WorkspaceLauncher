@@ -8,13 +8,11 @@ import type {
 	NewAction,
 	NewGlobalVariable,
 	NewRun,
-	NewTheme,
 	NewTool,
 	NewVariable,
 	NewWorkspace,
 	Run,
 	Setting,
-	Theme,
 	Tool,
 	Variable,
 	Workspace,
@@ -1130,120 +1128,8 @@ export async function listRunningActions(
 }
 
 // =============================================================================
-// Theme Management API
+// Process / Executable Discovery
 // =============================================================================
-
-export async function listThemes(): Promise<Result<Theme[], string>> {
-	try {
-		const db = getDatabase();
-		const themes = await db.select<Theme[]>(
-			"SELECT * FROM themes ORDER BY is_predefined DESC, updated_at DESC",
-		);
-		return ok(themes);
-	} catch (error) {
-		console.error("Failed to list themes:", error);
-		return err(`Failed to list themes: ${error}`);
-	}
-}
-
-export async function createTheme(
-	theme: NewTheme,
-): Promise<Result<number, string>> {
-	try {
-		const db = getDatabase();
-		const result = await db.execute(
-			`INSERT INTO themes (name, description, is_predefined, is_active, light_colors, dark_colors)
-        VALUES (?, ?, ?, 0, ?, ?)`,
-			[
-				theme.name,
-				theme.description ?? null,
-				theme.is_predefined ? 1 : 0,
-				theme.light_colors,
-				theme.dark_colors,
-			],
-		);
-		return ok(result.lastInsertId as number);
-	} catch (error) {
-		console.error("Failed to create theme:", error);
-		return err(`Failed to create theme: ${error}`);
-	}
-}
-
-export async function updateTheme(
-	id: number,
-	theme: Partial<NewTheme>,
-): Promise<Result<void, string>> {
-	try {
-		const db = getDatabase();
-
-		const setParts: string[] = [];
-		const values: Array<string | number | null> = [];
-
-		if (theme.name !== undefined) {
-			setParts.push("name = ?");
-			values.push(theme.name);
-		}
-		if (theme.description !== undefined) {
-			setParts.push("description = ?");
-			values.push(theme.description ?? null);
-		}
-		if (theme.is_predefined !== undefined) {
-			setParts.push("is_predefined = ?");
-			values.push(theme.is_predefined ? 1 : 0);
-		}
-		if (theme.light_colors !== undefined) {
-			setParts.push("light_colors = ?");
-			values.push(theme.light_colors);
-		}
-		if (theme.dark_colors !== undefined) {
-			setParts.push("dark_colors = ?");
-			values.push(theme.dark_colors);
-		}
-
-		if (setParts.length === 0) {
-			return ok(undefined);
-		}
-
-		setParts.push("updated_at = CURRENT_TIMESTAMP");
-		values.push(id);
-
-		await db.execute(
-			`UPDATE themes SET ${setParts.join(", ")} WHERE id = ?`,
-			values,
-		);
-
-		return ok(undefined);
-	} catch (error) {
-		console.error("Failed to update theme:", error);
-		return err(`Failed to update theme: ${error}`);
-	}
-}
-
-export async function deleteTheme(id: number): Promise<Result<void, string>> {
-	try {
-		const db = getDatabase();
-		await db.execute("DELETE FROM themes WHERE id = ?", [id]);
-		return ok(undefined);
-	} catch (error) {
-		console.error("Failed to delete theme:", error);
-		return err(`Failed to delete theme: ${error}`);
-	}
-}
-
-export async function activateTheme(id: number): Promise<Result<void, string>> {
-	try {
-		const db = getDatabase();
-		await db.execute("UPDATE themes SET is_active = 0", []);
-		await db.execute(
-			"UPDATE themes SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-			[id],
-		);
-		return ok(undefined);
-	} catch (error) {
-		console.error("Failed to activate theme:", error);
-		return err(`Failed to activate theme: ${error}`);
-	}
-}
 
 export interface KillProcessResponse {
 	success: boolean;
@@ -1309,7 +1195,6 @@ export async function resetDatabase(): Promise<Result<void, ApiError>> {
 			"actions",
 			"workspaces",
 			"tools",
-			"themes",
 			"settings",
 		];
 
@@ -1337,7 +1222,6 @@ export async function backupAndResetDatabase(): Promise<
 		let actions: Action[] = [];
 		let variables: Variable[] = [];
 		let tools: Tool[] = [];
-		let themes: Theme[] = [];
 		let settings: Setting[] = [];
 
 		try {
@@ -1345,7 +1229,6 @@ export async function backupAndResetDatabase(): Promise<
 			actions = await db.select<Action[]>("SELECT * FROM actions");
 			variables = await db.select<Variable[]>("SELECT * FROM variables");
 			tools = await db.select<Tool[]>("SELECT * FROM tools");
-			themes = await db.select<Theme[]>("SELECT * FROM themes");
 			settings = await db.select<Setting[]>("SELECT * FROM settings");
 		} catch (_backupError) {
 			console.log("Some tables don't exist, creating empty backup...");
@@ -1356,7 +1239,6 @@ export async function backupAndResetDatabase(): Promise<
 			actions,
 			variables,
 			tools,
-			themes,
 			settings,
 		};
 
@@ -1386,7 +1268,6 @@ export async function backupAndResetDatabase(): Promise<
 			"actions",
 			"workspaces",
 			"tools",
-			"themes",
 			"settings",
 		];
 		for (const table of tables) {
@@ -1398,7 +1279,6 @@ export async function backupAndResetDatabase(): Promise<
 			actions.length > 0 ||
 			variables.length > 0 ||
 			tools.length > 0 ||
-			themes.length > 0 ||
 			settings.length > 0
 		) {
 			console.log("Restoring backed up data...");
@@ -1431,22 +1311,6 @@ export async function backupAndResetDatabase(): Promise<
 						tool.category,
 						tool.created_at,
 						tool.updated_at,
-					],
-				);
-			}
-
-			for (const theme of themes) {
-				await db.execute(
-					`INSERT INTO themes (id, name, description, light_colors, dark_colors, is_predefined, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-					[
-						theme.id,
-						theme.name,
-						theme.description,
-						theme.light_colors,
-						theme.dark_colors,
-						theme.is_predefined,
-						theme.created_at,
-						theme.updated_at,
 					],
 				);
 			}

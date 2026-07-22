@@ -4,7 +4,6 @@ import { createEffect, createSignal } from "solid-js";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { GlobalVariablesSettings } from "@/components/settings/GlobalVariablesSettings";
-import { ThemesSettings } from "@/components/settings/ThemesSettings";
 import { ToolsSettings } from "@/components/settings/ToolsSettings";
 import {
 	Tabs,
@@ -26,7 +25,7 @@ export const SettingsPage: Component = () => {
 
 		const normalized = Array.isArray(tab)
 			? (tab[0] ?? "general")
-			: tab === "advanced"
+			: tab === "advanced" || tab === "themes"
 				? "general"
 				: tab;
 
@@ -43,10 +42,9 @@ export const SettingsPage: Component = () => {
 			</div>
 
 			<Tabs value={activeTab()} onChange={setActiveTab} class="w-full">
-				<TabsList class="grid w-full grid-cols-5">
+				<TabsList class="grid w-full grid-cols-4">
 					<TabsTrigger value="general">General</TabsTrigger>
 					<TabsTrigger value="appearance">Appearance</TabsTrigger>
-					<TabsTrigger value="themes">Themes</TabsTrigger>
 					<TabsTrigger value="tools">Tools</TabsTrigger>
 					<TabsTrigger value="variables">Global Variables</TabsTrigger>
 					<TabsIndicator />
@@ -58,10 +56,6 @@ export const SettingsPage: Component = () => {
 
 				<TabsContent value="appearance" class="space-y-4">
 					<AppearanceSettings />
-				</TabsContent>
-
-				<TabsContent value="themes" class="space-y-4">
-					<ThemesSettings />
 				</TabsContent>
 
 				<TabsContent value="tools" class="space-y-4">

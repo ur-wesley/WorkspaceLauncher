@@ -1,18 +1,15 @@
 import { ActionAdapter, type ActionExport } from "@/models/action.model";
 import type { ExportData } from "@/models/export.model";
-import { ThemeAdapter, type ThemeExport } from "@/models/theme.model";
 import { ToolAdapter, type ToolExport } from "@/models/tool.model";
 import {
 	WorkspaceAdapter,
 	type WorkspaceExport,
 } from "@/models/workspace.model";
-import type { NewTheme } from "@/types/database";
 
 export interface ImportOptions {
 	selectedWorkspaces: Set<number>;
 	selectedActions: Set<number>;
 	selectedTools: Set<number>;
-	selectedThemes: Set<number>;
 	renamedWorkspaces: Map<number, string>;
 	renamedActions: Map<number, string>;
 }
@@ -45,7 +42,6 @@ export interface ImportCallbacks {
 		os_overrides: string | null;
 		order_index: number;
 	}) => Promise<void>;
-	createTheme: (data: NewTheme) => Promise<boolean>;
 }
 
 export interface ImportResult {
@@ -115,31 +111,6 @@ async function importTools(
 		if (newTool) {
 			count++;
 		}
-	}
-
-	return count;
-}
-
-async function importThemes(
-	themes: ThemeExport[],
-	selectedIds: Set<number>,
-	createTheme: ImportCallbacks["createTheme"],
-): Promise<number> {
-	let count = 0;
-
-	for (const theme of themes) {
-		if (!selectedIds.has(theme.id)) continue;
-
-		const parsed = ThemeAdapter.fromExport(theme);
-		await createTheme({
-			name: parsed.name,
-			description: parsed.description ?? undefined,
-			light_colors: parsed.light_colors,
-			dark_colors: parsed.dark_colors,
-			is_predefined: parsed.is_predefined ?? false,
-		});
-
-		count++;
 	}
 
 	return count;
@@ -219,13 +190,6 @@ export async function performImport(
 			callbacks.createTool,
 		);
 		totalImported += toolCount;
-
-		const themeCount = await importThemes(
-			data.themes || [],
-			options.selectedThemes,
-			callbacks.createTheme,
-		);
-		totalImported += themeCount;
 
 		const actionCount = await importActions(
 			data.actions || [],
