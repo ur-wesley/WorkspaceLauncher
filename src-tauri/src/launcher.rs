@@ -361,17 +361,6 @@ async fn launch_command_action(
             },
         );
 
-        if detached_cfg {
-            emit_completed(
-                &app,
-                request.action_id,
-                request.workspace_id,
-                run_id,
-                Some(0),
-                true,
-            );
-        }
-
         return Ok(LaunchResult {
             success: true,
             message: format!("Command launched successfully: {}", command_str),

@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command as TokioCommand;
+use tokio::process::{Child, Command as TokioCommand};
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -27,29 +27,48 @@ pub struct DetachedSpawnRequest {
     pub track_process: bool,
 }
 
-pub async fn spawn_attached_with_logs(
-    app: &AppHandle,
-    req: AttachedSpawnRequest,
-) -> Result<u32, String> {
-    let mut cmd = TokioCommand::new(&req.command);
-    if !req.args.is_empty() {
-        cmd.args(&req.args);
-    }
-    if let Some(dir) = &req.working_directory {
-        cmd.current_dir(dir);
-    }
-    #[cfg(windows)]
-    {
-        #[allow(unused_imports)]
-        use std::os::windows::process::CommandExt;
-        let _ = cmd.creation_flags(CREATE_NO_WINDOW);
-    }
-    cmd.stdout(std::process::Stdio::piped());
-    cmd.stderr(std::process::Stdio::piped());
+struct SpawnCompletionContext {
+    action_id: Option<i64>,
+    workspace_id: Option<i64>,
+    run_id: i64,
+    emit_completion_on_exit: bool,
+}
 
-    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn: {}", e))?;
-    let pid = child.id().unwrap_or(0);
+fn unix_now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
 
+fn spawn_child_supervisor(app: AppHandle, mut child: Child, ctx: SpawnCompletionContext) {
+    tokio::spawn(async move {
+        let exit_status = child.wait().await;
+        if !ctx.emit_completion_on_exit {
+            return;
+        }
+        let (exit_code, success) = match exit_status {
+            Ok(status) => (status.code(), status.success()),
+            Err(_) => (None, false),
+        };
+        let (action_id, workspace_id) = match (ctx.action_id, ctx.workspace_id) {
+            (Some(action_id), Some(workspace_id)) => (action_id, workspace_id),
+            _ => return,
+        };
+        let _ = app.emit(
+            "action-completed",
+            serde_json::json!({
+                "action_id": action_id,
+                "workspace_id": workspace_id,
+                "run_id": ctx.run_id,
+                "exit_code": exit_code,
+                "success": success,
+            }),
+        );
+    });
+}
+
+fn pipe_child_output(app: &AppHandle, child: &mut Child, req: &AttachedSpawnRequest) {
     if let Some(stdout) = child.stdout.take() {
         let app_clone = app.clone();
         let action_id = req.action_id;
@@ -94,10 +113,58 @@ pub async fn spawn_attached_with_logs(
             }
         });
     }
+}
+
+pub async fn spawn_attached_with_logs(
+    app: &AppHandle,
+    req: AttachedSpawnRequest,
+) -> Result<u32, String> {
+    let started_after_secs = unix_now_secs();
+
+    let mut cmd = TokioCommand::new(&req.command);
+    if !req.args.is_empty() {
+        cmd.args(&req.args);
+    }
+    if let Some(dir) = &req.working_directory {
+        cmd.current_dir(dir);
+    }
+    #[cfg(windows)]
+    {
+        #[allow(unused_imports)]
+        use std::os::windows::process::CommandExt;
+        let _ = cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.stdout(std::process::Stdio::piped());
+    cmd.stderr(std::process::Stdio::piped());
+
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn: {}", e))?;
+    let pid = child.id().unwrap_or(0);
+
+    pipe_child_output(app, &mut child, &req);
+
+    spawn_child_supervisor(
+        app.clone(),
+        child,
+        SpawnCompletionContext {
+            action_id: req.action_id,
+            workspace_id: req.workspace_id,
+            run_id: req.run_id,
+            emit_completion_on_exit: !req.track_process,
+        },
+    );
 
     if req.track_process {
-        let resolved = resolve_pid_for_tracking(pid, &req.command, &req.args, req.working_directory.as_deref()).await;
-        Ok(resolved.unwrap_or(pid))
+        let resolved = resolve_pid_for_tracking(
+            pid,
+            &req.command,
+            &req.args,
+            req.working_directory.as_deref(),
+            started_after_secs,
+        )
+        .await;
+        let tracked_pid = resolved.unwrap_or(pid);
+        crate::process::register_tracked_pid(tracked_pid);
+        Ok(tracked_pid)
     } else {
         Ok(pid)
     }
@@ -123,17 +190,8 @@ async fn resolve_pid_for_tracking(
     command: &str,
     args: &[String],
     working_directory: Option<&str>,
+    started_after_secs: u64,
 ) -> Option<u32> {
-    println!(
-        "DEBUG: resolve_pid_for_tracking parent={} cmd={}",
-        parent_pid, command
-    );
-
-    let started_after_secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-
     let expected_name = args
         .get(0)
         .filter(|s| s.ends_with(".exe") || s.contains('/') || s.contains('\\'))
@@ -154,6 +212,8 @@ async fn resolve_pid_for_tracking(
 }
 
 pub async fn spawn_detached(app: &AppHandle, req: DetachedSpawnRequest) -> Result<u32, String> {
+    let started_after_secs = unix_now_secs();
+
     let mut cmd = TokioCommand::new(&req.command);
     if !req.args.is_empty() {
         cmd.args(&req.args);
@@ -176,59 +236,41 @@ pub async fn spawn_detached(app: &AppHandle, req: DetachedSpawnRequest) -> Resul
 
     let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn: {}", e))?;
     let pid = child.id().unwrap_or(0);
-    println!(
-        "DEBUG: spawn_detached pid={} track_process={}",
-        pid, req.track_process
+
+    let attached_req = AttachedSpawnRequest {
+        action_id: req.action_id,
+        workspace_id: req.workspace_id,
+        run_id: req.run_id,
+        command: req.command.clone(),
+        args: req.args.clone(),
+        working_directory: req.working_directory.clone(),
+        track_process: req.track_process,
+    };
+    pipe_child_output(app, &mut child, &attached_req);
+
+    spawn_child_supervisor(
+        app.clone(),
+        child,
+        SpawnCompletionContext {
+            action_id: req.action_id,
+            workspace_id: req.workspace_id,
+            run_id: req.run_id,
+            emit_completion_on_exit: !req.track_process,
+        },
     );
 
-    if let Some(stdout) = child.stdout.take() {
-        let app_clone = app.clone();
-        let action_id = req.action_id;
-        let workspace_id = req.workspace_id;
-        let run_id = req.run_id;
-        tokio::spawn(async move {
-            let reader = BufReader::new(stdout);
-            let mut lines = reader.lines();
-            while let Ok(Some(line)) = lines.next_line().await {
-                let _ = app_clone.emit(
-                    "action-log",
-                    serde_json::json!({
-                        "action_id": action_id,
-                        "workspace_id": workspace_id,
-                        "run_id": run_id,
-                        "level": "info",
-                        "message": line,
-                    }),
-                );
-            }
-        });
-    }
-    if let Some(stderr) = child.stderr.take() {
-        let app_clone = app.clone();
-        let action_id = req.action_id;
-        let workspace_id = req.workspace_id;
-        let run_id = req.run_id;
-        tokio::spawn(async move {
-            let reader = BufReader::new(stderr);
-            let mut lines = reader.lines();
-            while let Ok(Some(line)) = lines.next_line().await {
-                let _ = app_clone.emit(
-                    "action-log",
-                    serde_json::json!({
-                        "action_id": action_id,
-                        "workspace_id": workspace_id,
-                        "run_id": run_id,
-                        "level": "error",
-                        "message": line,
-                    }),
-                );
-            }
-        });
-    }
-
     if req.track_process {
-        let resolved = resolve_pid_for_tracking(pid, &req.command, &req.args, req.working_directory.as_deref()).await;
-        Ok(resolved.unwrap_or(pid))
+        let resolved = resolve_pid_for_tracking(
+            pid,
+            &req.command,
+            &req.args,
+            req.working_directory.as_deref(),
+            started_after_secs,
+        )
+        .await;
+        let tracked_pid = resolved.unwrap_or(pid);
+        crate::process::register_tracked_pid(tracked_pid);
+        Ok(tracked_pid)
     } else {
         Ok(pid)
     }

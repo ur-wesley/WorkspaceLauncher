@@ -4,8 +4,9 @@ use common::*;
 use serial_test::serial;
 use tokio::time::{sleep, Duration};
 use workspacelauncher_lib::test_helpers::{
-    find_server_process, is_process_running, kill_process, resolve_descendant_pid, replace_variables,
-    spawn_hidden_process, FindServerRequest, ResolvePidRequest,
+    find_server_process, is_process_running, kill_process, register_tracked_pid,
+    resolve_descendant_pid, replace_variables, spawn_hidden_process, FindServerRequest,
+    ResolvePidRequest,
 };
 
 #[tokio::test]
@@ -49,6 +50,7 @@ async fn test_is_process_running_after_kill() {
     );
     assert!(running_before, "Process should be running before kill");
 
+    register_tracked_pid(pid);
     let kill_result = kill_process(pid).await;
     eprintln!("[TEST] Kill result: {:?}", kill_result);
 
@@ -63,6 +65,7 @@ async fn test_is_process_running_after_kill() {
 #[serial]
 async fn test_kill_process_already_terminated() {
     let invalid_pid = 99999999;
+    register_tracked_pid(invalid_pid);
     let result: Result<workspacelauncher_lib::test_helpers::KillProcessResult, String> =
         kill_process(invalid_pid).await;
     eprintln!("[TEST] Kill already terminated result: {:?}", result);
@@ -426,6 +429,9 @@ async fn test_concurrent_process_operations() {
     assert!(r2.expect("check 2 failed"), "Process 2 should be running");
     assert!(r3.expect("check 3 failed"), "Process 3 should be running");
 
+    register_tracked_pid(process1.pid);
+    register_tracked_pid(process2.pid);
+    register_tracked_pid(process3.pid);
     let k1 = kill_process(process1.pid).await;
     let k2 = kill_process(process2.pid).await;
     let k3 = kill_process(process3.pid).await;

@@ -1,6 +1,37 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::sync::{LazyLock, Mutex};
 use sysinfo::{Pid, Process, ProcessesToUpdate, System};
 use tokio::time::{sleep, Duration};
+
+static TRACKED_PIDS: LazyLock<Mutex<HashSet<u32>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
+
+pub fn register_tracked_pid(pid: u32) {
+    if pid > 0 {
+        if let Ok(mut pids) = TRACKED_PIDS.lock() {
+            pids.insert(pid);
+        }
+    }
+}
+
+pub fn unregister_tracked_pid(pid: u32) {
+    if let Ok(mut pids) = TRACKED_PIDS.lock() {
+        pids.remove(&pid);
+    }
+}
+
+#[tauri::command]
+pub fn register_tracked_pid_command(pid: u32) {
+    register_tracked_pid(pid);
+}
+
+fn is_pid_registered(pid: u32) -> bool {
+    TRACKED_PIDS
+        .lock()
+        .map(|pids| pids.contains(&pid))
+        .unwrap_or(false)
+}
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -18,7 +49,15 @@ pub struct KillProcessResult {
 
 #[tauri::command]
 pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
+    if !is_pid_registered(pid) {
+        return Err(format!(
+            "Refusing to kill PID {}: not launched by WorkspaceLauncher",
+            pid
+        ));
+    }
+
     if !is_process_running(pid).await.unwrap_or(false) {
+        unregister_tracked_pid(pid);
         return Ok(KillProcessResult {
             success: true,
             message: format!("Process {} already terminated", pid),
@@ -43,19 +82,25 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
         };
 
         match try_taskkill(false) {
-            Ok(output) if output.status.success() => Ok(KillProcessResult {
-                success: true,
-                message: format!("Process {} terminated", pid),
-                denied: false,
-            }),
+            Ok(output) if output.status.success() => {
+                unregister_tracked_pid(pid);
+                Ok(KillProcessResult {
+                    success: true,
+                    message: format!("Process {} terminated", pid),
+                    denied: false,
+                })
+            }
             Ok(output) => {
                 let stderr = String::from_utf8_lossy(&output.stderr).to_string();
                 match try_taskkill(true) {
-                    Ok(force_output) if force_output.status.success() => Ok(KillProcessResult {
-                        success: true,
-                        message: format!("Process {} killed forcefully", pid),
-                        denied: false,
-                    }),
+                    Ok(force_output) if force_output.status.success() => {
+                        unregister_tracked_pid(pid);
+                        Ok(KillProcessResult {
+                            success: true,
+                            message: format!("Process {} killed forcefully", pid),
+                            denied: false,
+                        })
+                    }
                     Ok(force_output) => {
                         let mut combined =
                             String::from_utf8_lossy(&force_output.stderr).to_string();
@@ -116,8 +161,18 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
             let upid = UnixPid::from_raw(p.as_u32() as i32);
             let _ = signal::kill(upid, Signal::SIGTERM);
         }
-        let mut any_success = false;
-        for p in to_kill.iter().rev() {
+
+        sleep(Duration::from_millis(500)).await;
+
+        system.refresh_processes(ProcessesToUpdate::All, true);
+        let still_running: Vec<Pid> = to_kill
+            .iter()
+            .copied()
+            .filter(|p| system.process(*p).is_some())
+            .collect();
+
+        let mut any_success = to_kill.len() > still_running.len();
+        for p in still_running.iter().rev() {
             let upid = UnixPid::from_raw(p.as_u32() as i32);
             if signal::kill(upid, Signal::SIGKILL).is_ok() {
                 any_success = true;
@@ -125,6 +180,7 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
         }
 
         if any_success {
+            unregister_tracked_pid(pid);
             Ok(KillProcessResult {
                 success: true,
                 message: format!("Process {} terminated", pid),
@@ -143,6 +199,29 @@ pub async fn kill_process(pid: u32) -> Result<KillProcessResult, String> {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessIdentity {
+    pub pid: u32,
+    pub start_time_secs: u64,
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct VerifyTrackedProcessRequest {
+    pub pid: u32,
+    pub expected_start_time_secs: Option<u64>,
+    pub expected_name: Option<String>,
+}
+
+fn lookup_process_identity(system: &System, pid: u32) -> Option<ProcessIdentity> {
+    let proc_info = system.process(Pid::from_u32(pid))?;
+    Some(ProcessIdentity {
+        pid,
+        start_time_secs: proc_info.start_time(),
+        name: proc_info.name().to_string_lossy().to_string(),
+    })
+}
+
 #[tauri::command]
 pub async fn is_process_running(pid: u32) -> Result<bool, String> {
     let mut system = System::new_all();
@@ -153,6 +232,48 @@ pub async fn is_process_running(pid: u32) -> Result<bool, String> {
         println!("DEBUG: is_process_running({}) -> false", pid);
     }
     Ok(exists)
+}
+
+#[tauri::command]
+pub async fn get_process_identity(pid: u32) -> Result<Option<ProcessIdentity>, String> {
+    let mut system = System::new_all();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+    Ok(lookup_process_identity(&system, pid))
+}
+
+#[tauri::command]
+pub async fn verify_tracked_process(req: VerifyTrackedProcessRequest) -> Result<bool, String> {
+    let mut system = System::new_all();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+
+    let Some(identity) = lookup_process_identity(&system, req.pid) else {
+        return Ok(false);
+    };
+
+    if let Some(expected_start) = req.expected_start_time_secs {
+        if identity.start_time_secs != expected_start {
+            println!(
+                "DEBUG: verify_tracked_process({}) -> false (start_time {} != {})",
+                req.pid, identity.start_time_secs, expected_start
+            );
+            return Ok(false);
+        }
+    }
+
+    if let Some(ref expected_name) = req.expected_name {
+        let needle = expected_name.to_lowercase();
+        if !needle.is_empty()
+            && !identity.name.to_lowercase().contains(&needle)
+        {
+            println!(
+                "DEBUG: verify_tracked_process({}) -> false (name {:?} missing {:?})",
+                req.pid, identity.name, expected_name
+            );
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -260,7 +381,7 @@ async fn find_server_after_build(
 
 #[tauri::command]
 pub async fn resolve_descendant_pid(req: ResolvePidRequest) -> Result<Option<u32>, String> {
-    let poll_budget_ms = req.max_wait_ms.unwrap_or(3000).min(1000);
+    let poll_budget_ms = req.max_wait_ms.unwrap_or(3000);
     let stabilize_ms = 2000u64;
     let mut poll_attempts = (poll_budget_ms / 100).max(1) as u32;
     let exclude: Vec<String> = req
@@ -486,6 +607,7 @@ mod tests {
             .expect("is_process_running failed");
         assert!(running_before, "process should be running before kill");
 
+        register_tracked_pid(pid);
         let result = kill_process(pid).await;
 
         sleep(Duration::from_millis(250)).await;
@@ -496,5 +618,37 @@ mod tests {
             "process should not be running after kill attempt"
         );
         let _ = result;
+    }
+
+    #[tokio::test]
+    async fn test_verify_tracked_process_start_time() {
+        let pid = spawn_dummy_long_running().await;
+        sleep(Duration::from_millis(150)).await;
+
+        let identity = get_process_identity(pid)
+            .await
+            .expect("get_process_identity failed")
+            .expect("process should exist");
+
+        let ok = verify_tracked_process(VerifyTrackedProcessRequest {
+            pid,
+            expected_start_time_secs: Some(identity.start_time_secs),
+            expected_name: None,
+        })
+        .await
+        .expect("verify failed");
+        assert!(ok, "matching start_time should verify");
+
+        let reused = verify_tracked_process(VerifyTrackedProcessRequest {
+            pid,
+            expected_start_time_secs: Some(identity.start_time_secs.saturating_sub(999_999)),
+            expected_name: None,
+        })
+        .await
+        .expect("verify failed");
+        assert!(!reused, "mismatched start_time should fail (PID reuse)");
+
+        register_tracked_pid(pid);
+        let _ = kill_process(pid).await;
     }
 }
