@@ -69,8 +69,7 @@ export function RunStoreProvider(props: { readonly children: JSX.Element }) {
 		},
 
 		refreshRunningActions() {
-			const currentWorkspaceId = store.runningActions[0]?.workspace_id;
-			actions.loadRunningActions(currentWorkspaceId);
+			actions.loadRunningActions();
 		},
 
 		async reconcileAndRefresh(workspaceId?: number) {

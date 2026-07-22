@@ -17,6 +17,16 @@ const WRAPPER_EXCLUDE = [
 	"pnpm",
 ];
 
+const APP_BOOT_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+export function getAppBootId(): string {
+	return APP_BOOT_ID;
+}
+
+export function isActivelyRunning(action: RunningAction): boolean {
+	return (action.status ?? "running") === "running";
+}
+
 export interface StopRunningActionResult {
 	ok: boolean;
 	pruned: boolean;
@@ -24,12 +34,52 @@ export interface StopRunningActionResult {
 	message: string;
 }
 
-async function isProcessRunning(pid: number): Promise<boolean> {
+export interface ReconcileOptions {
+	cold?: boolean;
+}
+
+interface ProcessIdentity {
+	pid: number;
+	start_time_secs: number;
+	name: string;
+}
+
+async function registerTrackedPid(pid: number): Promise<void> {
 	try {
-		return await invoke<boolean>("is_process_running", { pid });
+		await invoke("register_tracked_pid_command", { pid });
 	} catch (error) {
-		console.error(`Failed to check if process ${pid} is running:`, error);
+		console.error(`Failed to register tracked PID ${pid}:`, error);
+	}
+}
+
+async function verifyTrackedProcess(action: RunningAction): Promise<boolean> {
+	try {
+		return await invoke<boolean>("verify_tracked_process", {
+			req: {
+				pid: action.process_id,
+				expected_start_time_secs: action.process_start_time_secs ?? null,
+				expected_name: action.expected_process_name ?? null,
+			},
+		});
+	} catch (error) {
+		console.error(
+			`Failed to verify tracked process ${action.process_id}:`,
+			error,
+		);
 		return false;
+	}
+}
+
+async function getProcessIdentity(
+	pid: number,
+): Promise<ProcessIdentity | null> {
+	try {
+		return await invoke<ProcessIdentity | null>("get_process_identity", {
+			pid,
+		});
+	} catch (error) {
+		console.error(`Failed to get process identity for ${pid}:`, error);
+		return null;
 	}
 }
 
@@ -113,57 +163,127 @@ export async function pruneRunningAction(
 }
 
 export function isActionAlive(action: RunningAction): Promise<boolean> {
-	return isProcessRunning(action.process_id);
+	return verifyTrackedProcess(action);
 }
 
-export async function reconcileRunningActions(): Promise<void> {
+function isSameSession(action: RunningAction): boolean {
+	return action.app_boot_id === APP_BOOT_ID;
+}
+
+async function adoptProcessIdentity(
+	actionId: string,
+	pid: number,
+	now: string,
+): Promise<boolean> {
+	const identity = await getProcessIdentity(pid);
+	if (!identity) return false;
+
+	runningActionsService.update(actionId, {
+		process_id: pid,
+		process_start_time_secs: identity.start_time_secs,
+		expected_process_name:
+			runningActionsService.getById(actionId)?.expected_process_name ??
+			identity.name,
+		resolution_retries: 0,
+		status: "running",
+		last_verified_at: now,
+		stop_error: undefined,
+	});
+	await registerTrackedPid(pid);
+	return true;
+}
+
+async function reconcileColdAction(
+	action: RunningAction,
+	now: string,
+): Promise<void> {
+	if (action.process_start_time_secs == null) {
+		await pruneRunningAction(action.id, {
+			runStatus: "failed",
+			errorMessage: "Process identity unknown after restart",
+		});
+		return;
+	}
+
+	const alive = await verifyTrackedProcess(action);
+
+	if (alive) {
+		await registerTrackedPid(action.process_id);
+		runningActionsService.update(action.id, {
+			status: "running",
+			last_verified_at: now,
+			stop_error: undefined,
+		});
+		return;
+	}
+
+	await pruneRunningAction(action.id, {
+		runStatus: "failed",
+		errorMessage: "Process no longer running after restart",
+	});
+}
+
+async function reconcileRuntimeAction(
+	action: RunningAction,
+	now: string,
+): Promise<void> {
+	const alive = await verifyTrackedProcess(action);
+
+	if (alive) {
+		await registerTrackedPid(action.process_id);
+		runningActionsService.update(action.id, {
+			status: "running",
+			last_verified_at: now,
+			stop_error: undefined,
+		});
+		return;
+	}
+
+	const retries = action.resolution_retries ?? 0;
+	const canReResolve =
+		isSameSession(action) &&
+		action.working_directory &&
+		action.launched_at_secs &&
+		retries < MAX_RESOLUTION_RETRIES;
+
+	if (canReResolve) {
+		const newPid = await findServerProcess(
+			action.working_directory!,
+			action.launched_at_secs!,
+		);
+
+		if (newPid) {
+			const adopted = await adoptProcessIdentity(action.id, newPid, now);
+			if (adopted) {
+				console.log(`Re-resolved PID for "${action.action_name}": ${newPid}`);
+				return;
+			}
+		}
+
+		runningActionsService.update(action.id, {
+			resolution_retries: retries + 1,
+			status: "exited",
+			last_verified_at: now,
+		});
+		return;
+	}
+
+	await pruneRunningAction(action.id, { runStatus: "success" });
+}
+
+export async function reconcileRunningActions(
+	options?: ReconcileOptions,
+): Promise<void> {
 	const runningActions = runningActionsService.getAll();
 	const now = new Date().toISOString();
+	const cold = options?.cold === true;
 
 	for (const action of runningActions) {
-		const alive = await isProcessRunning(action.process_id);
-
-		if (alive) {
-			runningActionsService.update(action.id, {
-				status: "running",
-				last_verified_at: now,
-				stop_error: undefined,
-			});
-			continue;
+		if (cold) {
+			await reconcileColdAction(action, now);
+		} else {
+			await reconcileRuntimeAction(action, now);
 		}
-
-		const retries = action.resolution_retries ?? 0;
-
-		if (
-			action.working_directory &&
-			action.launched_at_secs &&
-			retries < MAX_RESOLUTION_RETRIES
-		) {
-			const newPid = await findServerProcess(
-				action.working_directory,
-				action.launched_at_secs,
-			);
-
-			if (newPid) {
-				runningActionsService.update(action.id, {
-					process_id: newPid,
-					resolution_retries: 0,
-					status: "running",
-					last_verified_at: now,
-				});
-				console.log(`Re-resolved PID for "${action.action_name}": ${newPid}`);
-				continue;
-			}
-
-			runningActionsService.update(action.id, {
-				resolution_retries: retries + 1,
-				status: "exited",
-				last_verified_at: now,
-			});
-			continue;
-		}
-
-		await pruneRunningAction(action.id, { runStatus: "success" });
 	}
 }
 
@@ -187,7 +307,7 @@ export async function stopRunningAction(
 			};
 		}
 
-		const stillAlive = await isProcessRunning(action.process_id);
+		const stillAlive = await verifyTrackedProcess(action);
 		if (!stillAlive) {
 			await pruneRunningAction(action.id, { runStatus: "cancelled" });
 			return {
@@ -220,7 +340,7 @@ export async function stopRunningAction(
 		};
 	} catch (error) {
 		const message = String(error);
-		const stillAlive = await isProcessRunning(action.process_id);
+		const stillAlive = await verifyTrackedProcess(action);
 		if (!stillAlive) {
 			await pruneRunningAction(action.id, { runStatus: "cancelled" });
 			return {
@@ -269,5 +389,5 @@ export async function isActionTrackedAndAlive(
 		.getByWorkspace(workspaceId)
 		.find((a) => a.action_id === actionId);
 	if (!entry) return false;
-	return isProcessRunning(entry.process_id);
+	return verifyTrackedProcess(entry);
 }

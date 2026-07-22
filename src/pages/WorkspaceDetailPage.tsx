@@ -101,7 +101,9 @@ export default function WorkspaceDetailPage() {
 	let filterVarsRef: HTMLInputElement | undefined;
 
 	const updateRunningActionsCount = () => {
-		const runningActions = runningActionsService.getByWorkspace(workspaceId());
+		const runningActions = runningActionsService
+			.getByWorkspace(workspaceId())
+			.filter((a) => (a.status ?? "running") === "running");
 		setRunningActionsCount(runningActions.length);
 		setRunningActionIds(new Set(runningActions.map((a) => a.action_id)));
 	};
@@ -338,7 +340,9 @@ export default function WorkspaceDetailPage() {
 		const workspace = currentWorkspace();
 		if (!workspace) return;
 
-		const runningActions = runningActionsService.getByWorkspace(workspace.id);
+		const runningActions = runningActionsService
+			.getByWorkspace(workspace.id)
+			.filter((a) => (a.status ?? "running") === "running");
 		if (runningActions.length === 0) {
 			showToast({
 				title: "No Running Actions",
@@ -387,7 +391,10 @@ export default function WorkspaceDetailPage() {
 
 		const runningAction = runningActionsService
 			.getByWorkspace(workspace.id)
-			.find((ra) => ra.action_id === action.id);
+			.find(
+				(ra) =>
+					ra.action_id === action.id && (ra.status ?? "running") === "running",
+			);
 
 		if (runningAction) {
 			const result = await stopRunningAction(runningAction);

@@ -4,6 +4,7 @@ import {
 	createSignal,
 	For,
 	onCleanup,
+	onMount,
 	Show,
 } from "solid-js";
 import { useRunStore } from "@/store";
@@ -53,21 +54,22 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (
 	const [state, actions] = useRunStore();
 	const [, setTick] = createSignal(0);
 
-	let intervalId: number | undefined;
-
 	createEffect(() => {
-		void actions.reconcileAndRefresh(props.workspaceId);
-
-		intervalId = window.setInterval(() => {
-			void actions.reconcileAndRefresh(props.workspaceId);
-			setTick((t) => t + 1);
-		}, 3000);
+		actions.loadRunningActions(props.workspaceId);
 	});
 
-	onCleanup(() => {
-		if (intervalId) {
-			window.clearInterval(intervalId);
-		}
+	onMount(() => {
+		const onChanged = () => actions.loadRunningActions(props.workspaceId);
+		window.addEventListener("running-actions-changed", onChanged);
+
+		const tickInterval = window.setInterval(() => {
+			setTick((t) => t + 1);
+		}, 1000);
+
+		onCleanup(() => {
+			window.removeEventListener("running-actions-changed", onChanged);
+			window.clearInterval(tickInterval);
+		});
 	});
 
 	return (
@@ -77,7 +79,7 @@ export const RunningActionsPanel: Component<RunningActionsPanelProps> = (
 				<Button
 					variant="ghost"
 					size="sm"
-					onClick={() => actions.reconcileAndRefresh(props.workspaceId)}
+					onClick={() => actions.loadRunningActions(props.workspaceId)}
 				>
 					Refresh
 				</Button>

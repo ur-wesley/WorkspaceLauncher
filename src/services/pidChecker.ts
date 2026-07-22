@@ -10,10 +10,10 @@ export function startPidChecker(): void {
 		return;
 	}
 
-	reconcileRunningActions().catch(console.error);
+	reconcileRunningActions({ cold: false }).catch(console.error);
 
 	intervalId = window.setInterval(() => {
-		reconcileRunningActions().catch(console.error);
+		reconcileRunningActions({ cold: false }).catch(console.error);
 	}, CHECK_INTERVAL);
 
 	console.log("PID checker started");

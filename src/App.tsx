@@ -32,7 +32,6 @@ import {
 import { checkForUpdatesOnStartup } from "@/libs/updater";
 import { SettingsHotkeysPage } from "@/pages/SettingsHotkeysPage";
 import { SettingsPage } from "@/pages/SettingsPage";
-import { SettingsThemeCreatorPage } from "@/pages/SettingsThemeCreatorPage";
 import WorkspaceDetailPage from "@/pages/WorkspaceDetailPage";
 import { WorkspacesListPage } from "@/pages/WorkspacesListPage";
 import { startPidChecker, stopPidChecker } from "@/services/pidChecker";
@@ -40,6 +39,7 @@ import {
 	isActionTrackedAndAlive,
 	reconcileRunningActions,
 } from "@/services/processTracking";
+import { runningActionsService } from "@/services/runningActions";
 import { StoreProvider } from "@/store";
 import type { NewRun } from "@/types/database";
 
@@ -69,6 +69,17 @@ const App: Component = () => {
 
 	const handleActionCompleted = (event: CustomEvent<ActionCompletedEvent>) => {
 		const { action_id, workspace_id, exit_code, success } = event.detail;
+
+		const isTracked = runningActionsService
+			.getAll()
+			.some(
+				(action) =>
+					action.action_id === action_id &&
+					action.workspace_id === workspace_id,
+			);
+		if (isTracked) {
+			return;
+		}
 
 		let status: "success" | "failed" | "cancelled" = "failed";
 		if (success) {
@@ -137,7 +148,7 @@ const App: Component = () => {
 				handleActionCompleted as EventListener,
 			);
 
-			await reconcileRunningActions();
+			await reconcileRunningActions({ cold: true });
 			startPidChecker();
 
 			checkForUpdatesOnStartup().catch((err) => {
@@ -268,14 +279,6 @@ const App: Component = () => {
 										<Route
 											path="/settings/hotkeys"
 											component={SettingsHotkeysPage}
-										/>
-										<Route
-											path="/settings/themes/create"
-											component={SettingsThemeCreatorPage}
-										/>
-										<Route
-											path="/settings/themes/edit"
-											component={SettingsThemeCreatorPage}
 										/>
 									</Route>
 								</Suspense>

@@ -1,8 +1,10 @@
+import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { Command } from "@tauri-apps/plugin-shell";
 import { getSetting } from "@/libs/api";
 import type { Action } from "@/models/action.model";
 import type { Variable } from "@/models/variable.model";
+import { getAppBootId } from "@/services/processTracking";
 import { runningActionsService } from "@/services/runningActions";
 import type {
 	ActionConfig,
@@ -123,14 +125,33 @@ function extractExpectedProcessName(
 	return undefined;
 }
 
-function trackRunningAction(
+async function trackRunningAction(
 	action: Action,
 	processId: number,
 	context: LaunchContext,
 	runId?: number,
 	workingDirectory?: string,
 	expectedProcessName?: string,
-): void {
+): Promise<void> {
+	let processStartTimeSecs: number | undefined;
+	let processName = expectedProcessName;
+
+	try {
+		const identity = await invoke<{
+			pid: number;
+			start_time_secs: number;
+			name: string;
+		} | null>("get_process_identity", { pid: processId });
+		if (identity) {
+			processStartTimeSecs = identity.start_time_secs;
+			if (!processName && identity.name) {
+				processName = identity.name;
+			}
+		}
+	} catch (error) {
+		console.warn(`Failed to get process identity for PID ${processId}:`, error);
+	}
+
 	const runningAction = {
 		id: `${action.id}-${Date.now()}`,
 		workspace_id: context.workspaceId,
@@ -143,12 +164,14 @@ function trackRunningAction(
 		launched_at_secs: Math.floor(Date.now() / 1000),
 		status: "running" as const,
 		last_verified_at: new Date().toISOString(),
-		expected_process_name: expectedProcessName,
+		expected_process_name: processName,
+		process_start_time_secs: processStartTimeSecs,
+		app_boot_id: getAppBootId(),
 	};
 
 	runningActionsService.add(runningAction);
 	console.log(
-		`Tracking running action: ${action.name} (PID: ${processId}, RunID: ${runId})`,
+		`Tracking running action: ${action.name} (PID: ${processId}, RunID: ${runId}, start_time: ${processStartTimeSecs})`,
 	);
 }
 
@@ -252,7 +275,7 @@ export async function launchAction(
 		}
 
 		if (result.success && result.processId && action.track_process) {
-			trackRunningAction(
+			await trackRunningAction(
 				action,
 				result.processId,
 				context,

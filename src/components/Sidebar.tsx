@@ -16,9 +16,10 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { WorkspaceCreateDialog } from "@/components/WorkspaceCreateDialog";
+import { listGlobalVariables } from "@/libs/api";
 import { cn } from "@/libs/cn";
 import { hotkeyTitle } from "@/libs/hotkeys";
-import { launchWorkspace } from "@/libs/launcher";
+import { launchWorkspace, prepareVariables } from "@/libs/launcher";
 import { showToast } from "@/libs/toast";
 import { runningActionsService } from "@/services/runningActions";
 import { useActionStore } from "@/store/action";
@@ -88,7 +89,9 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 	};
 
 	const updateRunningWorkspaces = () => {
-		const running = runningActionsService.getAll();
+		const running = runningActionsService
+			.getAll()
+			.filter((action) => (action.status ?? "running") === "running");
 		const workspaceIds = new Set(running.map((action) => action.workspace_id));
 		setRunningWorkspaceIds(workspaceIds);
 		setTotalRunningActions(running.length);
@@ -220,14 +223,14 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 										await actionStoreActions.loadActions(workspace.id);
 										await variableStoreActions.loadVariables(workspace.id);
 
-										const variables = variableStore.variables.reduce(
-											(acc, variable) => {
-												if (variable.enabled) {
-													acc[variable.key] = variable.value;
-												}
-												return acc;
-											},
-											{} as Record<string, string>,
+										const globalVariablesResult = await listGlobalVariables();
+										const globalVariables = globalVariablesResult.isOk()
+											? globalVariablesResult.value
+											: [];
+
+										const variables = prepareVariables(
+											variableStore.variables,
+											globalVariables,
 										);
 
 										const context = {

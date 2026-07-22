@@ -64,14 +64,16 @@ export const ActiveActionsManagerDialog: Component<
 
 	createEffect(() => {
 		if (props.open) {
-			void actions.reconcileAndRefresh();
+			actions.loadRunningActions();
 			setNow(Date.now());
 
 			refreshInterval = window.setInterval(() => {
-				void actions.reconcileAndRefresh();
-			}, 3000);
+				actions.loadRunningActions();
+				setNow(Date.now());
+			}, 1000);
 		} else if (refreshInterval) {
 			window.clearInterval(refreshInterval);
+			refreshInterval = undefined;
 		}
 	});
 

@@ -164,6 +164,8 @@ export interface RunningAction {
 	last_verified_at?: string;
 	stop_error?: string;
 	expected_process_name?: string;
+	process_start_time_secs?: number;
+	app_boot_id?: string;
 }
 
 export interface Log {
@@ -261,53 +263,6 @@ export interface OSOverrides {
 	windows?: Partial<ActionConfig>;
 	macos?: Partial<ActionConfig>;
 	linux?: Partial<ActionConfig>;
-}
-
-export interface ThemeColors {
-	background: string;
-	foreground: string;
-	card: string;
-	cardForeground: string;
-	popover: string;
-	popoverForeground: string;
-	primary: string;
-	primaryForeground: string;
-	secondary: string;
-	secondaryForeground: string;
-	muted: string;
-	mutedForeground: string;
-	accent: string;
-	accentForeground: string;
-	destructive: string;
-	destructiveForeground: string;
-	border: string;
-	input: string;
-	ring: string;
-}
-
-export interface Theme {
-	id: number;
-	name: string;
-	description: string | null;
-	is_predefined: boolean;
-	is_active: boolean;
-	light_colors: string;
-	dark_colors: string;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface NewTheme {
-	name: string;
-	description?: string;
-	is_predefined?: boolean;
-	light_colors: string;
-	dark_colors: string;
-}
-
-export interface ThemeWithParsedColors extends Theme {
-	parsedLightColors: ThemeColors;
-	parsedDarkColors: ThemeColors;
 }
 
 export const SETTING_KEYS = {
