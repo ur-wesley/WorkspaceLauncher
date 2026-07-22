@@ -42,11 +42,9 @@ fn main() {
 
         let version: i64 = parts[0].parse().expect("Failed to parse migration version");
 
-        let abs_path = fs::canonicalize(&path).expect("Failed to canonicalize path");
-        let path_str = abs_path.to_string_lossy().replace("\\", "/");
-
         let content = fs::read_to_string(&path).expect("Failed to read migration file");
-        let description = if let Some(first_line) = content.lines().next() {
+        let normalized = content.replace("\r\n", "\n").replace('\r', "\n");
+        let description = if let Some(first_line) = normalized.lines().next() {
             if first_line.starts_with("--") {
                 first_line.trim_start_matches('-').trim().to_string()
             } else {
@@ -56,10 +54,14 @@ fn main() {
             parts[1].replace(".sql", "").replace("_", " ")
         };
 
+        let out_sql_path = Path::new(&out_dir).join(filename);
+        fs::write(&out_sql_path, &normalized).expect("Failed to write normalized migration");
+        let out_sql_str = out_sql_path.to_string_lossy().replace("\\", "/");
+
         writeln!(f, "        tauri_plugin_sql::Migration {{").unwrap();
         writeln!(f, "            version: {},", version).unwrap();
         writeln!(f, "            description: \"{}\",", description).unwrap();
-        writeln!(f, "            sql: include_str!(\"{}\"),", path_str).unwrap();
+        writeln!(f, "            sql: include_str!(\"{}\"),", out_sql_str).unwrap();
         writeln!(f, "            kind: tauri_plugin_sql::MigrationKind::Up,").unwrap();
         writeln!(f, "        }},").unwrap();
     }

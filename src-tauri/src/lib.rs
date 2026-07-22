@@ -14,7 +14,10 @@ use generic_launcher::{auto_launch_actions, spawn_process};
 use launcher::{launch_action, launch_workspace};
 use monitor::get_system_metrics;
 use executable::discover_executable;
-use process::{find_server_process, is_process_running, kill_process, resolve_descendant_pid};
+use process::{
+    find_server_process, get_process_identity, is_process_running, kill_process,
+    register_tracked_pid_command, resolve_descendant_pid, verify_tracked_process,
+};
 use recovery::AllData;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -172,6 +175,26 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            #[cfg(target_os = "windows")]
+            {
+                use tauri::window::{Effect, EffectsBuilder};
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Err(e) = window.set_effects(Some(
+                        EffectsBuilder::new()
+                            .effects([
+                                Effect::Acrylic,
+                                Effect::MicaDark,
+                                Effect::Mica,
+                                Effect::Blur,
+                            ])
+                            .color((232, 110, 140, 160).into())
+                            .build(),
+                    )) {
+                        eprintln!("Failed to apply window effects: {e}");
+                    }
+                }
+            }
+
             let handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
                 let app_local_data_dir = handle
@@ -208,31 +231,22 @@ pub fn run() {
                         println!("Database migrations applied successfully.");
                     }
                     Err(ref e) if database::is_migration_checksum_error(e) => {
-                        println!("Migration checksum mismatch: {e}");
-                        let has_data = database::has_user_data(&db_path).await.unwrap_or(false);
+                        println!("Migration checksum mismatch: {e}; auto-repairing.");
+                        rescued_data = reset_and_rescue(
+                            app_local_data_dir.clone(),
+                            db_path.clone(),
+                        )
+                        .await
+                        .or(rescued_data);
 
-                        if has_data {
-                            *db_init_state.0.lock().await = Some(format!(
-                                "Database needs migration repair after an app update. Your workspaces are preserved. Click Repair Database to fix this. ({e})"
-                            ));
-                        } else {
-                            println!("No user data found; resetting database and retrying migrations.");
-                            rescued_data = reset_and_rescue(
-                                app_local_data_dir.clone(),
-                                db_path.clone(),
-                            )
-                            .await
-                            .or(rescued_data);
-
-                            match database::run_migrations(&db_path).await {
-                                Ok(()) => {
-                                    migration_ok = true;
-                                    println!("Database migrations applied after reset.");
-                                }
-                                Err(retry_err) => {
-                                    eprintln!("Migration retry failed: {retry_err}");
-                                    *db_init_state.0.lock().await = Some(retry_err);
-                                }
+                        match database::run_migrations(&db_path).await {
+                            Ok(()) => {
+                                migration_ok = true;
+                                println!("Database migrations applied after auto-repair.");
+                            }
+                            Err(retry_err) => {
+                                eprintln!("Migration auto-repair failed: {retry_err}");
+                                *db_init_state.0.lock().await = Some(retry_err);
                             }
                         }
                     }
@@ -275,11 +289,13 @@ pub fn run() {
             spawn_process,
             auto_launch_actions,
             kill_process,
+            register_tracked_pid_command,
             is_process_running,
+            get_process_identity,
+            verify_tracked_process,
             resolve_descendant_pid,
             find_server_process,
             discover_executable,
-            get_system_metrics,
             get_system_metrics,
             schedule_db_reset,
             get_db_path,
