@@ -41,7 +41,7 @@ const LayoutContent: ParentComponent<LayoutProps> = (props) => {
 	});
 
 	return (
-		<div class="flex flex-col h-screen bg-background overflow-hidden">
+		<div class="flex flex-col h-screen bg-background/75 overflow-hidden">
 			<WindowHeader
 				sidebarCollapsed={ui.store.sidebarCollapsed}
 				onToggleSidebar={ui.actions.toggleSidebar}

@@ -29,7 +29,7 @@ export const WindowHeader: Component<WindowHeaderProps> = (props) => {
 
 	return (
 		<div
-			class="grid h-10 shrink-0 select-none border-b border-border bg-background grid-cols-[auto_1fr_auto] items-center"
+			class="grid h-10 shrink-0 select-none border-b border-border bg-background/75 grid-cols-[auto_1fr_auto] items-center"
 			data-tauri-drag-region
 		>
 			<div class="flex h-full shrink-0 items-center">

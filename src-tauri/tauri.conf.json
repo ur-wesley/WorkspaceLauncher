@@ -13,8 +13,9 @@
   "app": {
     "windows": [
       {
-        "title": "WorkspaceLauncher",
+		"title": "WorkspaceLauncher",
         "decorations": false,
+        "transparent": true,
         "width": 1000,
         "height": 800,
         "minWidth": 640,
